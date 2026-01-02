@@ -14,18 +14,23 @@ public class PlayerEntity : ActorEntity
     private enum State
     {
         Dummy,
-        Idle,
+        Idling,
         Attacking,
+        Attacking1,
+        Attacking2,
+        Attacking3,
         Moving
     }
 
     private enum Trigger
     {
         Activate,
-        StartAttacking,
-        AttackingCompleted,
-        StartMoving,
-        StopMoving
+        Attack1Start,
+        Attack2Start,
+        Attack3Start,
+        AttackCompleted,
+        MoveStart,
+        MoveStop
     }
 
     private readonly StateMachine<State, Trigger> _stateMachine;
@@ -43,11 +48,11 @@ public class PlayerEntity : ActorEntity
     {
         if (MovementDirection == Vector2.Zero)
         {
-            _stateMachine.Fire(Trigger.StopMoving);
+            _stateMachine.Fire(Trigger.MoveStop);
         }
         else
         {
-            _stateMachine.Fire(Trigger.StartMoving);
+            _stateMachine.Fire(Trigger.MoveStart);
             if (_stateMachine.IsInState(State.Moving))
             {
                 Move(MovementDirection, gameTime.ElapsedGameTime.Milliseconds);
@@ -56,14 +61,19 @@ public class PlayerEntity : ActorEntity
         base.Update(gameTime);
     }
 
-    public void Attack()
+    public void Attack1()
     {
-        _stateMachine.Fire(Trigger.StartAttacking);
+        _stateMachine.Fire(Trigger.Attack1Start);
     }
 
-    public void StopMoving()
+    public void Attack2()
     {
-        _stateMachine.Fire(Trigger.StopMoving);
+        _stateMachine.Fire(Trigger.Attack2Start);
+    }
+
+    public void Attack3()
+    {
+        _stateMachine.Fire(Trigger.Attack3Start);
     }
 
     public void Move(Vector2 direction, int deltaTimeInMilliseconds)
@@ -78,33 +88,53 @@ public class PlayerEntity : ActorEntity
         StateMachine<State, Trigger> stateMachine = new StateMachine<State, Trigger>(State.Dummy);
         stateMachine.Configure(State.Dummy)
             .OnActivate(() => stateMachine.Fire(Trigger.Activate))
-            .Permit(Trigger.Activate, State.Idle)
-            .Ignore(Trigger.AttackingCompleted)
-            .Ignore(Trigger.StartAttacking);
+            .Permit(Trigger.Activate, State.Idling)
+            .Ignore(Trigger.AttackCompleted)
+            .Ignore(Trigger.Attack1Start)
+            .Ignore(Trigger.Attack2Start)
+            .Ignore(Trigger.Attack3Start);
         stateMachine.Configure(State.Attacking)
             .OnEntry(t => OnAttackingEntry())
             .OnExit(t => OnAttackingExit())
-            .Permit(Trigger.AttackingCompleted, State.Idle)
-            .Ignore(Trigger.StartAttacking)
-            .Ignore(Trigger.StartMoving)
-            .Ignore(Trigger.StopMoving)
+            .Permit(Trigger.AttackCompleted, State.Idling)
+            .Ignore(Trigger.Attack1Start)
+            .Ignore(Trigger.Attack2Start)
+            .Ignore(Trigger.Attack3Start)
+            .Ignore(Trigger.MoveStart)
+            .Ignore(Trigger.MoveStop)
             .Ignore(Trigger.Activate);
-        stateMachine.Configure(State.Idle)
+        stateMachine.Configure(State.Attacking1)
+            .OnEntry(t => OnAttacking1Entry())
+            .OnExit(t => OnAttacking1Exit())
+            .SubstateOf(State.Attacking);
+        stateMachine.Configure(State.Attacking2)
+            .OnEntry(t => OnAttacking2Entry())
+            .OnExit(t => OnAttacking2Exit())
+            .SubstateOf(State.Attacking);
+        stateMachine.Configure(State.Attacking3)
+            .OnEntry(t => OnAttacking3Entry())
+            .OnExit(t => OnAttacking3Exit())
+            .SubstateOf(State.Attacking);
+        stateMachine.Configure(State.Idling)
             .OnEntry(t => OnIdleEntry())
             .OnExit(t => OnIdleExit())
-            .Permit(Trigger.StartAttacking, State.Attacking)
-            .Permit(Trigger.StartMoving, State.Moving)
+            .Permit(Trigger.Attack1Start, State.Attacking1)
+            .Permit(Trigger.Attack2Start, State.Attacking2)
+            .Permit(Trigger.Attack3Start, State.Attacking3)
+            .Permit(Trigger.MoveStart, State.Moving)
             .Ignore(Trigger.Activate)
-            .Ignore(Trigger.AttackingCompleted)
-            .Ignore(Trigger.StopMoving);
+            .Ignore(Trigger.AttackCompleted)
+            .Ignore(Trigger.MoveStop);
         stateMachine.Configure(State.Moving)
             .OnEntry(t => OnMovingEntry())
             .OnExit(t => OnMovingExit())
-            .Permit(Trigger.StartAttacking, State.Attacking)
-            .Permit(Trigger.StopMoving, State.Idle)
+            .Permit(Trigger.Attack1Start, State.Attacking1)
+            .Permit(Trigger.Attack2Start, State.Attacking2)
+            .Permit(Trigger.Attack3Start, State.Attacking3)
+            .Permit(Trigger.MoveStop, State.Idling)
             .Ignore(Trigger.Activate)
-            .Ignore(Trigger.AttackingCompleted)
-            .Ignore(Trigger.StartMoving);
+            .Ignore(Trigger.AttackCompleted)
+            .Ignore(Trigger.MoveStart);
         stateMachine.Activate();
         return stateMachine;
     }
@@ -112,14 +142,54 @@ public class PlayerEntity : ActorEntity
     private void OnAttackingEntry()
     {
         Console.WriteLine("Entering attacking.");
-        Sprite.SetAnimation("attack");
-        Sprite.Controller.OnAnimationEvent += OnAttackingAnimationEvent;
+
     }
 
     private void OnAttackingExit()
     {
-        Sprite.Controller.OnAnimationEvent -= OnAttackingAnimationEvent;
         Console.WriteLine("Exiting attacking.");
+    }
+
+    private void OnAttacking1Entry()
+    {
+        Console.WriteLine("Entering attacking 1.");
+        Sprite.SetAnimation("attack1");
+        Sprite.Controller.OnAnimationEvent += OnAttackingAnimationEvent;
+    }
+
+    private void OnAttacking1Exit()
+    {
+        Console.WriteLine("Exiting attacking 1.");
+        Sprite.Controller.OnAnimationEvent -= OnAttackingAnimationEvent;
+    }
+
+    private void OnAttacking2Entry()
+    {
+        Console.WriteLine("Entering attacking 2.");
+        Sprite.SetAnimation("attack2");
+        Sprite.Controller.OnAnimationEvent += OnAttackingAnimationEvent;
+
+    }
+
+    private void OnAttacking2Exit()
+    {
+        Console.WriteLine("Exiting attacking 2.");
+        Sprite.Controller.OnAnimationEvent -= OnAttackingAnimationEvent;
+
+    }
+
+    private void OnAttacking3Entry()
+    {
+        Console.WriteLine("Entering attacking 3.");
+        Sprite.SetAnimation("attack3");
+        Sprite.Controller.OnAnimationEvent += OnAttackingAnimationEvent;
+
+    }
+
+    private void OnAttacking3Exit()
+    {
+        Console.WriteLine("Exiting attacking 3.");
+        Sprite.Controller.OnAnimationEvent -= OnAttackingAnimationEvent;
     }
 
     private void OnIdleEntry()
@@ -145,14 +215,14 @@ public class PlayerEntity : ActorEntity
     private void OnMovingExit()
     {
         Sprite.Controller.OnAnimationEvent -= OnIdleAnimationEvent;
-        Console.WriteLine("Exiting moving down");
+        Console.WriteLine("Exiting moving");
     }
 
     private void OnAttackingAnimationEvent(IAnimationController animationController, AnimationEventTrigger animationEventTrigger)
     {
         if (animationEventTrigger == AnimationEventTrigger.AnimationCompleted)
         {
-            _stateMachine.Fire(Trigger.AttackingCompleted);
+            _stateMachine.Fire(Trigger.AttackCompleted);
         }
     }
 

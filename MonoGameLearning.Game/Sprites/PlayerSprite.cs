@@ -18,13 +18,29 @@ public static class PlayerSprite
             .AddFrame("adventurer-idle-02", TimeSpan.FromSeconds(0.1))
             .AddFrame("adventurer-idle-03", TimeSpan.FromSeconds(0.1));
         });
-        spriteSheet.DefineAnimation("attack", builder =>
+        spriteSheet.DefineAnimation("attack1", builder =>
         {
             builder.IsLooping(false)
              .AddFrame("adventurer-attack1-00", TimeSpan.FromSeconds(0.1))
              .AddFrame("adventurer-attack1-01", TimeSpan.FromSeconds(0.1))
              .AddFrame("adventurer-attack1-02", TimeSpan.FromSeconds(0.1))
              .AddFrame("adventurer-attack1-03", TimeSpan.FromSeconds(0.1));
+        });
+        spriteSheet.DefineAnimation("attack2", builder =>
+        {
+            builder.IsLooping(false)
+             .AddFrame("adventurer-attack2-00", TimeSpan.FromSeconds(0.1))
+             .AddFrame("adventurer-attack2-01", TimeSpan.FromSeconds(0.1))
+             .AddFrame("adventurer-attack2-02", TimeSpan.FromSeconds(0.1))
+             .AddFrame("adventurer-attack2-03", TimeSpan.FromSeconds(0.1));
+        });
+        spriteSheet.DefineAnimation("attack3", builder =>
+        {
+            builder.IsLooping(false)
+             .AddFrame("adventurer-attack3-00", TimeSpan.FromSeconds(0.1))
+             .AddFrame("adventurer-attack3-01", TimeSpan.FromSeconds(0.1))
+             .AddFrame("adventurer-attack3-02", TimeSpan.FromSeconds(0.1))
+             .AddFrame("adventurer-attack3-03", TimeSpan.FromSeconds(0.1));
         });
         AnimatedSprite sprite = new AnimatedSprite(spriteSheet, "idle");
         return sprite;

@@ -23,9 +23,9 @@ public class Game1 : CoreGame
     protected override void Initialize()
     {
         _input = new InputManager();
-        _input.Action1Pressed += (sender, e) => { _player.Attack(); };
-        _input.Action2Pressed += (sender, e) => { Window.Title = "Action2 was pressed"; };
-        _input.Action3Pressed += (sender, e) => { Window.Title = "Action3 was pressed"; };
+        _input.Action1Pressed += (sender, e) => { _player.Attack1(); };
+        _input.Action2Pressed += (sender, e) => { _player.Attack2(); };
+        _input.Action3Pressed += (sender, e) => { _player.Attack3(); };
         _input.BackPressed += (sender, e) => { Exit(); };
 
         base.Initialize();
