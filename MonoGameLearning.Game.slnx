@@ -1,5 +1,4 @@
 <Solution>
   <Project Path="MonoGameLearning.Core/MonoGameLearning.Core.csproj" />
   <Project Path="MonoGameLearning.Game/MonoGameLearning.Game.csproj" />
-  <Project Path="MonoGameLearning.Input/MonoGameLearning.Input.csproj" />
 </Solution>

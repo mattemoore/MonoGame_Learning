@@ -2,7 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended.Input;
 
-namespace MonoGameLearning.Input;
+namespace MonoGameLearning.Core.Input;
 
 public class InputManager
 {

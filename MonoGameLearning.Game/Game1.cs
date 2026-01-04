@@ -1,15 +1,14 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 using MonoGame.Extended.Graphics;
-using MonoGameLearning.Core.CoreGame;
+using MonoGameLearning.Core.GameCore;
+using MonoGameLearning.Core.Input;
 using MonoGameLearning.Game.Entities;
 using MonoGameLearning.Game.Sprites;
-using MonoGameLearning.Input;
 
 namespace MonoGameLearning.Game;
 
-public class Game1 : CoreGame
+public class Game1 : GameCore
 {
     private PlayerEntity _player;
     private InputManager _input;
