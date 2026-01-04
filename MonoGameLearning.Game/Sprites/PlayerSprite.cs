@@ -42,6 +42,17 @@ public static class PlayerSprite
              .AddFrame("adventurer-attack3-02", TimeSpan.FromSeconds(0.1))
              .AddFrame("adventurer-attack3-03", TimeSpan.FromSeconds(0.1));
         });
+        spriteSheet.DefineAnimation("run", builder =>
+        {
+            builder.IsLooping(true)
+             .AddFrame("adventurer-run-00", TimeSpan.FromSeconds(0.1))
+             .AddFrame("adventurer-run-01", TimeSpan.FromSeconds(0.1))
+             .AddFrame("adventurer-run-02", TimeSpan.FromSeconds(0.1))
+             .AddFrame("adventurer-run-03", TimeSpan.FromSeconds(0.1))
+             .AddFrame("adventurer-run-04", TimeSpan.FromSeconds(0.1))
+             .AddFrame("adventurer-run-05", TimeSpan.FromSeconds(0.1));
+        });
+
         AnimatedSprite sprite = new AnimatedSprite(spriteSheet, "idle");
         return sprite;
     }
