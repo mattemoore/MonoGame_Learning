@@ -3,16 +3,16 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace MonoGameLearning.Core.CoreGame;
+namespace MonoGameLearning.Core.GameCore;
 
-public class CoreGame : Game
+public class GameCore : Game
 {
-    internal static CoreGame s_instance;
+    internal static GameCore s_instance;
 
     /// <summary>
     /// Gets a reference to the Core instance.
     /// </summary>
-    public static CoreGame Instance => s_instance;
+    public static GameCore Instance => s_instance;
 
     /// <summary>
     /// Gets the graphics device manager to control the presentation of graphics.
@@ -41,7 +41,7 @@ public class CoreGame : Game
     /// <param name="width">The initial width, in pixels, of the game window.</param>
     /// <param name="height">The initial height, in pixels, of the game window.</param>
     /// <param name="fullScreen">Indicates if the game should start in fullscreen mode.</param>
-    public CoreGame(string title, int width, int height, bool fullScreen)
+    public GameCore(string title, int width, int height, bool fullScreen)
     {
         // Ensure that multiple cores are not created.
         if (s_instance != null)

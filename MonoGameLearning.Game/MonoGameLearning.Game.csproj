@@ -34,6 +34,5 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../MonoGameLearning.Core/MonoGameLearning.Core.csproj" />
-    <ProjectReference Include="../MonoGameLearning.Input/MonoGameLearning.Input.csproj" />
   </ItemGroup>
 </Project>

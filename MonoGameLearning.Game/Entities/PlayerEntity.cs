@@ -1,13 +1,10 @@
 using System;
-using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended.Animations;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Entities;
 using Stateless;
-
-//test123
 
 namespace MonoGameLearning.Game.Entities;
 
