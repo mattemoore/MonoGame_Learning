@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using MonoGame.Extended;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.GameCore;
 using MonoGameLearning.Core.Input;
@@ -14,7 +15,7 @@ public class Game1 : GameCore
     private InputManager _input;
 
 
-    public Game1() : base("Game Demo", 1280, 720, false)
+    public Game1() : base("Game Demo", 1280, 720, 800, 600, false)
     {
 
     }
@@ -49,7 +50,9 @@ public class Game1 : GameCore
     protected override void Draw(GameTime gameTime)
     {
         GraphicsDevice.Clear(Color.CornflowerBlue);
-        SpriteBatch.Begin();
+        Matrix transformMatrix = Camera.GetViewMatrix();
+        SpriteBatch.Begin(transformMatrix: transformMatrix);
+        SpriteBatch.DrawRectangle(new RectangleF(new Vector2(0, 0), new SizeF(800, 600)), Color.AntiqueWhite);
         SpriteBatch.Draw(_player.Sprite, _player.Position, _player.Rotation, _player.Scale);
         SpriteBatch.End();
         base.Draw(gameTime);
