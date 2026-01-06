@@ -9,13 +9,16 @@ using MonoGameLearning.Game.Sprites;
 
 namespace MonoGameLearning.Game;
 
-public class Game1 : GameCore
+public class GameLoop : GameCore
 {
+    public const int GAME_WIDTH = 800;
+    public const int GAME_HEIGHT = 600;
+
     private PlayerEntity _player;
     private InputManager _input;
 
 
-    public Game1() : base("Game Demo", 1280, 720, 800, 600, false)
+    public GameLoop() : base("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIGHT, false)
     {
 
     }
@@ -36,7 +39,8 @@ public class Game1 : GameCore
         base.LoadContent();
         AnimatedSprite playerSprite = PlayerSprite.GetPlayerSprite(Content);
         _player = new PlayerEntity(new Vector2(30, 30), 50, 50, playerSprite);
-        _player.Scale = new Vector2(3, 3);
+        _player.Rotation = 0f;
+        _player.Scale = new Vector2(5, 5);
     }
 
     protected override void Update(GameTime gameTime)
@@ -52,8 +56,8 @@ public class Game1 : GameCore
         GraphicsDevice.Clear(Color.CornflowerBlue);
         Matrix transformMatrix = Camera.GetViewMatrix();
         SpriteBatch.Begin(transformMatrix: transformMatrix);
-        SpriteBatch.DrawRectangle(new RectangleF(new Vector2(0, 0), new SizeF(800, 600)), Color.AntiqueWhite);
-        SpriteBatch.Draw(_player.Sprite, _player.Position, _player.Rotation, _player.Scale);
+        SpriteBatch.DrawRectangle(new RectangleF(new Vector2(0, 0), new SizeF(GAME_WIDTH, GAME_HEIGHT)), Color.AntiqueWhite);
+        SpriteBatch.Draw(_player.Sprite, _player.Position, MathHelper.ToRadians(_player.Rotation), _player.Scale);
         SpriteBatch.End();
         base.Draw(gameTime);
     }
