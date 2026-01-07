@@ -70,57 +70,28 @@ public class PlayerEntity : ActorEntity
         base.Update(gameTime);
     }
 
-    private static Vector2 PreventDiagonal(Vector2 direction)
-    {
-        if (Math.Abs(direction.X) > Math.Abs(direction.Y))
-        {
-            direction.Y = 0;
-        }
-        else
-        {
-            direction.X = 0;
-        }
-        return direction;
-    }
+    private static Vector2 PreventDiagonal(Vector2 direction) =>
+        Math.Abs(direction.X) > Math.Abs(direction.Y)
+            ? new Vector2(direction.X, 0)
+            : new Vector2(0, direction.Y);
 
+    private static Trigger GetDirectionalTrigger(Vector2 direction) =>
+        Math.Abs(direction.X) > Math.Abs(direction.Y)
+            ? (direction.X > 0 ? Trigger.MoveRightStart : Trigger.MoveLeftStart)
+            : (direction.Y > 0 ? Trigger.MoveDownStart : Trigger.MoveUpStart);
 
-    private static Trigger GetDirectionalTrigger(Vector2 direction)
-    {
-        if (Math.Abs(direction.X) > Math.Abs(direction.Y))
-        {
-            return direction.X > 0 ? Trigger.MoveRightStart : Trigger.MoveLeftStart;
-        }
-        else
-        {
-            return direction.Y > 0 ? Trigger.MoveDownStart : Trigger.MoveUpStart;
-        }
-    }
+    public void Attack1() => _stateMachine.Fire(Trigger.Attack1Start);
 
-    public void Attack1()
-    {
-        _stateMachine.Fire(Trigger.Attack1Start);
-    }
+    public void Attack2() => _stateMachine.Fire(Trigger.Attack2Start);
 
-    public void Attack2()
-    {
-        _stateMachine.Fire(Trigger.Attack2Start);
-    }
+    public void Attack3() => _stateMachine.Fire(Trigger.Attack3Start);
 
-    public void Attack3()
-    {
-        _stateMachine.Fire(Trigger.Attack3Start);
-    }
-
-    public void Move(Vector2 direction, int deltaTimeInMilliseconds)
-    {
-        Vector2 newPosition = new Vector2(Position.X + (direction.X * deltaTimeInMilliseconds * BASE_MOVEMENT_SPEED),
-                                          Position.Y + (direction.Y * deltaTimeInMilliseconds * BASE_MOVEMENT_SPEED));
-        Position = newPosition;
-    }
+    public void Move(Vector2 direction, int deltaTimeInMilliseconds) =>
+        Position += direction * deltaTimeInMilliseconds * BASE_MOVEMENT_SPEED;
 
     private StateMachine<State, Trigger> InitStateMachine()
     {
-        StateMachine<State, Trigger> stateMachine = new StateMachine<State, Trigger>(State.Dummy);
+        StateMachine<State, Trigger> stateMachine = new(State.Dummy);
         stateMachine.Configure(State.Dummy)
             .OnActivate(() => stateMachine.Fire(Trigger.Activate))
             .Permit(Trigger.Activate, State.Idling)
@@ -128,9 +99,10 @@ public class PlayerEntity : ActorEntity
             .Ignore(Trigger.Attack1Start)
             .Ignore(Trigger.Attack2Start)
             .Ignore(Trigger.Attack3Start);
+
         stateMachine.Configure(State.Attacking)
-            .OnEntry(t => OnAttackingEntry())
-            .OnExit(t => OnAttackingExit())
+            .OnEntry(_ => OnAttackingEntry())
+            .OnExit(_ => OnAttackingExit())
             .Permit(Trigger.AttackCompleted, State.Idling)
             .Ignore(Trigger.Attack1Start)
             .Ignore(Trigger.Attack2Start)
@@ -141,21 +113,25 @@ public class PlayerEntity : ActorEntity
             .Ignore(Trigger.MoveDownStart)
             .Ignore(Trigger.MoveStop)
             .Ignore(Trigger.Activate);
+
         stateMachine.Configure(State.Attacking1)
-            .OnEntry(t => OnAttacking1Entry())
-            .OnExit(t => OnAttacking1Exit())
+            .OnEntry(_ => OnAttacking1Entry())
+            .OnExit(_ => OnAttacking1Exit())
             .SubstateOf(State.Attacking);
+
         stateMachine.Configure(State.Attacking2)
-            .OnEntry(t => OnAttacking2Entry())
-            .OnExit(t => OnAttacking2Exit())
+            .OnEntry(_ => OnAttacking2Entry())
+            .OnExit(_ => OnAttacking2Exit())
             .SubstateOf(State.Attacking);
+
         stateMachine.Configure(State.Attacking3)
-            .OnEntry(t => OnAttacking3Entry())
-            .OnExit(t => OnAttacking3Exit())
+            .OnEntry(_ => OnAttacking3Entry())
+            .OnExit(_ => OnAttacking3Exit())
             .SubstateOf(State.Attacking);
+
         stateMachine.Configure(State.Idling)
-            .OnEntry(t => OnIdleEntry())
-            .OnExit(t => OnIdleExit())
+            .OnEntry(_ => OnIdleEntry())
+            .OnExit(_ => OnIdleExit())
             .Permit(Trigger.Attack1Start, State.Attacking1)
             .Permit(Trigger.Attack2Start, State.Attacking2)
             .Permit(Trigger.Attack3Start, State.Attacking3)
@@ -166,42 +142,47 @@ public class PlayerEntity : ActorEntity
             .Ignore(Trigger.Activate)
             .Ignore(Trigger.AttackCompleted)
             .Ignore(Trigger.MoveStop);
+
         stateMachine.Configure(State.Moving)
-            .OnEntry(t => OnMovingEntry())
-            .OnExit(t => OnMovingExit())
+            .OnEntry(_ => OnMovingEntry())
+            .OnExit(_ => OnMovingExit())
             .Permit(Trigger.Attack1Start, State.Attacking1)
             .Permit(Trigger.Attack2Start, State.Attacking2)
             .Permit(Trigger.Attack3Start, State.Attacking3)
             .Permit(Trigger.MoveStop, State.Idling)
             .Ignore(Trigger.Activate)
             .Ignore(Trigger.AttackCompleted);
+
         stateMachine.Configure(State.MovingLeft)
-            .OnEntry(t => OnMovingLeftEntry())
-            .OnExit(t => OnMovingLeftExit())
+            .OnEntry(_ => OnMovingLeftEntry())
+            .OnExit(_ => OnMovingLeftExit())
             .SubstateOf(State.Moving)
             .Permit(Trigger.MoveRightStart, State.MovingRight)
             .Permit(Trigger.MoveUpStart, State.MovingUp)
             .Permit(Trigger.MoveDownStart, State.MovingDown)
             .Ignore(Trigger.MoveLeftStart);
+
         stateMachine.Configure(State.MovingRight)
-            .OnEntry(t => OnMovingRightEntry())
-            .OnExit(t => OnMovingRightExit())
+            .OnEntry(_ => OnMovingRightEntry())
+            .OnExit(_ => OnMovingRightExit())
             .SubstateOf(State.Moving)
             .Permit(Trigger.MoveLeftStart, State.MovingLeft)
             .Permit(Trigger.MoveUpStart, State.MovingUp)
             .Permit(Trigger.MoveDownStart, State.MovingDown)
             .Ignore(Trigger.MoveRightStart);
+
         stateMachine.Configure(State.MovingUp)
-            .OnEntry(t => OnMovingUpEntry())
-            .OnExit(t => OnMovingUpExit())
+            .OnEntry(_ => OnMovingUpEntry())
+            .OnExit(_ => OnMovingUpExit())
             .SubstateOf(State.Moving)
             .Permit(Trigger.MoveLeftStart, State.MovingLeft)
             .Permit(Trigger.MoveRightStart, State.MovingRight)
             .Permit(Trigger.MoveDownStart, State.MovingDown)
             .Ignore(Trigger.MoveUpStart);
+
         stateMachine.Configure(State.MovingDown)
-            .OnEntry(t => OnMovingDownEntry())
-            .OnExit(t => OnMovingDownExit())
+            .OnEntry(_ => OnMovingDownEntry())
+            .OnExit(_ => OnMovingDownExit())
             .SubstateOf(State.Moving)
             .Permit(Trigger.MoveRightStart, State.MovingRight)
             .Permit(Trigger.MoveUpStart, State.MovingUp)
@@ -212,16 +193,9 @@ public class PlayerEntity : ActorEntity
         return stateMachine;
     }
 
-    private void OnAttackingEntry()
-    {
-        Console.WriteLine("Entering attacking.");
+    private void OnAttackingEntry() => Console.WriteLine("Entering attacking.");
 
-    }
-
-    private void OnAttackingExit()
-    {
-        Console.WriteLine("Exiting attacking.");
-    }
+    private void OnAttackingExit() => Console.WriteLine("Exiting attacking.");
 
     private void OnAttacking1Entry()
     {
@@ -241,14 +215,12 @@ public class PlayerEntity : ActorEntity
         Console.WriteLine("Entering attacking 2.");
         Sprite.SetAnimation("attack2");
         Sprite.Controller.OnAnimationEvent += OnAttackingAnimationEvent;
-
     }
 
     private void OnAttacking2Exit()
     {
         Console.WriteLine("Exiting attacking 2.");
         Sprite.Controller.OnAnimationEvent -= OnAttackingAnimationEvent;
-
     }
 
     private void OnAttacking3Entry()
@@ -256,7 +228,6 @@ public class PlayerEntity : ActorEntity
         Console.WriteLine("Entering attacking 3.");
         Sprite.SetAnimation("attack3");
         Sprite.Controller.OnAnimationEvent += OnAttackingAnimationEvent;
-
     }
 
     private void OnAttacking3Exit()
@@ -271,20 +242,11 @@ public class PlayerEntity : ActorEntity
         Sprite.SetAnimation("idle");
     }
 
-    private void OnIdleExit()
-    {
-        Console.WriteLine("Exiting idle");
-    }
+    private void OnIdleExit() => Console.WriteLine("Exiting idle");
 
-    private void OnMovingEntry()
-    {
-        Console.WriteLine("Entering moving");
-    }
+    private void OnMovingEntry() => Console.WriteLine("Entering moving");
 
-    private void OnMovingExit()
-    {
-        Console.WriteLine("Exiting moving");
-    }
+    private void OnMovingExit() => Console.WriteLine("Exiting moving");
 
     private void OnMovingLeftEntry()
     {
@@ -293,10 +255,7 @@ public class PlayerEntity : ActorEntity
         Sprite.Effect = SpriteEffects.FlipHorizontally;
     }
 
-    private void OnMovingLeftExit()
-    {
-        Console.WriteLine("Exiting moving left");
-    }
+    private void OnMovingLeftExit() => Console.WriteLine("Exiting moving left");
 
     private void OnMovingRightEntry()
     {
@@ -308,10 +267,7 @@ public class PlayerEntity : ActorEntity
         }
     }
 
-    private void OnMovingRightExit()
-    {
-        Console.WriteLine("Exiting moving right");
-    }
+    private void OnMovingRightExit() => Console.WriteLine("Exiting moving right");
 
     private void OnMovingUpEntry()
     {
@@ -319,10 +275,7 @@ public class PlayerEntity : ActorEntity
         Sprite.SetAnimation("run");
     }
 
-    private void OnMovingUpExit()
-    {
-        Console.WriteLine("Exiting moving up");
-    }
+    private void OnMovingUpExit() => Console.WriteLine("Exiting moving up");
 
     private void OnMovingDownEntry()
     {
@@ -330,11 +283,7 @@ public class PlayerEntity : ActorEntity
         Sprite.SetAnimation("run");
     }
 
-    private void OnMovingDownExit()
-    {
-        Console.WriteLine("Exiting moving down");
-    }
-
+    private void OnMovingDownExit() => Console.WriteLine("Exiting moving down");
 
     private void OnAttackingAnimationEvent(IAnimationController animationController, AnimationEventTrigger animationEventTrigger)
     {

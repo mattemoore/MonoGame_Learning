@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.Graphics;
@@ -9,7 +9,7 @@ using MonoGameLearning.Game.Sprites;
 
 namespace MonoGameLearning.Game;
 
-public class GameLoop : GameCore
+public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIGHT, false)
 {
     public const int GAME_WIDTH = 800;
     public const int GAME_HEIGHT = 600;
@@ -18,19 +18,14 @@ public class GameLoop : GameCore
     private InputManager _input;
     private bool _isDebug = false;
 
-    public GameLoop() : base("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIGHT, false)
-    {
-
-    }
-
     protected override void Initialize()
     {
         _input = new InputManager();
-        _input.Action1Pressed += (sender, e) => { _player.Attack1(); };
-        _input.Action2Pressed += (sender, e) => { _player.Attack2(); };
-        _input.Action3Pressed += (sender, e) => { _player.Attack3(); };
-        _input.BackPressed += (sender, e) => { Exit(); };
-        _input.DebugPressed += (sender, e) => { _isDebug = !_isDebug; };
+        _input.Action1Pressed += (sender, e) => _player.Attack1();
+        _input.Action2Pressed += (sender, e) => _player.Attack2();
+        _input.Action3Pressed += (sender, e) => _player.Attack3();
+        _input.BackPressed += (sender, e) => Exit();
+        _input.DebugPressed += (sender, e) => _isDebug = !_isDebug;
 
         base.Initialize();
     }

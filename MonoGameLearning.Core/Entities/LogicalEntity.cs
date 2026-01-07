@@ -3,9 +3,10 @@ using Microsoft.Xna.Framework;
 
 namespace MonoGameLearning.Core.Entities;
 
-public abstract class LogicalEntity(Vector2 position, int width, int height) : Entity(position, width, height)
+public abstract class LogicalEntity(Vector2 position, int width, int height, float rotation = 0.0f) 
+    : Entity(position, width, height, rotation)
 {
-    public RectangleF Bounds => new RectangleF(
+    public RectangleF Bounds => new(
         Position.X - (Width / 2f),
         Position.Y - (Height / 2f),
         Width,
