@@ -16,7 +16,7 @@ public class GameLoop : GameCore
 
     private PlayerEntity _player;
     private InputManager _input;
-
+    private bool _isDebug = false;
 
     public GameLoop() : base("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIGHT, false)
     {
@@ -30,6 +30,7 @@ public class GameLoop : GameCore
         _input.Action2Pressed += (sender, e) => { _player.Attack2(); };
         _input.Action3Pressed += (sender, e) => { _player.Attack3(); };
         _input.BackPressed += (sender, e) => { Exit(); };
+        _input.DebugPressed += (sender, e) => { _isDebug = !_isDebug; };
 
         base.Initialize();
     }
@@ -38,9 +39,7 @@ public class GameLoop : GameCore
     {
         base.LoadContent();
         AnimatedSprite playerSprite = PlayerSprite.GetPlayerSprite(Content);
-        _player = new PlayerEntity(new Vector2(30, 30), 50, 50, playerSprite);
-        _player.Rotation = 0f;
-        _player.Scale = new Vector2(5, 5);
+        _player = new PlayerEntity(new Vector2(30, 30), 300, 150, playerSprite);
     }
 
     protected override void Update(GameTime gameTime)
@@ -56,8 +55,11 @@ public class GameLoop : GameCore
         GraphicsDevice.Clear(Color.CornflowerBlue);
         Matrix transformMatrix = Camera.GetViewMatrix();
         SpriteBatch.Begin(transformMatrix: transformMatrix);
-        SpriteBatch.DrawRectangle(new RectangleF(new Vector2(0, 0), new SizeF(GAME_WIDTH, GAME_HEIGHT)), Color.AntiqueWhite);
-        SpriteBatch.Draw(_player.Sprite, _player.Position, MathHelper.ToRadians(_player.Rotation), _player.Scale);
+        _player.Draw(SpriteBatch);
+        if (_isDebug)
+        {
+            SpriteBatch.DrawRectangle(_player.Bounds, Color.AntiqueWhite);
+        }
         SpriteBatch.End();
         base.Draw(gameTime);
     }
