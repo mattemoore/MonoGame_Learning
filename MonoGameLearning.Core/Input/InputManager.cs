@@ -7,7 +7,7 @@ namespace MonoGameLearning.Core.Input;
 public class InputManager
 {
     public event EventHandler Action1Pressed, Action2Pressed, Action3Pressed;
-    public event EventHandler BackPressed;
+    public event EventHandler BackPressed, DebugPressed;
     public Vector2 MovementDirection { get; private set; }
 
     public InputManager()
@@ -47,6 +47,10 @@ public class InputManager
         else if (keyboardStateExtended.WasKeyPressed(Microsoft.Xna.Framework.Input.Keys.Escape))
         {
             BackPressed?.Invoke(this, EventArgs.Empty);
+        }
+        else if (keyboardStateExtended.WasKeyPressed(Microsoft.Xna.Framework.Input.Keys.OemTilde))
+        {
+            DebugPressed?.Invoke(this, EventArgs.Empty);
         }
     }
 }
