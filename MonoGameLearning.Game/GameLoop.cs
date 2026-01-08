@@ -1,7 +1,10 @@
+using Gum.Forms;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.Graphics;
+using MonoGameGum;
+using MonoGameGum.GueDeriving;
 using MonoGameLearning.Core.GameCore;
 using MonoGameLearning.Core.Input;
 using MonoGameLearning.Game.Entities;
@@ -16,6 +19,8 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
 
     private PlayerEntity _player;
     private InputManager _input;
+    private TextRuntime _textInstance;
+    private static GumService GumService => GumService.Default;
 
     protected override void Initialize()
     {
@@ -24,7 +29,12 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
         _input.Action2Pressed += (sender, e) => _player.Attack2();
         _input.Action3Pressed += (sender, e) => _player.Attack3();
         _input.BackPressed += (sender, e) => Exit();
-        _input.DebugPressed += (sender, e) => IsDebug = !IsDebug;
+        _input.DebugPressed += (sender, e) => ToggleDebug();
+
+        GumService.Initialize(this, DefaultVisualsVersion.V3);
+        _textInstance = new TextRuntime();
+        _textInstance.AddToRoot();
+        _textInstance.Visible = false;
 
         base.Initialize();
     }
@@ -41,6 +51,7 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
         _input.Update(gameTime);
         _player.MovementDirection = _input.MovementDirection;
         _player.Update(gameTime);
+        GumService.Update(gameTime);
         base.Update(gameTime);
     }
 
@@ -53,8 +64,16 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
         if (IsDebug)
         {
             SpriteBatch.DrawRectangle(_player.Bounds, Color.AntiqueWhite);
+            _textInstance.Text = "FPS: " + FPSCounter.FramesPerSecond;
         }
         SpriteBatch.End();
+        GumService.Draw();
         base.Draw(gameTime);
+    }
+
+    private void ToggleDebug()
+    {
+        IsDebug = !IsDebug;
+        _textInstance.Visible = !_textInstance.Visible;
     }
 }

@@ -1,5 +1,3 @@
-using System.Buffers.Text;
-using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 
 namespace MonoGameLearning.Core.Entities;
