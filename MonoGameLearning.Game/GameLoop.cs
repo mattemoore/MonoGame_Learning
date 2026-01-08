@@ -16,7 +16,6 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
 
     private PlayerEntity _player;
     private InputManager _input;
-    private bool _isDebug = false;
 
     protected override void Initialize()
     {
@@ -25,7 +24,7 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
         _input.Action2Pressed += (sender, e) => _player.Attack2();
         _input.Action3Pressed += (sender, e) => _player.Attack3();
         _input.BackPressed += (sender, e) => Exit();
-        _input.DebugPressed += (sender, e) => _isDebug = !_isDebug;
+        _input.DebugPressed += (sender, e) => IsDebug = !IsDebug;
 
         base.Initialize();
     }
@@ -51,7 +50,7 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
         Matrix transformMatrix = Camera.GetViewMatrix();
         SpriteBatch.Begin(transformMatrix: transformMatrix);
         _player.Draw(SpriteBatch);
-        if (_isDebug)
+        if (IsDebug)
         {
             SpriteBatch.DrawRectangle(_player.Bounds, Color.AntiqueWhite);
         }
