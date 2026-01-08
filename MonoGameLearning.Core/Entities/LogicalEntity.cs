@@ -1,5 +1,5 @@
-using MonoGame.Extended;
 using Microsoft.Xna.Framework;
+using MonoGame.Extended;
 
 namespace MonoGameLearning.Core.Entities;
 
@@ -15,6 +15,5 @@ public abstract class LogicalEntity(Vector2 position, int width, int height, flo
 
     public override void Update(GameTime gameTime)
     {
-        // TODO: Does nothing for now
     }
 }
