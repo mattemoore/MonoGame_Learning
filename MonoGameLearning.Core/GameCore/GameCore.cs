@@ -19,6 +19,9 @@ public class GameCore : Game
     public static OrthographicCamera Camera { get; private set; }
     public static BoxingViewportAdapter ViewportAdapter { get; private set; }
 
+    public bool IsDebug { get; set; }
+    public FramesPerSecondCounter FPSCounter { get; } = new();
+
     public GameCore(string title, int resolutionWidth, int resolutionHeight, int virtualWidth, int virtualHeight, bool fullScreen)
     {
         if (s_instance != null)
@@ -47,5 +50,17 @@ public class GameCore : Game
         base.Initialize();
         GraphicsDevice = base.GraphicsDevice;
         SpriteBatch = new(GraphicsDevice);
+    }
+
+    protected override void Update(GameTime gameTime)
+    {
+        FPSCounter.Update(gameTime);
+        base.Update(gameTime);
+    }
+
+    protected override void Draw(GameTime gameTime)
+    {
+        FPSCounter.Draw(gameTime);
+        base.Draw(gameTime);
     }
 }

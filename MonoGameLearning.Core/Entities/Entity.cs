@@ -4,9 +4,6 @@ using Microsoft.Xna.Framework;
 
 namespace MonoGameLearning.Core.Entities;
 
-/// <summary>
-/// Represents anything in the game that is interactable (e.g. players, enemies, platforms, pickups etc.)
-/// </summary>
 public abstract class Entity(Vector2 position, int width, int height, float rotation = 0.0f)
 {
     public Vector2 Position { get; set; } = position;
