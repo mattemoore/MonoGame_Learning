@@ -1,7 +1,7 @@
 using System;
-using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using MonoGame.Extended;
 using MonoGame.Extended.Animations;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Entities;
@@ -13,6 +13,7 @@ namespace MonoGameLearning.Game.Entities;
 public class PlayerEntity : ActorEntity
 {
     public Vector2 MovementDirection { get; set; }
+    public RectangleF MovementBounds { get; set; }
     private enum State
     {
         Dummy,
@@ -88,8 +89,18 @@ public class PlayerEntity : ActorEntity
 
     public void Attack3() => _stateMachine.Fire(Trigger.Attack3Start);
 
-    public void Move(Vector2 direction, float deltaTime) =>
+    public void Move(Vector2 direction, float deltaTime)
+    {
         Position += direction * deltaTime * BASE_MOVEMENT_SPEED;
+
+        float halfWidth = Width / 2f;
+        float halfHeight = Height / 2f;
+
+        Position = new Vector2(
+            MathHelper.Clamp(Position.X, MovementBounds.Left + halfWidth, MovementBounds.Right - halfWidth),
+            MathHelper.Clamp(Position.Y, MovementBounds.Top + halfHeight, MovementBounds.Bottom - halfHeight)
+        );
+    }
 
     private StateMachine<State, Trigger> InitStateMachine()
     {
@@ -195,73 +206,64 @@ public class PlayerEntity : ActorEntity
         return stateMachine;
     }
 
-    private void OnAttackingEntry() => Debug.WriteLine("Entering attacking.");
+    private void OnAttackingEntry() { }
 
-    private void OnAttackingExit() => Debug.WriteLine("Exiting attacking.");
+    private void OnAttackingExit() { }
 
     private void OnAttacking1Entry()
     {
-        Debug.WriteLine("Entering attacking 1.");
         Sprite.SetAnimation(PlayerSprite.AnimationAttack1);
         Sprite.Controller.OnAnimationEvent += OnAttackingAnimationEvent;
     }
 
     private void OnAttacking1Exit()
     {
-        Debug.WriteLine("Exiting attacking 1.");
         Sprite.Controller.OnAnimationEvent -= OnAttackingAnimationEvent;
     }
 
     private void OnAttacking2Entry()
     {
-        Debug.WriteLine("Entering attacking 2.");
         Sprite.SetAnimation(PlayerSprite.AnimationAttack2);
         Sprite.Controller.OnAnimationEvent += OnAttackingAnimationEvent;
     }
 
     private void OnAttacking2Exit()
     {
-        Debug.WriteLine("Exiting attacking 2.");
         Sprite.Controller.OnAnimationEvent -= OnAttackingAnimationEvent;
     }
 
     private void OnAttacking3Entry()
     {
-        Debug.WriteLine("Entering attacking 3.");
         Sprite.SetAnimation(PlayerSprite.AnimationAttack3);
         Sprite.Controller.OnAnimationEvent += OnAttackingAnimationEvent;
     }
 
     private void OnAttacking3Exit()
     {
-        Debug.WriteLine("Exiting attacking 3.");
         Sprite.Controller.OnAnimationEvent -= OnAttackingAnimationEvent;
     }
 
     private void OnIdleEntry()
     {
-        Debug.WriteLine("Entering idle");
         Sprite.SetAnimation(PlayerSprite.AnimationIdle);
     }
 
-    private void OnIdleExit() => Debug.WriteLine("Exiting idle");
+    private void OnIdleExit() { }
 
-    private void OnMovingEntry() => Debug.WriteLine("Entering moving");
+    private void OnMovingEntry() { }
 
-    private void OnMovingExit() => Debug.WriteLine("Exiting moving");
+    private void OnMovingExit() { }
 
     private void OnMovingLeftEntry()
     {
-        Debug.WriteLine("Entering moving left");
         Sprite.SetAnimation(PlayerSprite.AnimationRun);
         Sprite.Effect = SpriteEffects.FlipHorizontally;
     }
 
-    private void OnMovingLeftExit() => Debug.WriteLine("Exiting moving left");
+    private void OnMovingLeftExit() { }
 
     private void OnMovingRightEntry()
     {
-        Debug.WriteLine("Entering moving right");
         Sprite.SetAnimation(PlayerSprite.AnimationRun);
         if (Sprite.Effect == SpriteEffects.FlipHorizontally)
         {
@@ -269,23 +271,21 @@ public class PlayerEntity : ActorEntity
         }
     }
 
-    private void OnMovingRightExit() => Debug.WriteLine("Exiting moving right");
+    private void OnMovingRightExit() { }
 
     private void OnMovingUpEntry()
     {
-        Debug.WriteLine("Entering moving up");
         Sprite.SetAnimation(PlayerSprite.AnimationRun);
     }
 
-    private void OnMovingUpExit() => Debug.WriteLine("Exiting moving up");
+    private void OnMovingUpExit() { }
 
     private void OnMovingDownEntry()
     {
-        Debug.WriteLine("Entering moving down");
         Sprite.SetAnimation(PlayerSprite.AnimationRun);
     }
 
-    private void OnMovingDownExit() => Debug.WriteLine("Exiting moving down");
+    private void OnMovingDownExit() { }
 
     private void OnAttackingAnimationEvent(IAnimationController animationController, AnimationEventTrigger animationEventTrigger)
     {

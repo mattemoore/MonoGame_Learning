@@ -50,6 +50,7 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
     {
         _input.Update(gameTime);
         _player.MovementDirection = _input.MovementDirection;
+        _player.MovementBounds = Camera.BoundingRectangle;
         _player.Update(gameTime);
         GumService.Update(gameTime);
         base.Update(gameTime);
