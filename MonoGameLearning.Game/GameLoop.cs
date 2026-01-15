@@ -43,7 +43,7 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
     {
         base.LoadContent();
         AnimatedSprite playerSprite = PlayerSprite.GetPlayerSprite(Content);
-        _player = new PlayerEntity(new Vector2(30, 30), 300, 150, playerSprite);
+        _player = new PlayerEntity(new Vector2(30, 30), 2.0f, playerSprite);
     }
 
     protected override void Update(GameTime gameTime)

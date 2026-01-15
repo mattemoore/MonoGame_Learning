@@ -47,9 +47,8 @@ public class PlayerEntity : ActorEntity
     private const float BASE_MOVEMENT_SPEED = 200f;
 
     public PlayerEntity(Vector2 position,
-                        int width,
-                        int height,
-                        AnimatedSprite sprite) : base(position, width, height, sprite)
+                        float scale,
+                        AnimatedSprite sprite) : base(position, scale, sprite)
     {
         _stateMachine = InitStateMachine();
     }
