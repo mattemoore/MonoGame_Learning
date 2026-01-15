@@ -5,15 +5,12 @@ using MonoGame.Extended.Graphics;
 namespace MonoGameLearning.Core.Entities;
 
 public abstract class ActorEntity(Vector2 position,
-                                 int width,
-                                 int height,
+                                 float scale,
                                  AnimatedSprite sprite,
-                                 float rotation = 0f) : LogicalEntity(position, width, height, rotation)
+                                 float rotation = 0f) : LogicalEntity(position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale), rotation)
 {
     public AnimatedSprite Sprite { get; private set; } = sprite;
-
-    private static Vector2 GetUniformScaleFactorToFitBounds(int boundsWidth, int boundsHeight, int spriteWidth, int spriteHeight) =>
-        new(MathHelper.Min(boundsWidth / (float)spriteWidth, boundsHeight / (float)spriteHeight));
+    public float Scale { get; private set; } = scale;
 
     public override void Update(GameTime gameTime)
     {
@@ -25,6 +22,6 @@ public abstract class ActorEntity(Vector2 position,
         spriteBatch.Draw(Sprite,
                         Position,
                         MathHelper.ToRadians(Rotation),
-                        GetUniformScaleFactorToFitBounds(Width, Height, Sprite.Size.X, Sprite.Size.Y));
+                        new Vector2(Scale));
 
 }
