@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using FlatRedBall.Glue.StateInterpolation;
 using Gum.Forms;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -22,6 +23,7 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
     public const int GAME_WIDTH = 800;
     public const int GAME_HEIGHT = 600;
     private PlayerEntity _player, _player1;
+    private BackgroundEntity _background;
     private List<ActorEntity> _actorEntities;
     private List<Entity> _entities;
     private InputManager _input;
@@ -50,12 +52,14 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
     protected override void LoadContent()
     {
         base.LoadContent();
+        Sprite background = new Sprite(Content.Load<Texture2D>("backgrounds/background"));
+        _background = new BackgroundEntity("background", background, Vector2.Zero, GAME_WIDTH, GAME_HEIGHT);
         AnimatedSprite playerSprite = PlayerSprite.GetPlayerSprite(Content);
         AnimatedSprite playerSprite1 = PlayerSprite.GetPlayerSprite(Content);
         _player = new PlayerEntity("player", new Vector2(30, 30), 2.0f, playerSprite, "foo");
         _player1 = new PlayerEntity("player1", new Vector2(75, 75), 2.0f, playerSprite1, "foo");
         _actorEntities = [_player, _player1];
-        _entities = [.. _actorEntities];
+        _entities = [_background, .. _actorEntities];
 
         RectangleF bounds = new(0, 0, GAME_WIDTH, GAME_HEIGHT);
         _collision.Add("foo", new Layer(new QuadTreeSpace(bounds)));
@@ -86,6 +90,7 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
         GraphicsDevice.Clear(Color.CornflowerBlue);
         Matrix transformMatrix = Camera.GetViewMatrix();
         SpriteBatch.Begin(transformMatrix: transformMatrix);
+        _background.Draw(SpriteBatch);
         foreach (var entity in _actorEntities)
         {
             entity.Draw(SpriteBatch);
