@@ -82,10 +82,6 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
         {
             entity.Draw(SpriteBatch);
         }
-        SpriteBatch.End();
-
-        GumService.Draw();
-
         if (IsDebug)
         {
             foreach (var entity in _actorEntities)
@@ -94,6 +90,9 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
             }
             _textInstance.Text = "FPS: " + FPSCounter.FramesPerSecond;
         }
+        SpriteBatch.End();
+
+        GumService.Draw();
 
         base.Draw(gameTime);
     }
