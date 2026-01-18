@@ -46,9 +46,10 @@ public class PlayerEntity : ActorEntity
     private readonly StateMachine<State, Trigger> _stateMachine;
     private const float BASE_MOVEMENT_SPEED = 200f;
 
-    public PlayerEntity(Vector2 position,
+    public PlayerEntity(string name,
+                        Vector2 position,
                         float scale,
-                        AnimatedSprite sprite) : base(position, scale, sprite)
+                        AnimatedSprite sprite) : base(name, position, scale, sprite)
     {
         _stateMachine = InitStateMachine();
     }
