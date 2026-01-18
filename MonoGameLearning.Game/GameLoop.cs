@@ -4,6 +4,8 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
+using MonoGame.Extended.Collisions.Layers;
+using MonoGame.Extended.Collisions.QuadTree;
 using MonoGame.Extended.Graphics;
 using MonoGameGum;
 using MonoGameGum.GueDeriving;
@@ -36,6 +38,7 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
         _input.BackPressed += (sender, e) => Exit();
         _input.DebugPressed += (sender, e) => ToggleDebug();
         _collision = new CollisionComponent(new RectangleF(0, 0, GAME_WIDTH, GAME_HEIGHT));
+
         GumService.Initialize(this, DefaultVisualsVersion.V3);
         _textInstance = new TextRuntime();
         _textInstance.AddToRoot();
@@ -49,10 +52,15 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
         base.LoadContent();
         AnimatedSprite playerSprite = PlayerSprite.GetPlayerSprite(Content);
         AnimatedSprite playerSprite1 = PlayerSprite.GetPlayerSprite(Content);
-        _player = new PlayerEntity("player", new Vector2(30, 30), 2.0f, playerSprite);
-        _player1 = new PlayerEntity("player1", new Vector2(75, 75), 2.0f, playerSprite1);
+        _player = new PlayerEntity("player", new Vector2(30, 30), 2.0f, playerSprite, "foo");
+        _player1 = new PlayerEntity("player1", new Vector2(75, 75), 2.0f, playerSprite1, "foo");
         _actorEntities = [_player, _player1];
         _entities = [.. _actorEntities];
+
+        RectangleF bounds = new(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        _collision.Add("foo", new Layer(new QuadTreeSpace(bounds)));
+        _collision.Add("bar", new Layer(new QuadTreeSpace(bounds)));
+
         foreach (var entity in _actorEntities)
         {
             _collision.Insert(entity);

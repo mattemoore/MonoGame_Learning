@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
@@ -10,6 +11,7 @@ public abstract class ActorEntity(string name,
                                  Vector2 position,
                                  float scale,
                                  AnimatedSprite sprite,
+                                 string layerName,
                                  float rotation = 0f)
                                  : LogicalEntity(name, position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale), rotation)
                                  , ICollisionActor
@@ -17,6 +19,7 @@ public abstract class ActorEntity(string name,
     public AnimatedSprite Sprite { get; private set; } = sprite;
     public float Scale { get; private set; } = scale;
     public IShapeF Bounds => Frame;
+    public string LayerName { get; init; } = layerName;
 
     public override void Update(GameTime gameTime)
     {
@@ -41,5 +44,6 @@ public abstract class ActorEntity(string name,
     public void OnCollision(CollisionEventArgs collisionInfo)
     {
         Position -= collisionInfo.PenetrationVector;
+        Debug.Write("foo");
     }
 }
