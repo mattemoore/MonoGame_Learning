@@ -49,7 +49,8 @@ public class PlayerEntity : ActorEntity
     public PlayerEntity(string name,
                         Vector2 position,
                         float scale,
-                        AnimatedSprite sprite) : base(name, position, scale, sprite)
+                        AnimatedSprite sprite,
+                        string layerName) : base(name, position, scale, sprite, layerName)
     {
         _stateMachine = InitStateMachine();
     }
