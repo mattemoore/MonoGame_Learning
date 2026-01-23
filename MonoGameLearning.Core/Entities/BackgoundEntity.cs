@@ -4,7 +4,7 @@ using MonoGame.Extended.Graphics;
 
 namespace MonoGameLearning.Core.Entities;
 
-public class BackgroundEntity(string name, Sprite sprite, Vector2 position, int width, int height) : Entity(name, position, width, height)
+public class BackgroundEntity(string name, Sprite sprite, Vector2 position, int width, int height) : LogicalEntity(name, position, width, height)
 {
     Sprite Sprite { get; init; } = sprite;
 
