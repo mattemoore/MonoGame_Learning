@@ -82,11 +82,7 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
         Camera.LookAt(new Vector2(clampedX, GAME_HEIGHT / 2f));
 
         _player.MovementDirection = _input.MovementDirection;
-
-        // Update movement bounds to match camera view or level bounds? 
-        // For now, let's limit player to the viewable area of the camera
-        var cameraBounds = Camera.BoundingRectangle;
-        _player.MovementBounds = cameraBounds;
+        _player.MovementBounds = Camera.BoundingRectangle;
 
         foreach (var entity in _entities)
         {
