@@ -16,10 +16,13 @@ using MonoGameLearning.Game.Sprites;
 
 namespace MonoGameLearning.Game;
 
-public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIGHT, false)
+public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEIGHT, GAME_WIDTH, GAME_HEIGHT, IS_FULL_SCREEN)
 {
     public const int GAME_WIDTH = 800;
     public const int GAME_HEIGHT = 600;
+    public const int RESOLUTION_WIDTH = 1024;
+    public const int RESOLUTION_HEIGHT = 768;
+    public const bool IS_FULL_SCREEN = false;
     private PlayerEntity _player, _player1;
     private List<BackgroundEntity> _levelSegments;
     private List<ActorEntity> _actorEntities;
@@ -96,8 +99,7 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
     protected override void Draw(GameTime gameTime)
     {
         GraphicsDevice.Clear(Color.CornflowerBlue);
-        Matrix transformMatrix = Camera.GetViewMatrix();
-        SpriteBatch.Begin(transformMatrix: transformMatrix);
+        SpriteBatch.Begin(transformMatrix: Camera.GetViewMatrix());
 
         var cameraBounds = Camera.BoundingRectangle;
         foreach (var bg in _levelSegments)
@@ -118,7 +120,11 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
             {
                 entity.DrawDebug(SpriteBatch);
             }
-            _textInstance.Text = "FPS: " + FPSCounter.FramesPerSecond;
+            _textInstance.Text = $"FPS: {FPSCounter.FramesPerSecond}\n" +
+                                 $"Viewport: Virtual-{ViewportAdapter.VirtualWidth}x{ViewportAdapter.VirtualHeight} Actual-{ViewportAdapter.ViewportWidth}x{ViewportAdapter.ViewportHeight}\n" +
+                                 $"Screen Buffer: {Graphics.PreferredBackBufferWidth}x{Graphics.PreferredBackBufferHeight}\n" +
+                                 $"Window: {Window.ClientBounds.Width}x{Window.ClientBounds.Height}";
+
         }
         SpriteBatch.End();
 
