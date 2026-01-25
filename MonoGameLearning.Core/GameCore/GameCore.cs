@@ -22,6 +22,9 @@ public class GameCore : Game
     public bool IsDebug { get; set; }
     public FramesPerSecondCounter FPSCounter { get; } = new();
 
+    private readonly int _virtualWidth;
+    private readonly int _virtualHeight;
+
     public GameCore(string title, int resolutionWidth, int resolutionHeight, int virtualWidth, int virtualHeight, bool fullScreen)
     {
         if (s_instance != null)
@@ -30,25 +33,29 @@ public class GameCore : Game
         }
 
         s_instance = this;
+        _virtualWidth = virtualWidth;
+        _virtualHeight = virtualHeight;
+
         Graphics = new(this);
         Graphics.PreferredBackBufferWidth = resolutionWidth;
         Graphics.PreferredBackBufferHeight = resolutionHeight;
         Graphics.IsFullScreen = fullScreen;
+        Graphics.HardwareModeSwitch = false;
         Graphics.ApplyChanges();
 
         Window.Title = title;
+        Window.AllowUserResizing = true;
         Content = base.Content;
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
-
-        ViewportAdapter = new(Window, Graphics.GraphicsDevice, virtualWidth, virtualHeight);
-        Camera = new(ViewportAdapter);
     }
 
     protected override void Initialize()
     {
         base.Initialize();
         GraphicsDevice = base.GraphicsDevice;
+        ViewportAdapter = new(Window, GraphicsDevice, _virtualWidth, _virtualHeight);
+        Camera = new(ViewportAdapter);
         SpriteBatch = new(GraphicsDevice);
     }
 

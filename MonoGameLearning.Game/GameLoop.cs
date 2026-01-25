@@ -1,12 +1,10 @@
+using System;
 using System.Collections.Generic;
-using FlatRedBall.Glue.StateInterpolation;
 using Gum.Forms;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
-using MonoGame.Extended.Collisions.Layers;
-using MonoGame.Extended.Collisions.QuadTree;
 using MonoGame.Extended.Graphics;
 using MonoGameGum;
 using MonoGameGum.GueDeriving;
@@ -18,12 +16,15 @@ using MonoGameLearning.Game.Sprites;
 
 namespace MonoGameLearning.Game;
 
-public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIGHT, false)
+public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEIGHT, GAME_WIDTH, GAME_HEIGHT, IS_FULL_SCREEN)
 {
     public const int GAME_WIDTH = 800;
     public const int GAME_HEIGHT = 600;
+    public const int RESOLUTION_WIDTH = 1024;
+    public const int RESOLUTION_HEIGHT = 768;
+    public const bool IS_FULL_SCREEN = false;
     private PlayerEntity _player, _player1;
-    private BackgroundEntity _background;
+    private List<BackgroundEntity> _levelSegments;
     private List<ActorEntity> _actorEntities;
     private List<Entity> _entities;
     private InputManager _input;
@@ -53,13 +54,19 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
     {
         base.LoadContent();
         Sprite background = new Sprite(Content.Load<Texture2D>("backgrounds/background"));
-        _background = new BackgroundEntity("background", background, Vector2.Zero, GAME_WIDTH, GAME_HEIGHT);
+
+        float bgCenterX = GAME_WIDTH / 2f;
+        float bgCenterY = GAME_HEIGHT / 2f;
+        var bg1 = new BackgroundEntity("bg1", background, new Vector2(bgCenterX, bgCenterY), GAME_WIDTH, GAME_HEIGHT);
+        var bg2 = new BackgroundEntity("bg2", background, new Vector2(bgCenterX + GAME_WIDTH, bgCenterY), GAME_WIDTH, GAME_HEIGHT);
+        _levelSegments = [bg1, bg2];
+
         AnimatedSprite playerSprite = PlayerSprite.GetPlayerSprite(Content);
         AnimatedSprite playerSprite1 = PlayerSprite.GetPlayerSprite(Content);
         _player = new PlayerEntity("player", new Vector2(30, 30), 2.0f, playerSprite);
         _player1 = new PlayerEntity("player1", new Vector2(75, 75), 2.0f, playerSprite1);
         _actorEntities = [_player, _player1];
-        _entities = [_background, .. _actorEntities];
+        _entities = [.. _levelSegments, .. _actorEntities];
 
         foreach (var entity in _actorEntities)
         {
@@ -70,8 +77,16 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
     protected override void Update(GameTime gameTime)
     {
         _input.Update(gameTime);
+
+        float totalLevelWidth = GAME_WIDTH * 2;
+        float minX = GAME_WIDTH / 2f;
+        float maxX = totalLevelWidth - (GAME_WIDTH / 2f);
+        float clampedX = Math.Clamp(_player.Position.X, minX, maxX);
+        Camera.LookAt(new Vector2(clampedX, GAME_HEIGHT / 2f));
+
         _player.MovementDirection = _input.MovementDirection;
         _player.MovementBounds = Camera.BoundingRectangle;
+
         foreach (var entity in _entities)
         {
             entity.Update(gameTime);
@@ -84,9 +99,17 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
     protected override void Draw(GameTime gameTime)
     {
         GraphicsDevice.Clear(Color.CornflowerBlue);
-        Matrix transformMatrix = Camera.GetViewMatrix();
-        SpriteBatch.Begin(transformMatrix: transformMatrix);
-        _background.Draw(SpriteBatch);
+        SpriteBatch.Begin(transformMatrix: Camera.GetViewMatrix());
+
+        var cameraBounds = Camera.BoundingRectangle;
+        foreach (var bg in _levelSegments)
+        {
+            if (cameraBounds.Intersects(bg.Frame))
+            {
+                bg.Draw(SpriteBatch);
+            }
+        }
+
         foreach (var entity in _actorEntities)
         {
             entity.Draw(SpriteBatch);
@@ -97,7 +120,11 @@ public class GameLoop() : GameCore("Game Demo", 1280, 720, GAME_WIDTH, GAME_HEIG
             {
                 entity.DrawDebug(SpriteBatch);
             }
-            _textInstance.Text = "FPS: " + FPSCounter.FramesPerSecond;
+            _textInstance.Text = $"FPS: {FPSCounter.FramesPerSecond}\n" +
+                                 $"Viewport: Virtual-{ViewportAdapter.VirtualWidth}x{ViewportAdapter.VirtualHeight} Actual-{ViewportAdapter.ViewportWidth}x{ViewportAdapter.ViewportHeight}\n" +
+                                 $"Screen Buffer: {Graphics.PreferredBackBufferWidth}x{Graphics.PreferredBackBufferHeight}\n" +
+                                 $"Window: {Window.ClientBounds.Width}x{Window.ClientBounds.Height}";
+
         }
         SpriteBatch.End();
 

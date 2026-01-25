@@ -10,7 +10,7 @@ public class BackgroundEntity(string name, Sprite sprite, Vector2 position, int 
 
     public void Draw(SpriteBatch spriteBatch)
     {
-        spriteBatch.Draw(Sprite, Vector2.Zero);
+        spriteBatch.Draw(Sprite, Frame.Position);
     }
 
     public override void DrawDebug(SpriteBatch spriteBatch)
