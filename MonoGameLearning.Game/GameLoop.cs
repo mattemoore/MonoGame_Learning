@@ -28,9 +28,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private List<ActorEntity> _actorEntities;
     private List<Entity> _entities;
     private InputManager _input;
-    private TextRuntime _textInstance;
+    private TextRuntime _debugWindow1, _debugWindow2;
     private CollisionComponent _collision;
     private static GumService GumService => GumService.Default;
+    private int _numBackgroundsDrawn, _numEntitiesDrawn;
 
     protected override void Initialize()
     {
@@ -43,9 +44,15 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _collision = new CollisionComponent(new RectangleF(0, 0, GAME_WIDTH, GAME_HEIGHT));
 
         GumService.Initialize(this, DefaultVisualsVersion.V3);
-        _textInstance = new TextRuntime();
-        _textInstance.AddToRoot();
-        _textInstance.Visible = false;
+        _debugWindow1 = new TextRuntime();
+        _debugWindow1.AddToRoot();
+        _debugWindow1.Visible = false;
+        _debugWindow1.Anchor(Gum.Wireframe.Anchor.TopLeft);
+        _debugWindow2 = new TextRuntime();
+        _debugWindow2.AddToRoot();
+        _debugWindow2.Visible = false;
+        _debugWindow2.Anchor(Gum.Wireframe.Anchor.TopRight);
+        _debugWindow2.X = -30;
 
         base.Initialize();
     }
@@ -53,7 +60,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     protected override void LoadContent()
     {
         base.LoadContent();
-        Sprite background = new Sprite(Content.Load<Texture2D>("backgrounds/background"));
+        MonoGame.Extended.Graphics.Sprite background = new(Content.Load<Texture2D>("backgrounds/background"));
 
         float bgCenterX = GAME_WIDTH / 2f;
         float bgCenterY = GAME_HEIGHT / 2f;
@@ -98,6 +105,9 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
     protected override void Draw(GameTime gameTime)
     {
+        _numBackgroundsDrawn = 0;
+        _numEntitiesDrawn = 0;
+
         GraphicsDevice.Clear(Color.CornflowerBlue);
         SpriteBatch.Begin(transformMatrix: Camera.GetViewMatrix());
 
@@ -107,35 +117,41 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             if (cameraBounds.Intersects(bg.Frame))
             {
                 bg.Draw(SpriteBatch);
+                _numBackgroundsDrawn++;
             }
         }
 
         foreach (var entity in _actorEntities)
         {
-            entity.Draw(SpriteBatch);
+            if (cameraBounds.Intersects(entity.Frame))
+            {
+                entity.Draw(SpriteBatch);
+                _numEntitiesDrawn++;
+            }
         }
+
         if (IsDebug)
         {
             foreach (var entity in _actorEntities)
             {
                 entity.DrawDebug(SpriteBatch);
             }
-            _textInstance.Text = $"FPS: {FPSCounter.FramesPerSecond}\n" +
+            _debugWindow1.Text = $"FPS: {FPSCounter.FramesPerSecond}\n" +
                                  $"Viewport: Virtual-{ViewportAdapter.VirtualWidth}x{ViewportAdapter.VirtualHeight} Actual-{ViewportAdapter.ViewportWidth}x{ViewportAdapter.ViewportHeight}\n" +
                                  $"Screen Buffer: {Graphics.PreferredBackBufferWidth}x{Graphics.PreferredBackBufferHeight}\n" +
                                  $"Window: {Window.ClientBounds.Width}x{Window.ClientBounds.Height}";
-
+            _debugWindow2.Text = $"BGs draw: {_numBackgroundsDrawn}\n" +
+                                 $"Ents draw: {_numEntitiesDrawn}";
         }
         SpriteBatch.End();
-
         GumService.Draw();
-
         base.Draw(gameTime);
     }
 
     private void ToggleDebug()
     {
         IsDebug = !IsDebug;
-        _textInstance.Visible = !_textInstance.Visible;
+        _debugWindow1.Visible = !_debugWindow1.Visible;
+        _debugWindow2.Visible = !_debugWindow2.Visible;
     }
 }
