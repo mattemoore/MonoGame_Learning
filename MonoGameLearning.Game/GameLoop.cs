@@ -66,14 +66,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     protected override void LoadContent()
     {
         base.LoadContent();
-        MonoGame.Extended.Graphics.Sprite background = new(Content.Load<Texture2D>("backgrounds/background"));
-
-        float bgCenterX = GAME_WIDTH / 2f;
-        float bgCenterY = GAME_HEIGHT / 2f;
-        var bg1 = new BackgroundEntity("bg1", background, new Vector2(bgCenterX, bgCenterY), GAME_WIDTH, GAME_HEIGHT);
-        var bg2 = new BackgroundEntity("bg2", background, new Vector2(bgCenterX + GAME_WIDTH, bgCenterY), GAME_WIDTH, GAME_HEIGHT);
         
-        _currentLevel = new Level([bg1, bg2]);
+        _currentLevel = new Level1(Content, GAME_WIDTH, GAME_HEIGHT);
 
         AnimatedSprite playerSprite = PlayerSprite.GetPlayerSprite(Content);
         AnimatedSprite playerSprite1 = PlayerSprite.GetPlayerSprite(Content);

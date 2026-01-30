@@ -6,7 +6,7 @@ using MonoGameLearning.Core.Entities;
 
 namespace MonoGameLearning.Game.Levels;
 
-public class Level(List<BackgroundEntity> backgrounds)
+public abstract class Level(List<BackgroundEntity> backgrounds)
 {
     public List<BackgroundEntity> Backgrounds { get; } = backgrounds;
 
