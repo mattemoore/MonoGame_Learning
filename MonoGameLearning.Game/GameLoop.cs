@@ -13,6 +13,7 @@ using MonoGameLearning.Core.GameCore;
 using MonoGameLearning.Core.Input;
 using MonoGameLearning.Game.Entities;
 using MonoGameLearning.Game.Sprites;
+using RenderingLibrary.Graphics;
 
 namespace MonoGameLearning.Game;
 
@@ -48,11 +49,15 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _debugWindow1.AddToRoot();
         _debugWindow1.Visible = false;
         _debugWindow1.Anchor(Gum.Wireframe.Anchor.TopLeft);
+
         _debugWindow2 = new TextRuntime();
         _debugWindow2.AddToRoot();
         _debugWindow2.Visible = false;
         _debugWindow2.Anchor(Gum.Wireframe.Anchor.TopRight);
-        _debugWindow2.X = -30;
+        _debugWindow2.Width = 200;
+        _debugWindow2.Height = 200;
+        _debugWindow2.X = -200;
+        _debugWindow2.HorizontalAlignment = HorizontalAlignment.Right;
 
         base.Initialize();
     }
