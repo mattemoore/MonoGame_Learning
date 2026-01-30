@@ -12,6 +12,7 @@ using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.GameCore;
 using MonoGameLearning.Core.Input;
 using MonoGameLearning.Game.Entities;
+using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.Sprites;
 using RenderingLibrary.Graphics;
 
@@ -25,7 +26,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     public const int RESOLUTION_HEIGHT = 768;
     public const bool IS_FULL_SCREEN = false;
     private PlayerEntity _player, _player1;
-    private List<BackgroundEntity> _levelSegments;
+    private Level _currentLevel;
     private List<ActorEntity> _actorEntities;
     private List<Entity> _entities;
     private InputManager _input;
@@ -71,14 +72,15 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         float bgCenterY = GAME_HEIGHT / 2f;
         var bg1 = new BackgroundEntity("bg1", background, new Vector2(bgCenterX, bgCenterY), GAME_WIDTH, GAME_HEIGHT);
         var bg2 = new BackgroundEntity("bg2", background, new Vector2(bgCenterX + GAME_WIDTH, bgCenterY), GAME_WIDTH, GAME_HEIGHT);
-        _levelSegments = [bg1, bg2];
+        
+        _currentLevel = new Level([bg1, bg2]);
 
         AnimatedSprite playerSprite = PlayerSprite.GetPlayerSprite(Content);
         AnimatedSprite playerSprite1 = PlayerSprite.GetPlayerSprite(Content);
         _player = new PlayerEntity("player", new Vector2(30, 30), 2.0f, playerSprite);
         _player1 = new PlayerEntity("player1", new Vector2(75, 75), 2.0f, playerSprite1);
         _actorEntities = [_player, _player1];
-        _entities = [.. _levelSegments, .. _actorEntities];
+        _entities = [.. _actorEntities];
 
         foreach (var entity in _actorEntities)
         {
@@ -99,6 +101,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _player.MovementDirection = _input.MovementDirection;
         _player.MovementBounds = Camera.BoundingRectangle;
 
+        _currentLevel.Update(gameTime);
+
         foreach (var entity in _entities)
         {
             entity.Update(gameTime);
@@ -116,16 +120,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         GraphicsDevice.Clear(Color.CornflowerBlue);
         SpriteBatch.Begin(transformMatrix: Camera.GetViewMatrix());
 
-        var cameraBounds = Camera.BoundingRectangle;
-        foreach (var bg in _levelSegments)
-        {
-            if (cameraBounds.Intersects(bg.Frame))
-            {
-                bg.Draw(SpriteBatch);
-                _numBackgroundsDrawn++;
-            }
-        }
+        _numBackgroundsDrawn = _currentLevel.Draw(SpriteBatch, Camera);
 
+        var cameraBounds = Camera.BoundingRectangle;
+        
         foreach (var entity in _actorEntities)
         {
             if (cameraBounds.Intersects(entity.Frame))
