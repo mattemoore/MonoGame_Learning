@@ -12,7 +12,9 @@ using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.GameCore;
 using MonoGameLearning.Core.Input;
 using MonoGameLearning.Game.Entities;
+using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.Sprites;
+using RenderingLibrary.Graphics;
 
 namespace MonoGameLearning.Game;
 
@@ -24,7 +26,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     public const int RESOLUTION_HEIGHT = 768;
     public const bool IS_FULL_SCREEN = false;
     private PlayerEntity _player, _player1;
-    private List<BackgroundEntity> _levelSegments;
+    private Level _currentLevel;
     private List<ActorEntity> _actorEntities;
     private List<Entity> _entities;
     private InputManager _input;
@@ -48,11 +50,15 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _debugWindow1.AddToRoot();
         _debugWindow1.Visible = false;
         _debugWindow1.Anchor(Gum.Wireframe.Anchor.TopLeft);
+
         _debugWindow2 = new TextRuntime();
         _debugWindow2.AddToRoot();
         _debugWindow2.Visible = false;
         _debugWindow2.Anchor(Gum.Wireframe.Anchor.TopRight);
-        _debugWindow2.X = -30;
+        _debugWindow2.Width = 200;
+        _debugWindow2.Height = 200;
+        _debugWindow2.X = -200;
+        _debugWindow2.HorizontalAlignment = HorizontalAlignment.Right;
 
         base.Initialize();
     }
@@ -60,20 +66,15 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     protected override void LoadContent()
     {
         base.LoadContent();
-        MonoGame.Extended.Graphics.Sprite background = new(Content.Load<Texture2D>("backgrounds/background"));
 
-        float bgCenterX = GAME_WIDTH / 2f;
-        float bgCenterY = GAME_HEIGHT / 2f;
-        var bg1 = new BackgroundEntity("bg1", background, new Vector2(bgCenterX, bgCenterY), GAME_WIDTH, GAME_HEIGHT);
-        var bg2 = new BackgroundEntity("bg2", background, new Vector2(bgCenterX + GAME_WIDTH, bgCenterY), GAME_WIDTH, GAME_HEIGHT);
-        _levelSegments = [bg1, bg2];
+        _currentLevel = new Level1(Content, GAME_WIDTH, GAME_HEIGHT);
 
         AnimatedSprite playerSprite = PlayerSprite.GetPlayerSprite(Content);
         AnimatedSprite playerSprite1 = PlayerSprite.GetPlayerSprite(Content);
         _player = new PlayerEntity("player", new Vector2(30, 30), 2.0f, playerSprite);
         _player1 = new PlayerEntity("player1", new Vector2(75, 75), 2.0f, playerSprite1);
         _actorEntities = [_player, _player1];
-        _entities = [.. _levelSegments, .. _actorEntities];
+        _entities = [.. _actorEntities];
 
         foreach (var entity in _actorEntities)
         {
@@ -92,7 +93,9 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         Camera.LookAt(new Vector2(clampedX, GAME_HEIGHT / 2f));
 
         _player.MovementDirection = _input.MovementDirection;
-        _player.MovementBounds = Camera.BoundingRectangle;
+        _player.MovementBounds = _currentLevel.MovementBounds;
+
+        _currentLevel.Update(gameTime);
 
         foreach (var entity in _entities)
         {
@@ -111,15 +114,9 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         GraphicsDevice.Clear(Color.CornflowerBlue);
         SpriteBatch.Begin(transformMatrix: Camera.GetViewMatrix());
 
+        _numBackgroundsDrawn = _currentLevel.Draw(SpriteBatch, Camera);
+
         var cameraBounds = Camera.BoundingRectangle;
-        foreach (var bg in _levelSegments)
-        {
-            if (cameraBounds.Intersects(bg.Frame))
-            {
-                bg.Draw(SpriteBatch);
-                _numBackgroundsDrawn++;
-            }
-        }
 
         foreach (var entity in _actorEntities)
         {
@@ -136,6 +133,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             {
                 entity.DrawDebug(SpriteBatch);
             }
+            _currentLevel.DrawDebug(SpriteBatch);
             _debugWindow1.Text = $"FPS: {FPSCounter.FramesPerSecond}\n" +
                                  $"Viewport: Virtual-{ViewportAdapter.VirtualWidth}x{ViewportAdapter.VirtualHeight} Actual-{ViewportAdapter.ViewportWidth}x{ViewportAdapter.ViewportHeight}\n" +
                                  $"Screen Buffer: {Graphics.PreferredBackBufferWidth}x{Graphics.PreferredBackBufferHeight}\n" +

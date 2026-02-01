@@ -9,6 +9,13 @@
             "type": "dotnet",
             "request": "launch",
             "projectPath": "${workspaceFolder}/MonoGameLearning.Game/MonoGameLearning.Game.csproj"
+        },
+        {
+            "name": "C# MonoGameLearningDebug in Antigravity",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${command:dotrush.activeTargetPath}",
+            "preLaunchTask": "dotrush: Build"
         }
     ],
 }
