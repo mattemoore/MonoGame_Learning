@@ -66,7 +66,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     protected override void LoadContent()
     {
         base.LoadContent();
-        
+
         _currentLevel = new Level1(Content, GAME_WIDTH, GAME_HEIGHT);
 
         AnimatedSprite playerSprite = PlayerSprite.GetPlayerSprite(Content);
@@ -93,7 +93,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         Camera.LookAt(new Vector2(clampedX, GAME_HEIGHT / 2f));
 
         _player.MovementDirection = _input.MovementDirection;
-        _player.MovementBounds = Camera.BoundingRectangle;
+        _player.MovementBounds = _currentLevel.MovementBounds;
 
         _currentLevel.Update(gameTime);
 
@@ -117,7 +117,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _numBackgroundsDrawn = _currentLevel.Draw(SpriteBatch, Camera);
 
         var cameraBounds = Camera.BoundingRectangle;
-        
+
         foreach (var entity in _actorEntities)
         {
             if (cameraBounds.Intersects(entity.Frame))
@@ -133,6 +133,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             {
                 entity.DrawDebug(SpriteBatch);
             }
+            _currentLevel.DrawDebug(SpriteBatch);
             _debugWindow1.Text = $"FPS: {FPSCounter.FramesPerSecond}\n" +
                                  $"Viewport: Virtual-{ViewportAdapter.VirtualWidth}x{ViewportAdapter.VirtualHeight} Actual-{ViewportAdapter.ViewportWidth}x{ViewportAdapter.ViewportHeight}\n" +
                                  $"Screen Buffer: {Graphics.PreferredBackBufferWidth}x{Graphics.PreferredBackBufferHeight}\n" +
