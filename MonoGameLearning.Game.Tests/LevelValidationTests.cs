@@ -25,8 +25,9 @@ public class LevelValidationTests
         var backgrounds = new List<BackgroundEntity> { bg1, bg2 };
 
         // Act & Assert
-        Assert.DoesNotThrow(() => Level.ValidateConnectivity(backgrounds));
-    }
+         var ex = Assert.Throws<InvalidOperationException>(() => Level.ValidateConnectivity(backgrounds));
+        Assert.That(ex.Message, Contains.Substring("are not connected"));
+   }
 
     [Test]
     public void ValidateConnectivity_WithDisconnectedBackgrounds_ShouldThrow()
