@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.Animations;
+using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Game.Sprites;
@@ -13,7 +14,6 @@ namespace MonoGameLearning.Game.Entities;
 public class PlayerEntity : ActorEntity
 {
     public Vector2 MovementDirection { get; set; }
-    public RectangleF MovementBounds { get; set; }
     private enum State
     {
         Dummy,
@@ -92,14 +92,6 @@ public class PlayerEntity : ActorEntity
     public void Move(Vector2 direction, float deltaTime)
     {
         Position += direction * deltaTime * BASE_MOVEMENT_SPEED;
-
-        float halfWidth = Width / 2f;
-        float halfHeight = Height / 2f;
-
-        Position = new Vector2(
-            MathHelper.Clamp(Position.X, MovementBounds.Left + halfWidth, MovementBounds.Right - halfWidth),
-            MathHelper.Clamp(Position.Y, MovementBounds.Top + halfHeight, MovementBounds.Bottom - halfHeight)
-        );
     }
 
     private StateMachine<State, Trigger> InitStateMachine()
