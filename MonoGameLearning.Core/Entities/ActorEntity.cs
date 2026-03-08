@@ -19,6 +19,21 @@ public abstract class ActorEntity(string name,
     public float Scale { get; private set; } = scale;
     public IShapeF Bounds => Frame;
 
+    public RectangleF MovementBounds { get; set; }
+
+    public virtual void ClampToBounds()
+    {
+        if (MovementBounds.IsEmpty) return;
+
+        float halfWidth = Width / 2f;
+        float halfHeight = Height / 2f;
+
+        Position = new Vector2(
+            MathHelper.Clamp(Position.X, MovementBounds.Left + halfWidth, MovementBounds.Right - halfWidth),
+            MathHelper.Clamp(Position.Y, MovementBounds.Top + halfHeight, MovementBounds.Bottom - halfHeight)
+        );
+    }
+
     public override void Update(GameTime gameTime)
     {
         Sprite.Update(gameTime);
@@ -39,7 +54,7 @@ public abstract class ActorEntity(string name,
         spriteBatch.DrawRectangle((RectangleF)Bounds, Color.Brown);
     }
 
-    public void OnCollision(CollisionEventArgs collisionInfo)
+    public virtual void OnCollision(CollisionEventArgs collisionInfo)
     {
         Position -= collisionInfo.PenetrationVector;
     }

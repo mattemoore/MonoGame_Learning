@@ -93,7 +93,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         Camera.LookAt(new Vector2(clampedX, GAME_HEIGHT / 2f));
 
         _player.MovementDirection = _input.MovementDirection;
-        _player.MovementBounds = _currentLevel.MovementBounds;
+        foreach (var entity in _actorEntities)
+        {
+            entity.MovementBounds = _currentLevel.MovementBounds;
+        }
 
         _currentLevel.Update(gameTime);
 
@@ -102,6 +105,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             entity.Update(gameTime);
         }
         _collision.Update(gameTime);
+        foreach (var entity in _actorEntities)
+        {
+            entity.ClampToBounds();
+        }
         GumService.Update(gameTime);
         base.Update(gameTime);
     }
