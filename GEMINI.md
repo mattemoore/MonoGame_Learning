@@ -51,6 +51,12 @@ dotnet run --project MonoGameLearning.Game/MonoGameLearning.Game.csproj
 dotnet build
 ```
 
+**Run Tests:**
+
+```bash
+dotnet test
+```
+
 ## Development Conventions
 
 * **Separation of Concerns**: Keep generic, reusable logic in `Core` and specific game implementation in `Game`.
@@ -60,3 +66,11 @@ dotnet build
 * **Conciseness**: Responses and suggestions should include code that is as concise and terse as possible.
 * **Modern C#**: Always use the latest C# features (e.g., primary constructors, collection expressions, raw string literals) to ensure the codebase remains modern and idiomatic.
 * **Solution Simplification**: Before proposing a solution, ALWAYS include a consideration step to see if the proposed architecture or implementation can be further simplified, refactored, or streamlined.
+* **Build Verification**: Always run `dotnet build` to ensure the project compiles successfully after any code modifications.
+* **Testing**: Always run `dotnet test` to execute unit tests after making any changes to verify no regressions were introduced.
+* **Preventing Game-Breaking Bugs (Test Suggestion)**: Always proactively suggest or write new unit/integration tests when modifying logic to prevent game-breaking bugs. Focus tests on critical gameplay failure modes such as:
+  * **Out-of-Bounds**: Characters or entities slipping outside of screen, level, or walkable boundaries.
+  * **Connectivity & Seams**: Disconnected backgrounds or levels that trap players or break scrolling.
+  * **State Machine Deadlocks**: Entities getting stuck in non-interruptible states (e.g., infinite attacking or falling) without recovery.
+  * **Collision Failures**: Entities passing through solid boundaries or failing to register collision responses.
+  * **Camera Tracking**: The camera tracking system losing track of player coordinates or clamping to incorrect screen areas.

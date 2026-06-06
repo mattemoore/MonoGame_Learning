@@ -71,8 +71,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
         AnimatedSprite playerSprite = PlayerSprite.GetPlayerSprite(Content);
         AnimatedSprite playerSprite1 = PlayerSprite.GetPlayerSprite(Content);
-        _player = new PlayerEntity("player", new Vector2(30, 30), 2.0f, playerSprite);
-        _player1 = new PlayerEntity("player1", new Vector2(75, 75), 2.0f, playerSprite1);
+        _player = new PlayerEntity("player", new Vector2(100, 450), 2.0f, playerSprite);
+        _player1 = new PlayerEntity("player1", new Vector2(150, 500), 2.0f, playerSprite1);
         _actorEntities = [_player, _player1];
         _entities = [.. _actorEntities];
 
