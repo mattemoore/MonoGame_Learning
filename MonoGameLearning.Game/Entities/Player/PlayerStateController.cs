@@ -17,7 +17,10 @@ public enum PlayerState
     MovingLeft,
     MovingRight,
     MovingUp,
-    MovingDown
+    MovingDown,
+    Hurt,
+    Dying,
+    Dead
 }
 
 public enum PlayerTrigger
@@ -31,7 +34,11 @@ public enum PlayerTrigger
     MoveRightStart,
     MoveUpStart,
     MoveDownStart,
-    MoveStop
+    MoveStop,
+    TakeDamage,
+    Die,
+    HurtCompleted,
+    DeathCompleted
 }
 
 public class PlayerStateController
@@ -50,7 +57,12 @@ public class PlayerStateController
         Action? onAttacking2Entry = null,
         Action? onAttacking2Exit = null,
         Action? onAttacking3Entry = null,
-        Action? onAttacking3Exit = null)
+        Action? onAttacking3Exit = null,
+        Action? onHurtEntry = null,
+        Action? onHurtExit = null,
+        Action? onDyingEntry = null,
+        Action? onDyingExit = null,
+        Action? onDeadEntry = null)
     {
         StateMachine = new(PlayerState.Dummy);
 
@@ -64,6 +76,8 @@ public class PlayerStateController
 
         StateMachine.Configure(PlayerState.Attacking)
             .Permit(PlayerTrigger.AttackCompleted, PlayerState.Idling)
+            .Permit(PlayerTrigger.TakeDamage, PlayerState.Hurt)
+            .Permit(PlayerTrigger.Die, PlayerState.Dying)
             .Ignore(PlayerTrigger.Attack1Start)
             .Ignore(PlayerTrigger.Attack2Start)
             .Ignore(PlayerTrigger.Attack3Start)
@@ -98,6 +112,8 @@ public class PlayerStateController
             .Permit(PlayerTrigger.MoveRightStart, PlayerState.MovingRight)
             .Permit(PlayerTrigger.MoveUpStart, PlayerState.MovingUp)
             .Permit(PlayerTrigger.MoveDownStart, PlayerState.MovingDown)
+            .Permit(PlayerTrigger.TakeDamage, PlayerState.Hurt)
+            .Permit(PlayerTrigger.Die, PlayerState.Dying)
             .Ignore(PlayerTrigger.Activate)
             .Ignore(PlayerTrigger.AttackCompleted)
             .Ignore(PlayerTrigger.MoveStop);
@@ -107,6 +123,8 @@ public class PlayerStateController
             .Permit(PlayerTrigger.Attack2Start, PlayerState.Attacking2)
             .Permit(PlayerTrigger.Attack3Start, PlayerState.Attacking3)
             .Permit(PlayerTrigger.MoveStop, PlayerState.Idling)
+            .Permit(PlayerTrigger.TakeDamage, PlayerState.Hurt)
+            .Permit(PlayerTrigger.Die, PlayerState.Dying)
             .Ignore(PlayerTrigger.Activate)
             .Ignore(PlayerTrigger.AttackCompleted);
 
@@ -141,6 +159,58 @@ public class PlayerStateController
             .Permit(PlayerTrigger.MoveUpStart, PlayerState.MovingUp)
             .Permit(PlayerTrigger.MoveLeftStart, PlayerState.MovingLeft)
             .Ignore(PlayerTrigger.MoveDownStart);
+
+        StateMachine.Configure(PlayerState.Hurt)
+            .OnEntry(_ => onHurtEntry?.Invoke())
+            .OnExit(_ => onHurtExit?.Invoke())
+            .Permit(PlayerTrigger.HurtCompleted, PlayerState.Idling)
+            .Permit(PlayerTrigger.Die, PlayerState.Dying)
+            .Ignore(PlayerTrigger.TakeDamage)
+            .Ignore(PlayerTrigger.Attack1Start)
+            .Ignore(PlayerTrigger.Attack2Start)
+            .Ignore(PlayerTrigger.Attack3Start)
+            .Ignore(PlayerTrigger.MoveLeftStart)
+            .Ignore(PlayerTrigger.MoveRightStart)
+            .Ignore(PlayerTrigger.MoveUpStart)
+            .Ignore(PlayerTrigger.MoveDownStart)
+            .Ignore(PlayerTrigger.MoveStop)
+            .Ignore(PlayerTrigger.Activate)
+            .Ignore(PlayerTrigger.AttackCompleted);
+
+        StateMachine.Configure(PlayerState.Dying)
+            .OnEntry(_ => onDyingEntry?.Invoke())
+            .OnExit(_ => onDyingExit?.Invoke())
+            .Permit(PlayerTrigger.DeathCompleted, PlayerState.Dead)
+            .Ignore(PlayerTrigger.TakeDamage)
+            .Ignore(PlayerTrigger.Die)
+            .Ignore(PlayerTrigger.HurtCompleted)
+            .Ignore(PlayerTrigger.Attack1Start)
+            .Ignore(PlayerTrigger.Attack2Start)
+            .Ignore(PlayerTrigger.Attack3Start)
+            .Ignore(PlayerTrigger.MoveLeftStart)
+            .Ignore(PlayerTrigger.MoveRightStart)
+            .Ignore(PlayerTrigger.MoveUpStart)
+            .Ignore(PlayerTrigger.MoveDownStart)
+            .Ignore(PlayerTrigger.MoveStop)
+            .Ignore(PlayerTrigger.Activate)
+            .Ignore(PlayerTrigger.AttackCompleted);
+
+        StateMachine.Configure(PlayerState.Dead)
+            .OnEntry(_ => onDeadEntry?.Invoke())
+            .Ignore(PlayerTrigger.TakeDamage)
+            .Ignore(PlayerTrigger.Die)
+            .Ignore(PlayerTrigger.HurtCompleted)
+            .Ignore(PlayerTrigger.DeathCompleted)
+            .Ignore(PlayerTrigger.Attack1Start)
+            .Ignore(PlayerTrigger.Attack2Start)
+            .Ignore(PlayerTrigger.Attack3Start)
+            .Ignore(PlayerTrigger.MoveLeftStart)
+            .Ignore(PlayerTrigger.MoveRightStart)
+            .Ignore(PlayerTrigger.MoveUpStart)
+            .Ignore(PlayerTrigger.MoveDownStart)
+            .Ignore(PlayerTrigger.MoveStop)
+            .Ignore(PlayerTrigger.Activate)
+            .Ignore(PlayerTrigger.AttackCompleted);
 
         StateMachine.Activate();
     }

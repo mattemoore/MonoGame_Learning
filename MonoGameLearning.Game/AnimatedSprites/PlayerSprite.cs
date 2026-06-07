@@ -11,6 +11,8 @@ public static class PlayerSprite
     public const string AnimationAttack1 = "attack1";
     public const string AnimationAttack2 = "attack2";
     public const string AnimationAttack3 = "attack3";
+    public const string AnimationHurt = "hurt";
+    public const string AnimationDie = "die";
     private const double FrameDuration = 0.1;
 
     public static AnimatedSprite GetPlayerSprite(ContentManager content)
@@ -23,6 +25,8 @@ public static class PlayerSprite
         DefineAnimation(spriteSheet, AnimationAttack2, "adventurer-attack2", 4, false);
         DefineAnimation(spriteSheet, AnimationAttack3, "adventurer-attack3", 4, false);
         DefineAnimation(spriteSheet, AnimationRun, "adventurer-run", 6, true);
+        DefineAnimation(spriteSheet, AnimationHurt, "adventurer-hurt", 3, false);
+        DefineAnimation(spriteSheet, AnimationDie, "adventurer-die", 7, false);
 
         return new(spriteSheet, AnimationIdle);
     }
