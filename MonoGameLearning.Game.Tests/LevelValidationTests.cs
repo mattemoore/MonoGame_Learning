@@ -5,7 +5,7 @@ using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Game.Levels;
 using NUnit.Framework;
 
-namespace MonoGameLearning.Tests;
+namespace MonoGameLearning.Game.Tests;
 
 [TestFixture]
 public class LevelValidationTests

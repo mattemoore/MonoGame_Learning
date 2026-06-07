@@ -2,7 +2,9 @@
 
 ## Project Overview
 
-This is a **C# MonoGame** project designed for learning game development concepts. It targets **.NET 10.0** and utilizes **MonoGame.Framework.DesktopGL** for cross-platform desktop support. The project makes heavy use of **MonoGame.Extended** for utilities like cameras, sprites, and input handling.
+This is a **C# MonoGame** project designed for learning game development concepts, with the primary goal of building a side-scrolling beat 'em up game in the vein of 90s classics like *Streets of Rage*, *Final Fight*, and *Double Dragon*. As part of this effort, we are developing a generic, reusable core engine library (`MonoGameLearning.Core`) that will be useful for bootstrapping future game projects.
+
+The project targets **.NET 10.0** and utilizes **MonoGame.Framework.DesktopGL** for cross-platform desktop support, relying heavily on **MonoGame.Extended** for utilities like cameras, sprites, and input handling.
 
 The solution is structured into two main projects:
 
