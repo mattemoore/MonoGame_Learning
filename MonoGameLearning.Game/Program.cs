@@ -1,2 +1,4 @@
-using var game = new MonoGameLearning.Game.GameLoop();
+using MonoGameLearning.Game.GameLoop;
+
+using var game = new GameLoop();
 game.Run();

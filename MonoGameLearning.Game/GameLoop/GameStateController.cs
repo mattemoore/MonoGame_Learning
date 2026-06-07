@@ -1,6 +1,6 @@
 using Stateless;
 
-namespace MonoGameLearning.Game;
+namespace MonoGameLearning.Game.GameLoop;
 
 public enum GameState
 {
