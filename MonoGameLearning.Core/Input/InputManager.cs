@@ -6,6 +6,12 @@ using MonoGame.Extended.Input;
 
 namespace MonoGameLearning.Core.Input;
 
+public enum InputMode
+{
+    Gameplay,
+    Menu
+}
+
 public class InputManager
 {
     public event EventHandler Action1Pressed, Action2Pressed, Action3Pressed;
@@ -13,6 +19,7 @@ public class InputManager
     public event EventHandler DebugKillPressed, DebugCompletePressed;
     public event Action<Vector2> MenuNavigated;
     public Vector2 MovementDirection { get; private set; }
+    public InputMode Mode { get; set; } = InputMode.Gameplay;
 
     private readonly Dictionary<Keys, Action> _keyActions;
     private readonly Dictionary<Keys, Vector2> _movementKeys;
@@ -53,26 +60,36 @@ public class InputManager
         KeyboardExtended.Update();
         var keyboardState = KeyboardExtended.GetState();
 
-        Vector2 newMovementDirection = Vector2.Zero;
-        foreach (var (key, direction) in _movementKeys)
+        if (Mode == InputMode.Gameplay)
         {
-            if (keyboardState.IsKeyDown(key))
+            Vector2 newMovementDirection = Vector2.Zero;
+            foreach (var (key, direction) in _movementKeys)
             {
-                newMovementDirection += direction;
+                if (keyboardState.IsKeyDown(key))
+                {
+                    newMovementDirection += direction;
+                }
             }
-        }
 
-        if (newMovementDirection != Vector2.Zero)
-        {
-            newMovementDirection.Normalize();
-        }
-        MovementDirection = newMovementDirection;
-
-        foreach (var (key, direction) in _menuKeys)
-        {
-            if (keyboardState.WasKeyPressed(key))
+            if (newMovementDirection != Vector2.Zero)
             {
-                MenuNavigated?.Invoke(direction);
+                newMovementDirection.Normalize();
+            }
+            MovementDirection = newMovementDirection;
+        }
+        else
+        {
+            MovementDirection = Vector2.Zero;
+        }
+
+        if (Mode == InputMode.Menu)
+        {
+            foreach (var (key, direction) in _menuKeys)
+            {
+                if (keyboardState.WasKeyPressed(key))
+                {
+                    MenuNavigated?.Invoke(direction);
+                }
             }
         }
 
