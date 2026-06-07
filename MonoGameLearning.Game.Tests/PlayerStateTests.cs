@@ -232,8 +232,7 @@ public class PlayerStateTests
     public void EntryCallbacks_AreInvoked_OnStateEntry()
     {
         bool entryInvoked = false;
-        var controller = new PlayerStateController(
-            onMovingRightEntry: () => entryInvoked = true);
+        var controller = new PlayerStateController(new() { OnMovingRightEntry = () => entryInvoked = true });
 
         controller.Fire(PlayerTrigger.MoveRightStart);
         Assert.That(entryInvoked, Is.True);
@@ -243,8 +242,7 @@ public class PlayerStateTests
     public void ExitCallbacks_AreInvoked_OnStateExit()
     {
         bool exitInvoked = false;
-        var controller = new PlayerStateController(
-            onAttacking1Exit: () => exitInvoked = true);
+        var controller = new PlayerStateController(new() { OnAttacking1Exit = () => exitInvoked = true });
 
         controller.Fire(PlayerTrigger.Attack1Start);
         controller.Fire(PlayerTrigger.AttackCompleted);
@@ -255,9 +253,11 @@ public class PlayerStateTests
     public void SubstateCallbacks_CanBeDistinct_PerDirection()
     {
         bool leftInvoked = false, rightInvoked = false;
-        var controller = new PlayerStateController(
-            onMovingLeftEntry: () => leftInvoked = true,
-            onMovingRightEntry: () => rightInvoked = true);
+        var controller = new PlayerStateController(new()
+        {
+            OnMovingLeftEntry = () => leftInvoked = true,
+            OnMovingRightEntry = () => rightInvoked = true
+        });
 
         controller.Fire(PlayerTrigger.MoveLeftStart);
         Assert.That(leftInvoked, Is.True);
@@ -416,7 +416,7 @@ public class PlayerStateTests
     public void HurtEntryCallback_IsInvoked_OnStateEntry()
     {
         bool entryInvoked = false;
-        var controller = new PlayerStateController(onHurtEntry: () => entryInvoked = true);
+        var controller = new PlayerStateController(new() { OnHurtEntry = () => entryInvoked = true });
         controller.Fire(PlayerTrigger.TakeDamage);
         Assert.That(entryInvoked, Is.True);
     }
@@ -425,9 +425,11 @@ public class PlayerStateTests
     public void HurtExitCallback_IsInvoked_OnStateExit()
     {
         bool exitInvoked = false;
-        var controller = new PlayerStateController(
-            onHurtEntry: () => { },
-            onHurtExit: () => exitInvoked = true);
+        var controller = new PlayerStateController(new()
+        {
+            OnHurtEntry = () => { },
+            OnHurtExit = () => exitInvoked = true
+        });
         controller.Fire(PlayerTrigger.TakeDamage);
         controller.Fire(PlayerTrigger.HurtCompleted);
         Assert.That(exitInvoked, Is.True);
@@ -437,7 +439,7 @@ public class PlayerStateTests
     public void DyingEntryCallback_IsInvoked_OnStateEntry()
     {
         bool entryInvoked = false;
-        var controller = new PlayerStateController(onDyingEntry: () => entryInvoked = true);
+        var controller = new PlayerStateController(new() { OnDyingEntry = () => entryInvoked = true });
         controller.Fire(PlayerTrigger.Die);
         Assert.That(entryInvoked, Is.True);
     }
@@ -446,9 +448,11 @@ public class PlayerStateTests
     public void DyingExitCallback_IsInvoked_OnStateExit()
     {
         bool exitInvoked = false;
-        var controller = new PlayerStateController(
-            onDyingEntry: () => { },
-            onDyingExit: () => exitInvoked = true);
+        var controller = new PlayerStateController(new()
+        {
+            OnDyingEntry = () => { },
+            OnDyingExit = () => exitInvoked = true
+        });
         controller.Fire(PlayerTrigger.Die);
         controller.Fire(PlayerTrigger.DeathCompleted);
         Assert.That(exitInvoked, Is.True);
@@ -458,9 +462,11 @@ public class PlayerStateTests
     public void DeadEntryCallback_IsInvoked_OnStateEntry()
     {
         bool entryInvoked = false;
-        var controller = new PlayerStateController(
-            onDyingEntry: () => { },
-            onDeadEntry: () => entryInvoked = true);
+        var controller = new PlayerStateController(new()
+        {
+            OnDyingEntry = () => { },
+            OnDeadEntry = () => entryInvoked = true
+        });
         controller.Fire(PlayerTrigger.Die);
         controller.Fire(PlayerTrigger.DeathCompleted);
         Assert.That(entryInvoked, Is.True);

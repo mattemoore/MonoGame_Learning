@@ -1,9 +1,27 @@
 using System;
 using Stateless;
 
-#nullable enable
-
 namespace MonoGameLearning.Game.Entities.Player;
+
+public class PlayerStateControllerConfig
+{
+    public Action OnIdleEntry { get; init; }
+    public Action OnMovingLeftEntry { get; init; }
+    public Action OnMovingRightEntry { get; init; }
+    public Action OnMovingUpEntry { get; init; }
+    public Action OnMovingDownEntry { get; init; }
+    public Action OnAttacking1Entry { get; init; }
+    public Action OnAttacking1Exit { get; init; }
+    public Action OnAttacking2Entry { get; init; }
+    public Action OnAttacking2Exit { get; init; }
+    public Action OnAttacking3Entry { get; init; }
+    public Action OnAttacking3Exit { get; init; }
+    public Action OnHurtEntry { get; init; }
+    public Action OnHurtExit { get; init; }
+    public Action OnDyingEntry { get; init; }
+    public Action OnDyingExit { get; init; }
+    public Action OnDeadEntry { get; init; }
+}
 
 public enum PlayerState
 {
@@ -46,23 +64,7 @@ public class PlayerStateController
     public StateMachine<PlayerState, PlayerTrigger> StateMachine { get; }
     public PlayerState State => StateMachine.State;
 
-    public PlayerStateController(
-        Action? onIdleEntry = null,
-        Action? onMovingLeftEntry = null,
-        Action? onMovingRightEntry = null,
-        Action? onMovingUpEntry = null,
-        Action? onMovingDownEntry = null,
-        Action? onAttacking1Entry = null,
-        Action? onAttacking1Exit = null,
-        Action? onAttacking2Entry = null,
-        Action? onAttacking2Exit = null,
-        Action? onAttacking3Entry = null,
-        Action? onAttacking3Exit = null,
-        Action? onHurtEntry = null,
-        Action? onHurtExit = null,
-        Action? onDyingEntry = null,
-        Action? onDyingExit = null,
-        Action? onDeadEntry = null)
+    public PlayerStateController(PlayerStateControllerConfig config = null)
     {
         StateMachine = new(PlayerState.Dummy);
 
@@ -89,22 +91,22 @@ public class PlayerStateController
             .Ignore(PlayerTrigger.Activate);
 
         StateMachine.Configure(PlayerState.Attacking1)
-            .OnEntry(_ => onAttacking1Entry?.Invoke())
-            .OnExit(_ => onAttacking1Exit?.Invoke())
+            .OnEntry(_ => config?.OnAttacking1Entry?.Invoke())
+            .OnExit(_ => config?.OnAttacking1Exit?.Invoke())
             .SubstateOf(PlayerState.Attacking);
 
         StateMachine.Configure(PlayerState.Attacking2)
-            .OnEntry(_ => onAttacking2Entry?.Invoke())
-            .OnExit(_ => onAttacking2Exit?.Invoke())
+            .OnEntry(_ => config?.OnAttacking2Entry?.Invoke())
+            .OnExit(_ => config?.OnAttacking2Exit?.Invoke())
             .SubstateOf(PlayerState.Attacking);
 
         StateMachine.Configure(PlayerState.Attacking3)
-            .OnEntry(_ => onAttacking3Entry?.Invoke())
-            .OnExit(_ => onAttacking3Exit?.Invoke())
+            .OnEntry(_ => config?.OnAttacking3Entry?.Invoke())
+            .OnExit(_ => config?.OnAttacking3Exit?.Invoke())
             .SubstateOf(PlayerState.Attacking);
 
         StateMachine.Configure(PlayerState.Idling)
-            .OnEntry(_ => onIdleEntry?.Invoke())
+            .OnEntry(_ => config?.OnIdleEntry?.Invoke())
             .Permit(PlayerTrigger.Attack1Start, PlayerState.Attacking1)
             .Permit(PlayerTrigger.Attack2Start, PlayerState.Attacking2)
             .Permit(PlayerTrigger.Attack3Start, PlayerState.Attacking3)
@@ -129,7 +131,7 @@ public class PlayerStateController
             .Ignore(PlayerTrigger.AttackCompleted);
 
         StateMachine.Configure(PlayerState.MovingLeft)
-            .OnEntry(_ => onMovingLeftEntry?.Invoke())
+            .OnEntry(_ => config?.OnMovingLeftEntry?.Invoke())
             .SubstateOf(PlayerState.Moving)
             .Permit(PlayerTrigger.MoveRightStart, PlayerState.MovingRight)
             .Permit(PlayerTrigger.MoveUpStart, PlayerState.MovingUp)
@@ -137,7 +139,7 @@ public class PlayerStateController
             .Ignore(PlayerTrigger.MoveLeftStart);
 
         StateMachine.Configure(PlayerState.MovingRight)
-            .OnEntry(_ => onMovingRightEntry?.Invoke())
+            .OnEntry(_ => config?.OnMovingRightEntry?.Invoke())
             .SubstateOf(PlayerState.Moving)
             .Permit(PlayerTrigger.MoveLeftStart, PlayerState.MovingLeft)
             .Permit(PlayerTrigger.MoveUpStart, PlayerState.MovingUp)
@@ -145,7 +147,7 @@ public class PlayerStateController
             .Ignore(PlayerTrigger.MoveRightStart);
 
         StateMachine.Configure(PlayerState.MovingUp)
-            .OnEntry(_ => onMovingUpEntry?.Invoke())
+            .OnEntry(_ => config?.OnMovingUpEntry?.Invoke())
             .SubstateOf(PlayerState.Moving)
             .Permit(PlayerTrigger.MoveLeftStart, PlayerState.MovingLeft)
             .Permit(PlayerTrigger.MoveRightStart, PlayerState.MovingRight)
@@ -153,7 +155,7 @@ public class PlayerStateController
             .Ignore(PlayerTrigger.MoveUpStart);
 
         StateMachine.Configure(PlayerState.MovingDown)
-            .OnEntry(_ => onMovingDownEntry?.Invoke())
+            .OnEntry(_ => config?.OnMovingDownEntry?.Invoke())
             .SubstateOf(PlayerState.Moving)
             .Permit(PlayerTrigger.MoveRightStart, PlayerState.MovingRight)
             .Permit(PlayerTrigger.MoveUpStart, PlayerState.MovingUp)
@@ -161,8 +163,8 @@ public class PlayerStateController
             .Ignore(PlayerTrigger.MoveDownStart);
 
         StateMachine.Configure(PlayerState.Hurt)
-            .OnEntry(_ => onHurtEntry?.Invoke())
-            .OnExit(_ => onHurtExit?.Invoke())
+            .OnEntry(_ => config?.OnHurtEntry?.Invoke())
+            .OnExit(_ => config?.OnHurtExit?.Invoke())
             .Permit(PlayerTrigger.HurtCompleted, PlayerState.Idling)
             .Permit(PlayerTrigger.Die, PlayerState.Dying)
             .Ignore(PlayerTrigger.TakeDamage)
@@ -178,8 +180,8 @@ public class PlayerStateController
             .Ignore(PlayerTrigger.AttackCompleted);
 
         StateMachine.Configure(PlayerState.Dying)
-            .OnEntry(_ => onDyingEntry?.Invoke())
-            .OnExit(_ => onDyingExit?.Invoke())
+            .OnEntry(_ => config?.OnDyingEntry?.Invoke())
+            .OnExit(_ => config?.OnDyingExit?.Invoke())
             .Permit(PlayerTrigger.DeathCompleted, PlayerState.Dead)
             .Ignore(PlayerTrigger.TakeDamage)
             .Ignore(PlayerTrigger.Die)
@@ -196,7 +198,7 @@ public class PlayerStateController
             .Ignore(PlayerTrigger.AttackCompleted);
 
         StateMachine.Configure(PlayerState.Dead)
-            .OnEntry(_ => onDeadEntry?.Invoke())
+            .OnEntry(_ => config?.OnDeadEntry?.Invoke())
             .Ignore(PlayerTrigger.TakeDamage)
             .Ignore(PlayerTrigger.Die)
             .Ignore(PlayerTrigger.HurtCompleted)
