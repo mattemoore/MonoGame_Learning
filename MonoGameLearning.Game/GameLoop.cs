@@ -99,6 +99,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
     protected override void Update(GameTime gameTime)
     {
+        _input.Mode = _gameState.State == GameState.Playing ? InputMode.Gameplay : InputMode.Menu;
         _input.Update(gameTime);
 
         if (_gameState.State == GameState.Playing)
