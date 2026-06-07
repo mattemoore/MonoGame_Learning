@@ -12,11 +12,12 @@ using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.GameCore;
 using MonoGameLearning.Core.Input;
 using MonoGameLearning.Game.Entities;
+using MonoGameLearning.Game.Entities.Player;
 using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.Sprites;
 using RenderingLibrary.Graphics;
 
-namespace MonoGameLearning.Game;
+namespace MonoGameLearning.Game.GameLoop;
 
 public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEIGHT, GAME_WIDTH, GAME_HEIGHT, IS_FULL_SCREEN)
 {
