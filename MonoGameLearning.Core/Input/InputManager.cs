@@ -45,13 +45,19 @@ public class InputManager
             { Keys.W, new Vector2(0, -1) },
             { Keys.S, new Vector2(0, 1) },
             { Keys.A, new Vector2(-1, 0) },
-            { Keys.D, new Vector2(1, 0) }
+            { Keys.D, new Vector2(1, 0) },
+            { Keys.Up, new Vector2(0, -1) },
+            { Keys.Down, new Vector2(0, 1) },
+            { Keys.Left, new Vector2(-1, 0) },
+            { Keys.Right, new Vector2(1, 0) }
         };
 
         _menuKeys = new()
         {
             { Keys.Up, new Vector2(0, -1) },
-            { Keys.Down, new Vector2(0, 1) }
+            { Keys.Down, new Vector2(0, 1) },
+            { Keys.W, new Vector2(0, -1) },
+            { Keys.S, new Vector2(0, 1) }
         };
     }
 
