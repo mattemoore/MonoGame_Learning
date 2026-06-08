@@ -70,7 +70,12 @@ dotnet test
 * **Solution Simplification**: Before proposing a solution, ALWAYS include a consideration step to see if the proposed architecture or implementation can be further simplified, refactored, or streamlined.
 * **Build Verification**: Always run `dotnet build` to ensure the project compiles successfully after any code modifications.
 * **Testing**: Always run `dotnet test` to execute unit tests after making any changes to verify no regressions were introduced.
-* **Preventing Game-Breaking Bugs (Test Suggestion)**: Always proactively suggest or write new unit/integration tests when modifying logic to prevent game-breaking bugs. Focus tests on critical gameplay failure modes such as:
+* **Mandatory Pre-Completion Checklist**: Before marking any implementation task as complete, the following steps MUST be performed in order:
+  1. Write unit/integration tests covering all new or modified logic.
+  2. Run `dotnet build` to verify compilation.
+  3. Run `dotnet test` to verify all tests pass with no regressions.
+  4. If any step fails, fix the issue before proceeding.
+* **Preventing Game-Breaking Bugs (Test Requirement)**: Always write new unit/integration tests when modifying logic — this is **not optional**. Focus tests on critical gameplay failure modes such as:
   * **Out-of-Bounds**: Characters or entities slipping outside of screen, level, or walkable boundaries.
   * **Connectivity & Seams**: Disconnected backgrounds or levels that trap players or break scrolling.
   * **State Machine Deadlocks**: Entities getting stuck in non-interruptible states (e.g., infinite attacking or falling) without recovery.
