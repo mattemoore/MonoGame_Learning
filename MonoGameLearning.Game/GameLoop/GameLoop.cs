@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Gum.Forms;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -44,19 +45,23 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     protected override void Initialize()
     {
         _input = new InputManager();
-        _input.Action1Pressed += (_, _) => { if (_gameState.State == GameState.Playing) _player.Attack1(); };
-        _input.Action2Pressed += (_, _) => { if (_gameState.State == GameState.Playing) _player.Attack2(); };
-        _input.Action3Pressed += (_, _) => { if (_gameState.State == GameState.Playing) _player.Attack3(); };
         _input.BackPressed += (_, _) => OnBackPressed();
         _input.DebugPressed += (_, _) => ToggleDebug();
         _input.MenuNavigated += dir => OnMenuNavigated(dir);
         _input.ConfirmPressed += (_, _) => OnConfirmPressed();
-        _input.DebugKillPressed += (_, _) => { if (IsDebug && _gameState.State == GameState.Playing) _gameState.Fire(GameTrigger.PlayerDied); };
+        _input.DebugKillPressed += (_, _) => { if (IsDebug && _gameState.State == GameState.Playing) _player?.TakeDamage(9999); };
         _input.DebugCompletePressed += (_, _) => { if (IsDebug && _gameState.State == GameState.Playing) _gameState.Fire(GameTrigger.CompleteLevel); };
-        _collision = new CollisionComponent(new RectangleF(0, 0, GAME_WIDTH, GAME_HEIGHT));
+        _collision = new CollisionComponent(new RectangleF(0, 0, GAME_WIDTH * 2, GAME_HEIGHT));
 
         _gameState = new GameStateController();
-        _gameState.StateMachine.OnTransitioned(_ => OnGameStateChanged());
+        _gameState.StateMachine.OnTransitioned(t =>
+        {
+            OnGameStateChanged();
+            if (t.Destination == GameState.Playing && t.Source != GameState.Paused)
+            {
+                ResetGame();
+            }
+        });
 
         GumService.Initialize(this, DefaultVisualsVersion.V3);
         _debugWindow1 = new TextRuntime();
@@ -88,9 +93,14 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         AnimatedSprite playerSprite = PlayerSprite.GetPlayerSprite(Content);
         AnimatedSprite playerSprite1 = PlayerSprite.GetPlayerSprite(Content);
         _player = new PlayerEntity("player", new Vector2(100, 450), 2.0f, playerSprite);
+        _player.Died += OnPlayerDied;
         _player1 = new PlayerEntity("player1", new Vector2(150, 500), 2.0f, playerSprite1);
         _actorEntities = [_player, _player1];
         _entities = [.. _actorEntities];
+
+        _input.Action1Pressed += (_, _) => { if (_gameState.State == GameState.Playing) _player.Attack1(); };
+        _input.Action2Pressed += (_, _) => { if (_gameState.State == GameState.Playing) _player.Attack2(); };
+        _input.Action3Pressed += (_, _) => { if (_gameState.State == GameState.Playing) _player.Attack3(); };
 
         foreach (var entity in _actorEntities)
         {
@@ -178,6 +188,11 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
         GumService.Draw();
         base.Draw(gameTime);
+    }
+
+    private void OnPlayerDied(object sender, EventArgs e)
+    {
+        _gameState.Fire(GameTrigger.PlayerDied);
     }
 
     // --- Input handlers ---
@@ -299,5 +314,13 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         IsDebug = !IsDebug;
         _debugWindow1.Visible = !_debugWindow1.Visible;
         _debugWindow2.Visible = !_debugWindow2.Visible;
+    }
+
+    private void ResetGame()
+    {
+        _player.Reset(new Vector2(100, 450));
+        _player1.Reset(new Vector2(150, 500));
+        _entities = [.. _actorEntities];
+        _currentLevel = new Level1(Content, GAME_WIDTH, GAME_HEIGHT);
     }
 }

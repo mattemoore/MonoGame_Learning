@@ -13,52 +13,80 @@ namespace MonoGameLearning.Game.Entities.Player;
 public class PlayerEntity : ActorEntity
 {
     public Vector2 MovementDirection { get; set; }
-    private readonly PlayerStateController _stateController;
+    private PlayerStateController _stateController;
     private const float BASE_MOVEMENT_SPEED = 200f;
+    public int Health { get; private set; }
+    public int MaxHealth { get; } = 100;
+    public bool IsAlive => Health > 0;
+    public event EventHandler Died;
 
     public PlayerEntity(string name,
                         Vector2 position,
                         float scale,
                         AnimatedSprite sprite) : base(name, position, scale, sprite)
     {
-        _stateController = new PlayerStateController(
-            onIdleEntry: () => Sprite.SetAnimation(PlayerSprite.AnimationIdle),
-            onMovingLeftEntry: () =>
-            {
-                Sprite.SetAnimation(PlayerSprite.AnimationRun);
-                Sprite.Effect = SpriteEffects.FlipHorizontally;
-            },
-            onMovingRightEntry: () =>
-            {
-                Sprite.SetAnimation(PlayerSprite.AnimationRun);
-                if (Sprite.Effect == SpriteEffects.FlipHorizontally)
-                    Sprite.Effect = SpriteEffects.None;
-            },
-            onMovingUpEntry: () => Sprite.SetAnimation(PlayerSprite.AnimationRun),
-            onMovingDownEntry: () => Sprite.SetAnimation(PlayerSprite.AnimationRun),
-            onAttacking1Entry: () =>
-            {
-                Sprite.SetAnimation(PlayerSprite.AnimationAttack1);
-                Sprite.Controller.OnAnimationEvent += OnAttackingAnimationEvent;
-            },
-            onAttacking1Exit: () => Sprite.Controller.OnAnimationEvent -= OnAttackingAnimationEvent,
-            onAttacking2Entry: () =>
-            {
-                Sprite.SetAnimation(PlayerSprite.AnimationAttack2);
-                Sprite.Controller.OnAnimationEvent += OnAttackingAnimationEvent;
-            },
-            onAttacking2Exit: () => Sprite.Controller.OnAnimationEvent -= OnAttackingAnimationEvent,
-            onAttacking3Entry: () =>
-            {
-                Sprite.SetAnimation(PlayerSprite.AnimationAttack3);
-                Sprite.Controller.OnAnimationEvent += OnAttackingAnimationEvent;
-            },
-            onAttacking3Exit: () => Sprite.Controller.OnAnimationEvent -= OnAttackingAnimationEvent
-        );
+        Health = MaxHealth;
+        _stateController = CreateStateController();
     }
+
+    private PlayerStateController CreateStateController() => new(new()
+    {
+        OnIdleEntry = () => Sprite.SetAnimation(PlayerSprite.AnimationIdle),
+        OnMovingLeftEntry = () =>
+        {
+            Sprite.SetAnimation(PlayerSprite.AnimationRun);
+            Sprite.Effect = SpriteEffects.FlipHorizontally;
+        },
+        OnMovingRightEntry = () =>
+        {
+            Sprite.SetAnimation(PlayerSprite.AnimationRun);
+            if (Sprite.Effect == SpriteEffects.FlipHorizontally)
+                Sprite.Effect = SpriteEffects.None;
+        },
+        OnMovingUpEntry = () => Sprite.SetAnimation(PlayerSprite.AnimationRun),
+        OnMovingDownEntry = () => Sprite.SetAnimation(PlayerSprite.AnimationRun),
+        OnAttacking1Entry = () =>
+        {
+            Sprite.SetAnimation(PlayerSprite.AnimationAttack1);
+            Sprite.Controller.OnAnimationEvent += OnAnimationCompleted;
+        },
+        OnAttacking1Exit = () => Sprite.Controller.OnAnimationEvent -= OnAnimationCompleted,
+        OnAttacking2Entry = () =>
+        {
+            Sprite.SetAnimation(PlayerSprite.AnimationAttack2);
+            Sprite.Controller.OnAnimationEvent += OnAnimationCompleted;
+        },
+        OnAttacking2Exit = () => Sprite.Controller.OnAnimationEvent -= OnAnimationCompleted,
+        OnAttacking3Entry = () =>
+        {
+            Sprite.SetAnimation(PlayerSprite.AnimationAttack3);
+            Sprite.Controller.OnAnimationEvent += OnAnimationCompleted;
+        },
+        OnAttacking3Exit = () => Sprite.Controller.OnAnimationEvent -= OnAnimationCompleted,
+        OnHurtEntry = () =>
+        {
+            Sprite.SetAnimation(PlayerSprite.AnimationHurt);
+            Sprite.Controller.OnAnimationEvent += OnAnimationCompleted;
+        },
+        OnHurtExit = () => Sprite.Controller.OnAnimationEvent -= OnAnimationCompleted,
+        OnDyingEntry = () =>
+        {
+            Sprite.SetAnimation(PlayerSprite.AnimationDie);
+            Sprite.Controller.OnAnimationEvent += OnAnimationCompleted;
+        },
+        OnDyingExit = () => Sprite.Controller.OnAnimationEvent -= OnAnimationCompleted,
+        OnDeadEntry = () => Died?.Invoke(this, EventArgs.Empty)
+    });
 
     public override void Update(GameTime gameTime)
     {
+        if (_stateController.State is PlayerState.Dead or PlayerState.Dying)
+        {
+            MovementDirection = Vector2.Zero;
+            base.Update(gameTime);
+            return;
+        }
+
         if (MovementDirection == Vector2.Zero)
         {
             _stateController.Fire(PlayerTrigger.MoveStop);
@@ -87,21 +115,47 @@ public class PlayerEntity : ActorEntity
             : (direction.Y > 0 ? PlayerTrigger.MoveDownStart : PlayerTrigger.MoveUpStart);
 
     public void Attack1() => _stateController.Fire(PlayerTrigger.Attack1Start);
-
     public void Attack2() => _stateController.Fire(PlayerTrigger.Attack2Start);
-
     public void Attack3() => _stateController.Fire(PlayerTrigger.Attack3Start);
+
+    public void TakeDamage(int amount)
+    {
+        if (!IsAlive) return;
+
+        Health = Math.Max(0, Health - amount);
+
+        if (Health <= 0)
+        {
+            _stateController.Fire(PlayerTrigger.Die);
+        }
+        else
+        {
+            _stateController.Fire(PlayerTrigger.TakeDamage);
+        }
+    }
 
     public void Move(Vector2 direction, float deltaTime)
     {
         Position += direction * deltaTime * BASE_MOVEMENT_SPEED;
     }
 
-    private void OnAttackingAnimationEvent(IAnimationController animationController, AnimationEventTrigger animationEventTrigger)
+    public void Reset(Vector2 position)
     {
-        if (animationEventTrigger == AnimationEventTrigger.AnimationCompleted)
+        Position = position;
+        Health = MaxHealth;
+        MovementDirection = Vector2.Zero;
+        Sprite.SetAnimation(PlayerSprite.AnimationIdle);
+        _stateController = CreateStateController();
+    }
+
+    private void OnAnimationCompleted(IAnimationController controller, AnimationEventTrigger trigger)
+    {
+        if (trigger != AnimationEventTrigger.AnimationCompleted) return;
+        _stateController.Fire(_stateController.State switch
         {
-            _stateController.Fire(PlayerTrigger.AttackCompleted);
-        }
+            PlayerState.Hurt => PlayerTrigger.HurtCompleted,
+            PlayerState.Dying => PlayerTrigger.DeathCompleted,
+            _ => PlayerTrigger.AttackCompleted
+        });
     }
 }

@@ -232,8 +232,7 @@ public class PlayerStateTests
     public void EntryCallbacks_AreInvoked_OnStateEntry()
     {
         bool entryInvoked = false;
-        var controller = new PlayerStateController(
-            onMovingRightEntry: () => entryInvoked = true);
+        var controller = new PlayerStateController(new() { OnMovingRightEntry = () => entryInvoked = true });
 
         controller.Fire(PlayerTrigger.MoveRightStart);
         Assert.That(entryInvoked, Is.True);
@@ -243,8 +242,7 @@ public class PlayerStateTests
     public void ExitCallbacks_AreInvoked_OnStateExit()
     {
         bool exitInvoked = false;
-        var controller = new PlayerStateController(
-            onAttacking1Exit: () => exitInvoked = true);
+        var controller = new PlayerStateController(new() { OnAttacking1Exit = () => exitInvoked = true });
 
         controller.Fire(PlayerTrigger.Attack1Start);
         controller.Fire(PlayerTrigger.AttackCompleted);
@@ -255,9 +253,11 @@ public class PlayerStateTests
     public void SubstateCallbacks_CanBeDistinct_PerDirection()
     {
         bool leftInvoked = false, rightInvoked = false;
-        var controller = new PlayerStateController(
-            onMovingLeftEntry: () => leftInvoked = true,
-            onMovingRightEntry: () => rightInvoked = true);
+        var controller = new PlayerStateController(new()
+        {
+            OnMovingLeftEntry = () => leftInvoked = true,
+            OnMovingRightEntry = () => rightInvoked = true
+        });
 
         controller.Fire(PlayerTrigger.MoveLeftStart);
         Assert.That(leftInvoked, Is.True);
@@ -300,5 +300,175 @@ public class PlayerStateTests
         controller.Fire(PlayerTrigger.AttackCompleted);
         controller.Fire(PlayerTrigger.Attack3Start);
         Assert.That(controller.IsInState(PlayerState.Attacking), Is.True);
+    }
+
+    [Test]
+    public void FromIdling_TakeDamage_TransitionsToHurt()
+    {
+        _controller.Fire(PlayerTrigger.TakeDamage);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.Hurt));
+    }
+
+    [Test]
+    public void FromMoving_TakeDamage_TransitionsToHurt()
+    {
+        _controller.Fire(PlayerTrigger.MoveRightStart);
+        _controller.Fire(PlayerTrigger.TakeDamage);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.Hurt));
+    }
+
+    [Test]
+    public void FromAttacking_TakeDamage_InterruptsAttack()
+    {
+        _controller.Fire(PlayerTrigger.Attack1Start);
+        _controller.Fire(PlayerTrigger.TakeDamage);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.Hurt));
+    }
+
+    [Test]
+    public void FromHurt_HurtCompleted_TransitionsToIdling()
+    {
+        _controller.Fire(PlayerTrigger.TakeDamage);
+        _controller.Fire(PlayerTrigger.HurtCompleted);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.Idling));
+    }
+
+    [Test]
+    public void FromHurt_Die_TransitionsToDying()
+    {
+        _controller.Fire(PlayerTrigger.TakeDamage);
+        _controller.Fire(PlayerTrigger.Die);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.Dying));
+    }
+
+    [Test]
+    public void FromIdling_Die_TransitionsToDying()
+    {
+        _controller.Fire(PlayerTrigger.Die);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.Dying));
+    }
+
+    [Test]
+    public void FromMoving_Die_TransitionsToDying()
+    {
+        _controller.Fire(PlayerTrigger.MoveRightStart);
+        _controller.Fire(PlayerTrigger.Die);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.Dying));
+    }
+
+    [Test]
+    public void FromAttacking_Die_InterruptsAttack()
+    {
+        _controller.Fire(PlayerTrigger.Attack1Start);
+        _controller.Fire(PlayerTrigger.Die);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.Dying));
+    }
+
+    [Test]
+    public void FromDying_DeathCompleted_TransitionsToDead()
+    {
+        _controller.Fire(PlayerTrigger.Die);
+        _controller.Fire(PlayerTrigger.DeathCompleted);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.Dead));
+    }
+
+    [Test]
+    public void Dead_IsTerminal_NoTransitionsOut()
+    {
+        _controller.Fire(PlayerTrigger.Die);
+        _controller.Fire(PlayerTrigger.DeathCompleted);
+
+        _controller.Fire(PlayerTrigger.HurtCompleted);
+        _controller.Fire(PlayerTrigger.AttackCompleted);
+        _controller.Fire(PlayerTrigger.Attack1Start);
+        _controller.Fire(PlayerTrigger.MoveLeftStart);
+        _controller.Fire(PlayerTrigger.Die);
+        _controller.Fire(PlayerTrigger.TakeDamage);
+
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.Dead));
+    }
+
+    [Test]
+    public void WhileHurt_AttackAndMovementTriggers_AreIgnored()
+    {
+        _controller.Fire(PlayerTrigger.TakeDamage);
+        _controller.Fire(PlayerTrigger.Attack1Start);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.Hurt));
+
+        _controller.Fire(PlayerTrigger.MoveRightStart);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.Hurt));
+    }
+
+    [Test]
+    public void WhileDying_AllTriggers_AreIgnored()
+    {
+        _controller.Fire(PlayerTrigger.Die);
+
+        _controller.Fire(PlayerTrigger.Attack1Start);
+        _controller.Fire(PlayerTrigger.MoveRightStart);
+        _controller.Fire(PlayerTrigger.TakeDamage);
+        _controller.Fire(PlayerTrigger.HurtCompleted);
+
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.Dying));
+    }
+
+    [Test]
+    public void HurtEntryCallback_IsInvoked_OnStateEntry()
+    {
+        bool entryInvoked = false;
+        var controller = new PlayerStateController(new() { OnHurtEntry = () => entryInvoked = true });
+        controller.Fire(PlayerTrigger.TakeDamage);
+        Assert.That(entryInvoked, Is.True);
+    }
+
+    [Test]
+    public void HurtExitCallback_IsInvoked_OnStateExit()
+    {
+        bool exitInvoked = false;
+        var controller = new PlayerStateController(new()
+        {
+            OnHurtEntry = () => { },
+            OnHurtExit = () => exitInvoked = true
+        });
+        controller.Fire(PlayerTrigger.TakeDamage);
+        controller.Fire(PlayerTrigger.HurtCompleted);
+        Assert.That(exitInvoked, Is.True);
+    }
+
+    [Test]
+    public void DyingEntryCallback_IsInvoked_OnStateEntry()
+    {
+        bool entryInvoked = false;
+        var controller = new PlayerStateController(new() { OnDyingEntry = () => entryInvoked = true });
+        controller.Fire(PlayerTrigger.Die);
+        Assert.That(entryInvoked, Is.True);
+    }
+
+    [Test]
+    public void DyingExitCallback_IsInvoked_OnStateExit()
+    {
+        bool exitInvoked = false;
+        var controller = new PlayerStateController(new()
+        {
+            OnDyingEntry = () => { },
+            OnDyingExit = () => exitInvoked = true
+        });
+        controller.Fire(PlayerTrigger.Die);
+        controller.Fire(PlayerTrigger.DeathCompleted);
+        Assert.That(exitInvoked, Is.True);
+    }
+
+    [Test]
+    public void DeadEntryCallback_IsInvoked_OnStateEntry()
+    {
+        bool entryInvoked = false;
+        var controller = new PlayerStateController(new()
+        {
+            OnDyingEntry = () => { },
+            OnDeadEntry = () => entryInvoked = true
+        });
+        controller.Fire(PlayerTrigger.Die);
+        controller.Fire(PlayerTrigger.DeathCompleted);
+        Assert.That(entryInvoked, Is.True);
     }
 }
