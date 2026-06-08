@@ -4,19 +4,19 @@ This roadmap outlines the milestones and individual TODO items required to build
 
 ---
 
-## [ ] Milestone 1: Game State Lifecycle Management
+## [x] Milestone 1: Game State Lifecycle Management
 Establish the high-level states of the application to support game transitions.
 
-- [ ] **State Machine for Game State**: Create a main game flow state machine (e.g., in `GameLoop` or a new manager) with the following states:
+- [x] **State Machine for Game State**: Create a main game flow state machine (e.g., in `GameLoop` or a new manager) with the following states:
   - `TitleScreen`
   - `Playing`
   - `Paused`
   - `GameOver`
   - `LevelComplete`
-- [ ] **Screens and Inputs**:
-  - Implement a basic Title Screen with "Start Game" and "Exit" actions.
-  - Implement a pause toggle (e.g., ESC key) that halts gameplay update logic.
-  - Create Game Over and Level Complete screens that display placeholder text/menus.
+- [x] **Screens and Inputs**:
+  - [x] Implement a basic Title Screen with "Start Game" and "Exit" actions.
+  - [x] Implement a pause toggle (e.g., ESC key) that halts gameplay update logic.
+  - [x] Create Game Over and Level Complete screens that display placeholder text/menus.
 
 ---
 
