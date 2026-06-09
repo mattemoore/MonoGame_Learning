@@ -7,8 +7,13 @@ using MonoGameLearning.Core.Entities;
 
 namespace MonoGameLearning.Game.Levels;
 
-public class Level1(ContentManager content, int gameWidth, int gameHeight) : Level(CreateBackgrounds(content, gameWidth, gameHeight))
+public class Level1 : Level
 {
+    public Level1(ContentManager content, int gameWidth, int gameHeight)
+        : base(CreateBackgrounds(content, gameWidth, gameHeight))
+    {
+    }
+
     private static List<BackgroundEntity> CreateBackgrounds(ContentManager content, int gameWidth, int gameHeight)
     {
         Sprite background = new(content.Load<Texture2D>("backgrounds/background1"));
