@@ -12,7 +12,7 @@ public abstract class ActorEntity(string name,
                                  float scale,
                                  AnimatedSprite sprite,
                                  float rotation = 0f)
-                                 : LogicalEntity(name, position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale), rotation)
+                                 : SpatialEntity(name, position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale), rotation)
                                  , ICollisionActor
 {
     public AnimatedSprite Sprite { get; private set; } = sprite;

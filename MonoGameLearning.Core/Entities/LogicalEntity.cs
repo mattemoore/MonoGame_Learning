@@ -4,7 +4,7 @@ using MonoGame.Extended;
 
 namespace MonoGameLearning.Core.Entities;
 
-public abstract class LogicalEntity(string name, Vector2 position, int width, int height, float rotation = 0.0f)
+public abstract class SpatialEntity(string name, Vector2 position, int width, int height, float rotation = 0.0f)
     : Entity(name, position, width, height, rotation)
 {
     public RectangleF Frame => new(

@@ -10,6 +10,10 @@ using MonoGameLearning.Game.Sprites;
 
 namespace MonoGameLearning.Game.Entities.Player;
 
+public enum AttackType { Attack1, Attack2, Attack3 }
+
+public enum FacingDirection { Left, Right }
+
 public class PlayerEntity : ActorEntity
 {
     public Vector2 MovementDirection { get; set; }
@@ -19,6 +23,8 @@ public class PlayerEntity : ActorEntity
     public int MaxHealth { get; } = 100;
     public bool IsAlive => Health > 0;
     public event EventHandler Died;
+    public FacingDirection Direction { get; private set; } = FacingDirection.Right;
+    private AttackType _pendingAttackType;
 
     public PlayerEntity(string name,
                         Vector2 position,
@@ -29,52 +35,39 @@ public class PlayerEntity : ActorEntity
         _stateController = CreateStateController();
     }
 
+    private void SubscribeToAnimationEvent() =>
+        Sprite.Controller.OnAnimationEvent += OnAnimationCompleted;
+
+    private void UnsubscribeFromAnimationEvent() =>
+        Sprite.Controller.OnAnimationEvent -= OnAnimationCompleted;
+
     private PlayerStateController CreateStateController() => new(new()
     {
         OnIdleEntry = () => Sprite.SetAnimation(PlayerSprite.AnimationIdle),
-        OnMovingLeftEntry = () =>
+        OnMovingEntry = () => Sprite.SetAnimation(PlayerSprite.AnimationRun),
+        OnAttackingEntry = () =>
         {
-            Sprite.SetAnimation(PlayerSprite.AnimationRun);
-            Sprite.Effect = SpriteEffects.FlipHorizontally;
+            Sprite.SetAnimation(_pendingAttackType switch
+            {
+                AttackType.Attack2 => PlayerSprite.AnimationAttack2,
+                AttackType.Attack3 => PlayerSprite.AnimationAttack3,
+                _ => PlayerSprite.AnimationAttack1
+            });
+            SubscribeToAnimationEvent();
         },
-        OnMovingRightEntry = () =>
-        {
-            Sprite.SetAnimation(PlayerSprite.AnimationRun);
-            if (Sprite.Effect == SpriteEffects.FlipHorizontally)
-                Sprite.Effect = SpriteEffects.None;
-        },
-        OnMovingUpEntry = () => Sprite.SetAnimation(PlayerSprite.AnimationRun),
-        OnMovingDownEntry = () => Sprite.SetAnimation(PlayerSprite.AnimationRun),
-        OnAttacking1Entry = () =>
-        {
-            Sprite.SetAnimation(PlayerSprite.AnimationAttack1);
-            Sprite.Controller.OnAnimationEvent += OnAnimationCompleted;
-        },
-        OnAttacking1Exit = () => Sprite.Controller.OnAnimationEvent -= OnAnimationCompleted,
-        OnAttacking2Entry = () =>
-        {
-            Sprite.SetAnimation(PlayerSprite.AnimationAttack2);
-            Sprite.Controller.OnAnimationEvent += OnAnimationCompleted;
-        },
-        OnAttacking2Exit = () => Sprite.Controller.OnAnimationEvent -= OnAnimationCompleted,
-        OnAttacking3Entry = () =>
-        {
-            Sprite.SetAnimation(PlayerSprite.AnimationAttack3);
-            Sprite.Controller.OnAnimationEvent += OnAnimationCompleted;
-        },
-        OnAttacking3Exit = () => Sprite.Controller.OnAnimationEvent -= OnAnimationCompleted,
+        OnAttackingExit = UnsubscribeFromAnimationEvent,
         OnHurtEntry = () =>
         {
             Sprite.SetAnimation(PlayerSprite.AnimationHurt);
-            Sprite.Controller.OnAnimationEvent += OnAnimationCompleted;
+            SubscribeToAnimationEvent();
         },
-        OnHurtExit = () => Sprite.Controller.OnAnimationEvent -= OnAnimationCompleted,
+        OnHurtExit = UnsubscribeFromAnimationEvent,
         OnDyingEntry = () =>
         {
             Sprite.SetAnimation(PlayerSprite.AnimationDie);
-            Sprite.Controller.OnAnimationEvent += OnAnimationCompleted;
+            SubscribeToAnimationEvent();
         },
-        OnDyingExit = () => Sprite.Controller.OnAnimationEvent -= OnAnimationCompleted,
+        OnDyingExit = UnsubscribeFromAnimationEvent,
         OnDeadEntry = () => Died?.Invoke(this, EventArgs.Empty)
     });
 
@@ -94,8 +87,8 @@ public class PlayerEntity : ActorEntity
         else
         {
             Vector2 movementDirectionNoDiagonal = PreventDiagonal(MovementDirection);
-            PlayerTrigger directionTrigger = GetDirectionalTrigger(movementDirectionNoDiagonal);
-            _stateController.Fire(directionTrigger);
+            _stateController.Fire(PlayerTrigger.MoveStart);
+            UpdateFacingDirection(movementDirectionNoDiagonal);
             if (_stateController.IsInState(PlayerState.Moving))
             {
                 Move(movementDirectionNoDiagonal, (float)gameTime.ElapsedGameTime.TotalSeconds);
@@ -104,19 +97,28 @@ public class PlayerEntity : ActorEntity
         base.Update(gameTime);
     }
 
+    private void UpdateFacingDirection(Vector2 direction)
+    {
+        if (direction.X < 0 && Direction != FacingDirection.Left)
+        {
+            Direction = FacingDirection.Left;
+            Sprite.Effect = SpriteEffects.FlipHorizontally;
+        }
+        else if (direction.X > 0 && Direction != FacingDirection.Right)
+        {
+            Direction = FacingDirection.Right;
+            Sprite.Effect = SpriteEffects.None;
+        }
+    }
+
     private static Vector2 PreventDiagonal(Vector2 direction) =>
         Math.Abs(direction.X) > Math.Abs(direction.Y)
             ? new Vector2(direction.X, 0)
             : new Vector2(0, direction.Y);
 
-    private static PlayerTrigger GetDirectionalTrigger(Vector2 direction) =>
-        Math.Abs(direction.X) > Math.Abs(direction.Y)
-            ? (direction.X > 0 ? PlayerTrigger.MoveRightStart : PlayerTrigger.MoveLeftStart)
-            : (direction.Y > 0 ? PlayerTrigger.MoveDownStart : PlayerTrigger.MoveUpStart);
-
-    public void Attack1() => _stateController.Fire(PlayerTrigger.Attack1Start);
-    public void Attack2() => _stateController.Fire(PlayerTrigger.Attack2Start);
-    public void Attack3() => _stateController.Fire(PlayerTrigger.Attack3Start);
+    public void Attack1() { _pendingAttackType = AttackType.Attack1; _stateController.Fire(PlayerTrigger.AttackStart); }
+    public void Attack2() { _pendingAttackType = AttackType.Attack2; _stateController.Fire(PlayerTrigger.AttackStart); }
+    public void Attack3() { _pendingAttackType = AttackType.Attack3; _stateController.Fire(PlayerTrigger.AttackStart); }
 
     public void TakeDamage(int amount)
     {
@@ -144,6 +146,8 @@ public class PlayerEntity : ActorEntity
         Position = position;
         Health = MaxHealth;
         MovementDirection = Vector2.Zero;
+        Direction = FacingDirection.Right;
+        Sprite.Effect = SpriteEffects.None;
         Sprite.SetAnimation(PlayerSprite.AnimationIdle);
         _stateController = CreateStateController();
     }

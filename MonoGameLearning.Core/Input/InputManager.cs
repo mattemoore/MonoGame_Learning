@@ -6,6 +6,20 @@ using MonoGame.Extended.Input;
 
 namespace MonoGameLearning.Core.Input;
 
+public enum InputAction
+{
+    Action1,
+    Action2,
+    Action3,
+    Back,
+    Debug,
+    Confirm,
+    DebugKill,
+    DebugComplete,
+    MenuUp,
+    MenuDown
+}
+
 public enum InputMode
 {
     Gameplay,
@@ -14,30 +28,27 @@ public enum InputMode
 
 public class InputManager
 {
-    public event EventHandler Action1Pressed, Action2Pressed, Action3Pressed;
-    public event EventHandler BackPressed, DebugPressed, ConfirmPressed;
-    public event EventHandler DebugKillPressed, DebugCompletePressed;
-    public event Action<Vector2> MenuNavigated;
+    public event Action<InputAction> ActionTriggered;
     public Vector2 MovementDirection { get; private set; }
     public InputMode Mode { get; set; } = InputMode.Gameplay;
 
-    private readonly Dictionary<Keys, Action> _keyActions;
+    private readonly Dictionary<Keys, InputAction> _keyActions;
     private readonly Dictionary<Keys, Vector2> _movementKeys;
-    private readonly Dictionary<Keys, Vector2> _menuKeys;
+    private readonly Dictionary<Keys, InputAction> _menuKeys;
 
     public InputManager()
     {
         _keyActions = new()
         {
-            { Keys.U, () => Action1Pressed?.Invoke(this, EventArgs.Empty) },
-            { Keys.I, () => Action2Pressed?.Invoke(this, EventArgs.Empty) },
-            { Keys.O, () => Action3Pressed?.Invoke(this, EventArgs.Empty) },
-            { Keys.Escape, () => BackPressed?.Invoke(this, EventArgs.Empty) },
-            { Keys.OemTilde, () => DebugPressed?.Invoke(this, EventArgs.Empty) },
-            { Keys.Enter, () => ConfirmPressed?.Invoke(this, EventArgs.Empty) },
-            { Keys.Space, () => ConfirmPressed?.Invoke(this, EventArgs.Empty) },
-            { Keys.K, () => DebugKillPressed?.Invoke(this, EventArgs.Empty) },
-            { Keys.C, () => DebugCompletePressed?.Invoke(this, EventArgs.Empty) }
+            { Keys.U, InputAction.Action1 },
+            { Keys.I, InputAction.Action2 },
+            { Keys.O, InputAction.Action3 },
+            { Keys.Escape, InputAction.Back },
+            { Keys.OemTilde, InputAction.Debug },
+            { Keys.Enter, InputAction.Confirm },
+            { Keys.Space, InputAction.Confirm },
+            { Keys.K, InputAction.DebugKill },
+            { Keys.C, InputAction.DebugComplete }
         };
 
         _movementKeys = new()
@@ -54,10 +65,10 @@ public class InputManager
 
         _menuKeys = new()
         {
-            { Keys.Up, new Vector2(0, -1) },
-            { Keys.Down, new Vector2(0, 1) },
-            { Keys.W, new Vector2(0, -1) },
-            { Keys.S, new Vector2(0, 1) }
+            { Keys.Up, InputAction.MenuUp },
+            { Keys.Down, InputAction.MenuDown },
+            { Keys.W, InputAction.MenuUp },
+            { Keys.S, InputAction.MenuDown }
         };
     }
 
@@ -90,11 +101,11 @@ public class InputManager
 
         if (Mode == InputMode.Menu)
         {
-            foreach (var (key, direction) in _menuKeys)
+            foreach (var (key, action) in _menuKeys)
             {
                 if (keyboardState.WasKeyPressed(key))
                 {
-                    MenuNavigated?.Invoke(direction);
+                    ActionTriggered?.Invoke(action);
                 }
             }
         }
@@ -103,7 +114,7 @@ public class InputManager
         {
             if (keyboardState.WasKeyPressed(key))
             {
-                action();
+                ActionTriggered?.Invoke(action);
             }
         }
     }

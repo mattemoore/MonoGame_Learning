@@ -80,4 +80,14 @@ dotnet test
   * **Connectivity & Seams**: Disconnected backgrounds or levels that trap players or break scrolling.
   * **State Machine Deadlocks**: Entities getting stuck in non-interruptible states (e.g., infinite attacking or falling) without recovery.
   * **Collision Failures**: Entities passing through solid boundaries or failing to register collision responses.
-  * **Camera Tracking**: The camera tracking system losing track of player coordinates or clamping to incorrect screen areas.
+* **Camera Tracking**: The camera tracking system losing track of player coordinates or clamping to incorrect screen areas.
+
+## MonoGame.Extended Pitfalls
+
+### `AnimatedSprite.Controller` is replaced by `SetAnimation()`
+
+`MonoGame.Extended.AnimatedSprite.Controller` has a public setter. Calling `SetAnimation()` may replace the `Controller` property with a **new** `IAnimationController` instance. This means:
+
+* **Event subscriptions must happen AFTER `SetAnimation()`**, not once at construction time. Subscribing to `Sprite.Controller.OnAnimationEvent` in the constructor subscribes to the *initial* controller, which becomes orphaned after the first `SetAnimation()` call. Events from the new controller (including `AnimationCompleted`) will never fire.
+* **Always subscribe/unsubscribe in pairs** around `SetAnimation()` calls for non-looping animations that need completion detection. See `PlayerEntity.SubscribeToAnimationEvent()` / `UnsubscribeFromAnimationEvent()` for the pattern.
+* The affected entry/exit callbacks are: `OnAttackingEntry/Exit`, `OnHurtEntry/Exit`, `OnDyingEntry/Exit` — any state that plays a non-looping animation requiring a completion trigger.
