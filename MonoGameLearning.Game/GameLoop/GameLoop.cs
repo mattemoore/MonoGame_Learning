@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Gum.Forms;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -13,7 +12,6 @@ using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.GameCore;
 using MonoGameLearning.Core.Input;
-using MonoGameLearning.Game.Entities;
 using MonoGameLearning.Game.Entities.Player;
 using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.Sprites;

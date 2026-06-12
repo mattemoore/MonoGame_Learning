@@ -1,5 +1,4 @@
 using MonoGameLearning.Game.Entities.Player;
-using NUnit.Framework;
 
 namespace MonoGameLearning.Game.Tests;
 

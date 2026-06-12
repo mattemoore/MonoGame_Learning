@@ -2,7 +2,6 @@ using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGameLearning.Core.Entities;
-using NUnit.Framework;
 
 namespace MonoGameLearning.Game.Tests;
 

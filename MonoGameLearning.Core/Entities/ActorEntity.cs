@@ -56,6 +56,11 @@ public abstract class ActorEntity(string name,
 
         if (CurrentMove is not null && _animationFrameIndex != _lastRegisteredAnimationFrame)
         {
+            var frameDelta = _animationFrameIndex - _lastRegisteredAnimationFrame;
+            Debug.Assert(frameDelta > 0, "Frame counter should only advance forward");
+            if (frameDelta > 1)
+                Debug.WriteLine($"[{Name}] Skipped {frameDelta - 1} animation frame(s) — hitboxes not registered for intermediate frames");
+
             // Animation frame changed — clear this entity's old hitboxes and
             // register the new frame's. Clear() is owner-scoped so other
             // entities' hitboxes are not affected.
