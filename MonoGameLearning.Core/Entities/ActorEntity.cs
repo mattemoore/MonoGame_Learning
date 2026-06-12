@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Graphics;
+using MonoGameLearning.Core.Combat;
 
 namespace MonoGameLearning.Core.Entities;
 
@@ -20,6 +21,17 @@ public abstract class ActorEntity(string name,
     public IShapeF Bounds => Frame;
 
     public RectangleF MovementBounds { get; set; }
+    public HitboxService HitboxService { get; set; }
+    public MoveData CurrentMove { get; set; }
+    public FacingDirection Direction { get; set; } = FacingDirection.Right;
+
+    private int _animationFrameIndex;
+    // Sprite.Controller.CurrentFrame returns the global texture atlas region
+    // index, NOT the 0-based position within the current animation's frame
+    // sequence. We track _animationFrameIndex manually by detecting atlas frame
+    // changes in Update(). ResetAnimationFrameIndex() must be called after every
+    // SetAnimation() to reset this counter.
+    private int _lastRegisteredAnimationFrame = -1;
 
     public virtual void ClampToBounds()
     {
@@ -36,8 +48,21 @@ public abstract class ActorEntity(string name,
 
     public override void Update(GameTime gameTime)
     {
+        int oldAtlasFrame = Sprite.Controller.CurrentFrame;
         Sprite.Update(gameTime);
+        if (Sprite.Controller.CurrentFrame != oldAtlasFrame)
+            _animationFrameIndex++;
         base.Update(gameTime);
+
+        if (CurrentMove is not null && _animationFrameIndex != _lastRegisteredAnimationFrame)
+        {
+            // Animation frame changed — clear this entity's old hitboxes and
+            // register the new frame's. Clear() is owner-scoped so other
+            // entities' hitboxes are not affected.
+            _lastRegisteredAnimationFrame = _animationFrameIndex;
+            HitboxService?.Clear(this);
+            HitboxService?.RegisterFrameHitboxes(this, CurrentMove, _animationFrameIndex, Direction);
+        }
     }
 
     public void Draw(SpriteBatch spriteBatch)
@@ -51,11 +76,27 @@ public abstract class ActorEntity(string name,
     public override void DrawDebug(SpriteBatch spriteBatch)
     {
         base.DrawDebug(spriteBatch);
-        spriteBatch.DrawRectangle((RectangleF)Bounds, Color.Brown);
+        spriteBatch.DrawRectangle(Frame, Color.Blue);
+
+        if (HitboxService is not null)
+        {
+            foreach (var bounds in HitboxService.GetActiveHitboxBounds(this))
+                spriteBatch.DrawRectangle(bounds, Color.Red);
+        }
     }
 
     public virtual void OnCollision(CollisionEventArgs collisionInfo)
     {
         Position -= collisionInfo.PenetrationVector;
+    }
+
+    public void ResetAnimationFrameIndex()
+    {
+        _animationFrameIndex = 0;
+        _lastRegisteredAnimationFrame = -1;
+    }
+
+    public virtual void TakeDamage(int amount)
+    {
     }
 }

@@ -5,14 +5,13 @@ using MonoGame.Extended;
 using MonoGame.Extended.Animations;
 using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Graphics;
+using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Game.Sprites;
 
 namespace MonoGameLearning.Game.Entities.Player;
 
 public enum AttackType { Attack1, Attack2, Attack3 }
-
-public enum FacingDirection { Left, Right }
 
 public class PlayerEntity : ActorEntity
 {
@@ -23,7 +22,6 @@ public class PlayerEntity : ActorEntity
     public int MaxHealth { get; } = 100;
     public bool IsAlive => Health > 0;
     public event EventHandler Died;
-    public FacingDirection Direction { get; private set; } = FacingDirection.Right;
     private AttackType _pendingAttackType;
 
     public PlayerEntity(string name,
@@ -47,15 +45,23 @@ public class PlayerEntity : ActorEntity
         OnMovingEntry = () => Sprite.SetAnimation(PlayerSprite.AnimationRun),
         OnAttackingEntry = () =>
         {
-            Sprite.SetAnimation(_pendingAttackType switch
+            var animKey = _pendingAttackType switch
             {
                 AttackType.Attack2 => PlayerSprite.AnimationAttack2,
                 AttackType.Attack3 => PlayerSprite.AnimationAttack3,
                 _ => PlayerSprite.AnimationAttack1
-            });
+            };
+            Sprite.SetAnimation(animKey);
+            CurrentMove = PlayerMoves.All[animKey];
+            ResetAnimationFrameIndex();
             SubscribeToAnimationEvent();
         },
-        OnAttackingExit = UnsubscribeFromAnimationEvent,
+        OnAttackingExit = () =>
+        {
+            UnsubscribeFromAnimationEvent();
+            CurrentMove = null;
+            HitboxService?.Clear(this);
+        },
         OnHurtEntry = () =>
         {
             Sprite.SetAnimation(PlayerSprite.AnimationHurt);
@@ -120,7 +126,7 @@ public class PlayerEntity : ActorEntity
     public void Attack2() { _pendingAttackType = AttackType.Attack2; _stateController.Fire(PlayerTrigger.AttackStart); }
     public void Attack3() { _pendingAttackType = AttackType.Attack3; _stateController.Fire(PlayerTrigger.AttackStart); }
 
-    public void TakeDamage(int amount)
+    public override void TakeDamage(int amount)
     {
         if (!IsAlive) return;
 
@@ -149,6 +155,8 @@ public class PlayerEntity : ActorEntity
         Direction = FacingDirection.Right;
         Sprite.Effect = SpriteEffects.None;
         Sprite.SetAnimation(PlayerSprite.AnimationIdle);
+        CurrentMove = null;
+        ResetAnimationFrameIndex();
         _stateController = CreateStateController();
     }
 

@@ -9,6 +9,7 @@ using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Graphics;
 using MonoGameGum;
 using MonoGameGum.GueDeriving;
+using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.GameCore;
 using MonoGameLearning.Core.Input;
@@ -40,12 +41,14 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private GameStateController _gameState;
     private CameraController _cameraController;
     private MenuManager _menuManager;
+    private HitboxService _hitboxService;
 
     protected override void Initialize()
     {
         _input = new InputManager();
         _input.ActionTriggered += OnActionTriggered;
         _collision = new CollisionComponent(new RectangleF(0, 0, GAME_WIDTH * 2, GAME_HEIGHT));
+        _hitboxService = new();
 
         _gameState = new GameStateController();
         _gameState.StateMachine.OnTransitioned(t =>
@@ -94,6 +97,11 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _actorEntities = [_player, _player1];
         _entities = [.. _actorEntities];
 
+        foreach (var entity in _actorEntities)
+        {
+            entity.HitboxService = _hitboxService;
+        }
+
         _cameraController = new CameraController(_player, GAME_WIDTH, GAME_HEIGHT, GAME_WIDTH * 2);
 
         foreach (var entity in _actorEntities)
@@ -123,6 +131,19 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             {
                 entity.Update(gameTime);
             }
+
+            var hitResults = _hitboxService.ResolveHits(_actorEntities);
+            foreach (var hit in hitResults)
+            {
+                if (hit.Target is ActorEntity actor)
+                {
+                    actor.TakeDamage(hit.Damage);
+                    // TODO: replace instant knockback with lerp over time via
+                    // a velocity/physics system on ActorEntity
+                    actor.Position += hit.Knockback;
+                }
+            }
+
             _collision.Update(gameTime);
             foreach (var entity in _actorEntities)
             {
@@ -231,6 +252,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
     private void ResetGame()
     {
+        _hitboxService.ClearAll();
         _player.Reset(new Vector2(100, 450));
         _player1.Reset(new Vector2(150, 500));
         _entities = [.. _actorEntities];
