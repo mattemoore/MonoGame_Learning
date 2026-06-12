@@ -5,6 +5,7 @@ This roadmap outlines the milestones and individual TODO items required to build
 ---
 
 ## [x] Milestone 1: Game State Lifecycle Management
+
 Establish the high-level states of the application to support game transitions.
 
 - [x] **State Machine for Game State**: Create a main game flow state machine (e.g., in `GameLoop` or a new manager) with the following states:
@@ -21,22 +22,25 @@ Establish the high-level states of the application to support game transitions.
 ---
 
 ## [ ] Milestone 2: Combat Engine (Hitboxes, Hurtboxes, and Health)
+
 Implement the core collision-based combat mechanics.
 
 - [ ] **Hitbox/Hurtbox Component**:
-  - [ ] Add support for defining attack `Hitboxes`
-  - [ ] Add support for `Hurtboxes` (collision areas on actors that can receive damage).
-  - [ ] Implement overlap check: when a `Hitbox` overlaps an active enemy's `Hurtbox`, trigger a hit.
+  - [X] Add support for defining attack `Hitboxes`
+  - [X] Add support for `Hurtboxes` (collision areas on actors that can receive damage).
+  - [X] Implement overlap check: when a `Hitbox` overlaps an active enemy's `Hurtbox`, trigger a hit.
 - [ ] **Health System**:
-  - [ ] Add `Health` (Current / Max) to `ActorEntity`.
+  - [X] Add `Health` (Current / Max) to `ActorEntity`.
   - [ ] Add basic damage processing and damage invincibility frames (i-frames) after being hit.
 - [ ] **Knockback and Hit States**:
+  - [X] Implement Knockback
   - [ ] Implement a "HitStun" state (actor is temporarily unable to move/attack).
-  - [ ] Implement a "Knockdown" state (actor is knocked onto the floor, becomes invulnerable, then stands back up).
+  - [ ] STRETCH: Implement a "Knockdown" state (actor is knocked onto the floor, becomes invulnerable, then stands back up).
 
 ---
 
 ## [ ] Milestone 3: Enemy AI & Spawning
+
 Introduce automated opponents with basic tracking behavior.
 
 - [ ] **Enemy Entity Class**:
@@ -53,6 +57,7 @@ Introduce automated opponents with basic tracking behavior.
 ---
 
 ## [ ] Milestone 4: Scroll Locking & Level Progression
+
 Control player movement and camera tracking during fights.
 
 - [ ] **Fight Areas (Scroll Locks)**:
@@ -67,6 +72,7 @@ Control player movement and camera tracking during fights.
 ---
 
 ## [ ] Milestone 5: HUD & UI Integration (Placeholder Layouts)
+
 Provide visual feedback of game parameters using basic text/shapes.
 
 - [ ] **Player HUD**:

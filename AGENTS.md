@@ -81,6 +81,12 @@ dotnet test
   * **State Machine Deadlocks**: Entities getting stuck in non-interruptible states (e.g., infinite attacking or falling) without recovery.
   * **Collision Failures**: Entities passing through solid boundaries or failing to register collision responses.
 * **Camera Tracking**: The camera tracking system losing track of player coordinates or clamping to incorrect screen areas.
+* **Diagnostic Debug Warnings**: When adding logic with edge cases, invariants, or states that should never be reached, add `Debug.WriteLine` and/or `Debug.Assert` calls to surface unexpected conditions during local debugging. These are compiled out in Release builds (zero runtime cost) but catch sentinel drift, skipped frames, null invariants, and other game state corruptions during development. Use this pattern:
+  ```csharp
+  Debug.Assert(condition, "Description of what went wrong");
+  if (unexpectedCondition)
+      Debug.WriteLine($"[{name}] Descriptive warning — root cause hint");
+  ```
 
 ## MonoGame.Extended Pitfalls
 

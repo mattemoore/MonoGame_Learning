@@ -1,5 +1,4 @@
 using MonoGameLearning.Game.GameLoop;
-using NUnit.Framework;
 
 namespace MonoGameLearning.Game.Tests
 {

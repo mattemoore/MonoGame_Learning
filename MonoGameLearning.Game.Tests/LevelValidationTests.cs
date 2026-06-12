@@ -1,9 +1,6 @@
-using System;
-using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Game.Levels;
-using NUnit.Framework;
 
 namespace MonoGameLearning.Game.Tests;
 
