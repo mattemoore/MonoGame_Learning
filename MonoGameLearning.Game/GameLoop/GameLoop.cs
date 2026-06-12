@@ -133,12 +133,12 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             var hitResults = _hitboxService.ResolveHits(_actorEntities);
             foreach (var hit in hitResults)
             {
-                if (hit.Target is ActorEntity actor)
+                if (hit.Target is ICombatant combatant)
                 {
-                    actor.TakeDamage(hit.Damage);
+                    combatant.TakeDamage(hit.Damage);
                     // TODO: replace instant knockback with lerp over time via
                     // a velocity/physics system on ActorEntity
-                    actor.Position += hit.Knockback;
+                    hit.Target.Position += hit.Knockback;
                 }
             }
 

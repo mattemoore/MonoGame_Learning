@@ -5,33 +5,38 @@ using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Combat;
+using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Core.Entities;
 
-public abstract class ActorEntity(string name,
-                                 Vector2 position,
-                                 float scale,
-                                 AnimatedSprite sprite,
-                                 float rotation = 0f)
-                                 : SpatialEntity(name, position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale), rotation)
-                                 , ICollisionActor
+public abstract class ActorEntity : SpatialEntity, ICollisionActor, IAnimated, IHitboxProvider, IMoveableEntity
 {
-    public AnimatedSprite Sprite { get; private set; } = sprite;
-    public float Scale { get; private set; } = scale;
+    public AnimatedSprite Sprite { get; private set; }
+    public float Scale { get; private set; }
     public IShapeF Bounds => Frame;
 
     public RectangleF MovementBounds { get; set; }
+    public Vector2 MovementDirection { get; set; }
+    public float Speed { get; set; } = 200f;
     public HitboxService HitboxService { get; set; }
     public MoveData CurrentMove { get; set; }
     public FacingDirection Direction { get; set; } = FacingDirection.Right;
 
-    private int _animationFrameIndex;
-    // Sprite.Controller.CurrentFrame returns the global texture atlas region
-    // index, NOT the 0-based position within the current animation's frame
-    // sequence. We track _animationFrameIndex manually by detecting atlas frame
-    // changes in Update(). ResetAnimationFrameIndex() must be called after every
-    // SetAnimation() to reset this counter.
-    private int _lastRegisteredAnimationFrame = -1;
+    private readonly AnimationFrameTracker _frameTracker = new();
+
+    protected ActorEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, float rotation = 0f)
+        : base(name, position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale), rotation)
+    {
+        Sprite = sprite;
+        Scale = scale;
+    }
+
+    protected ActorEntity(string name, Vector2 position, int width, int height, float rotation = 0f)
+        : base(name, position, width, height, rotation)
+    {
+        Sprite = null!;
+        Scale = 1f;
+    }
 
     public virtual void ClampToBounds()
     {
@@ -48,25 +53,15 @@ public abstract class ActorEntity(string name,
 
     public override void Update(GameTime gameTime)
     {
-        int oldAtlasFrame = Sprite.Controller.CurrentFrame;
-        Sprite.Update(gameTime);
-        if (Sprite.Controller.CurrentFrame != oldAtlasFrame)
-            _animationFrameIndex++;
+        Debug.Assert(Sprite is not null, $"ActorEntity [{Name}] has no Sprite assigned");
+        if (Sprite is null) return;
+        _frameTracker.AdvanceOnFrameChange(Sprite, gameTime);
         base.Update(gameTime);
 
-        if (CurrentMove is not null && _animationFrameIndex != _lastRegisteredAnimationFrame)
+        if (CurrentMove is not null && _frameTracker.TryGetNewFrame(out var newFrameIndex))
         {
-            var frameDelta = _animationFrameIndex - _lastRegisteredAnimationFrame;
-            Debug.Assert(frameDelta > 0, "Frame counter should only advance forward");
-            if (frameDelta > 1)
-                Debug.WriteLine($"[{Name}] Skipped {frameDelta - 1} animation frame(s) — hitboxes not registered for intermediate frames");
-
-            // Animation frame changed — clear this entity's old hitboxes and
-            // register the new frame's. Clear() is owner-scoped so other
-            // entities' hitboxes are not affected.
-            _lastRegisteredAnimationFrame = _animationFrameIndex;
             HitboxService?.Clear(this);
-            HitboxService?.RegisterFrameHitboxes(this, CurrentMove, _animationFrameIndex, Direction);
+            HitboxService?.RegisterFrameHitboxes(this, CurrentMove, newFrameIndex, Direction);
         }
     }
 
@@ -95,11 +90,7 @@ public abstract class ActorEntity(string name,
         Position -= collisionInfo.PenetrationVector;
     }
 
-    public void ResetAnimationFrameIndex()
-    {
-        _animationFrameIndex = 0;
-        _lastRegisteredAnimationFrame = -1;
-    }
+    public void ResetAnimationFrameIndex() => _frameTracker.Reset();
 
     public virtual void TakeDamage(int amount)
     {

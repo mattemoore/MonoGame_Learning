@@ -5,29 +5,9 @@ using MonoGameLearning.Core.Entities;
 
 namespace MonoGameLearning.Game.Tests;
 
-// Extends SpatialEntity (not ActorEntity) to avoid requiring an AnimatedSprite,
-// which needs a GraphicsDevice that test runners don't provide.
-public class TestCollisionEntity(string name, Vector2 position, int width, int height)
-    : SpatialEntity(name, position, width, height), ICollisionActor
+public class TestActorEntity(string name, Vector2 position, int width, int height)
+    : ActorEntity(name, position, width, height)
 {
-    public IShapeF Bounds => Frame;
-    public RectangleF MovementBounds { get; set; }
-
-    public void OnCollision(CollisionEventArgs collisionInfo) =>
-        Position -= collisionInfo.PenetrationVector;
-
-    public void ClampToBounds()
-    {
-        if (MovementBounds.IsEmpty) return;
-
-        float halfWidth = Width / 2f;
-        float halfHeight = Height / 2f;
-
-        Position = new Vector2(
-            MathHelper.Clamp(Position.X, MovementBounds.Left + halfWidth, MovementBounds.Right - halfWidth),
-            MathHelper.Clamp(Position.Y, MovementBounds.Top + halfHeight, MovementBounds.Bottom - halfHeight)
-        );
-    }
 }
 
 [TestFixture]
@@ -36,7 +16,7 @@ public class ActorCollisionTests
     private static RectangleF TwoScreenBounds => new(0, 200, 1600, 200);
     private const int EntitySize = 50;
 
-    private static TestCollisionEntity MakeEntity(float x, float y) =>
+    private static TestActorEntity MakeEntity(float x, float y) =>
         new("actor", new Vector2(x, y), EntitySize, EntitySize);
 
     private static CollisionEventArgs CollisionWith(Vector2 penetration) =>
