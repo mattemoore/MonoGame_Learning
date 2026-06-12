@@ -4,17 +4,16 @@ using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended.Animations;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Game.Sprites;
 
 namespace MonoGameLearning.Game.Entities.Player;
 
 public enum AttackType { Attack1, Attack2, Attack3 }
 
-public class PlayerEntity : ActorEntity
+public class PlayerEntity : ActorEntity, ICombatant
 {
-    public Vector2 MovementDirection { get; set; }
     private PlayerStateController _stateController;
-    private const float BASE_MOVEMENT_SPEED = 200f;
     public int Health { get; private set; }
     public int MaxHealth { get; } = 100;
     public bool IsAlive => Health > 0;
@@ -141,7 +140,7 @@ public class PlayerEntity : ActorEntity
 
     public void Move(Vector2 direction, float deltaTime)
     {
-        Position += direction * deltaTime * BASE_MOVEMENT_SPEED;
+        Position += direction * deltaTime * Speed;
     }
 
     public void Reset(Vector2 position)

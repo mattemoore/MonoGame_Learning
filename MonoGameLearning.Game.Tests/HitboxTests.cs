@@ -1,20 +1,24 @@
+using System;
 using Microsoft.Xna.Framework;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 
 namespace MonoGameLearning.Game.Tests;
 
-public class TestActor(string name, Vector2 position, int width, int height)
-    : SpatialEntity(name, position, width, height)
+public class TestSpatialEntity(string name, Vector2 position, int width, int height)
+    : SpatialEntity(name, position, width, height), ICombatant
 {
     public int Health { get; private set; } = 100;
+    public int MaxHealth => 100;
+    public bool IsAlive => Health > 0;
+    public event EventHandler? Died;
     public void TakeDamage(int amount) => Health -= amount;
 }
 
 [TestFixture]
 public class HitboxTests
 {
-    private static TestActor MakeActor(float x, float y, int size = 50) =>
+    private static TestSpatialEntity MakeActor(float x, float y, int size = 50) =>
         new("actor", new Vector2(x, y), size, size);
 
     private static MoveData MakeTestMove(int damage = 10, Vector2? knockback = null) => new()
@@ -205,7 +209,8 @@ public class HitboxTests
         Assert.That(hits, Has.Count.EqualTo(1));
         Assert.That(hits[0].Damage, Is.EqualTo(7));
 
-        target.TakeDamage(hits[0].Damage);
+        if (hits[0].Target is ICombatant combatant)
+            combatant.TakeDamage(hits[0].Damage);
         Assert.That(target.Health, Is.EqualTo(93));
     }
 }
