@@ -8,5 +8,5 @@ public interface ICombatant
     int MaxHealth { get; }
     bool IsAlive { get; }
     event EventHandler Died;
-    void TakeDamage(int amount);
+    void TakeDamage(int amount, bool knockdown = false);
 }
