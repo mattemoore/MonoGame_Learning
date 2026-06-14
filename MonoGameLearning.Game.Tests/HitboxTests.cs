@@ -21,12 +21,11 @@ public class HitboxTests
     private static TestSpatialEntity MakeActor(float x, float y, int size = 50) =>
         new("actor", new Vector2(x, y), size, size);
 
-    private static MoveData MakeTestMove(int damage = 10, Vector2? knockback = null) => new()
+    private static MoveData MakeTestMove(int damage = 10) => new()
     {
         Name = "TestPunch",
         AnimationKey = "attack1",
         Damage = damage,
-        Knockback = knockback ?? new Vector2(100, 0),
         FrameHitboxes = new()
         {
             [0] = [new() { Offset = new Vector2(30, 0), Size = new Point(40, 40) }],

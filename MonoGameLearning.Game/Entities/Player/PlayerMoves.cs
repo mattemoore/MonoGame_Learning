@@ -14,7 +14,6 @@ public static class PlayerMoves
             Name = "Punch",
             AnimationKey = PlayerSprite.AnimationAttack1,
             Damage = 5,
-            Knockback = new Vector2(120, 0),
             FrameHitboxes = new()
             {
                 [1] = [new() { Offset = new Vector2(60, 0), Size = new Point(40, 40) }],
@@ -26,7 +25,6 @@ public static class PlayerMoves
             Name = "Uppercut",
             AnimationKey = PlayerSprite.AnimationAttack2,
             Damage = 8,
-            Knockback = new Vector2(160, -40),
             FrameHitboxes = new()
             {
                 [1] = [new() { Offset = new Vector2(70, -10), Size = new Point(50, 50) }],
@@ -38,7 +36,6 @@ public static class PlayerMoves
             Name = "Strong Punch",
             AnimationKey = PlayerSprite.AnimationAttack3,
             Damage = 12,
-            Knockback = new Vector2(200, 0),
             FrameHitboxes = new()
             {
                 [2] = [new() { Offset = new Vector2(80, 0), Size = new Point(60, 40) }],

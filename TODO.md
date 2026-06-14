@@ -1,9 +1,5 @@
 # TODO
 
-## Knockback Should Lerp Instead of Instant Position Change
-
-Currently `actor.Position += hit.Knockback` applies an instant teleport. Knockback should smoothly push the target over a short duration (e.g., using `Vector2.Lerp` over ~100–200ms). This likely means the game needs a simple physics/velocity system on `ActorEntity` (velocity, drag, integration in `Update`), so knockback sets a velocity that decays each frame rather than directly manipulating position.
-
 `LogicalEntity` → `SpatialEntity` represents an entity with a `Frame` (position + size) but no rendering. `ActorEntity` extends it with an `AnimatedSprite`, movement, and collision.
 
 Questions to revisit:
