@@ -136,9 +136,6 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                 if (hit.Target is ICombatant combatant)
                 {
                     combatant.TakeDamage(hit.Damage);
-                    // TODO: replace instant knockback with lerp over time via
-                    // a velocity/physics system on ActorEntity
-                    hit.Target.Position += hit.Knockback;
                 }
             }
 

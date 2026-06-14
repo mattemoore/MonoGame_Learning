@@ -32,9 +32,8 @@ Implement the core collision-based combat mechanics.
 - [ ] **Health System**:
   - [X] Add `Health` (Current / Max) to `ActorEntity`.
   - [ ] Add basic damage processing and damage invincibility frames (i-frames) after being hit.
-- [ ] **Knockback and Hit States**:
-  - [X] Implement Knockback
-- [ ] Implement a "HitStun" state (actor is temporarily unable to move/attack).
+- [ ] **Hit States**:
+  - [ ] Implement a "HitStun" state (actor is temporarily unable to move/attack).
   - [ ] **Destroyable Prop Support**: Add `IDamageable` interface to allow non-combatant entities (garbage cans, barrels) to receive damage. See [plan](.kilo/plans/add-prop-support.md).
   - [ ] STRETCH: Implement a "Knockdown" state (actor is knocked onto the floor, becomes invulnerable, then stands back up).
 

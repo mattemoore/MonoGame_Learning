@@ -9,6 +9,7 @@ No hit detection exists. Entities can overlap but attacks never register — the
 ### Data Model
 
 **`HitboxData`** — a single attack rectangle on one frame:
+
 ```csharp
 public record struct HitboxData
 {
@@ -20,6 +21,7 @@ public record struct HitboxData
 ```
 
 **`MoveData`** — a complete attack, the primary authoring unit:
+
 ```csharp
 public class MoveData
 {
@@ -115,24 +117,27 @@ public record struct HitResult
 ### Entity Changes
 
 **`ActorEntity`** additions:
+
 - `HitboxService` property (assigned by `GameLoop`)
 - `MoveData CurrentMove { get; set; }` — set when attack state begins, null otherwise
 - `FacingDirection Direction { get; set; }` — moved up from `PlayerEntity` (was private set, now public)
 - `_animationFrameIndex` + `_lastRegisteredAnimationFrame` — manual frame tracking (see Gotchas)
 
 **`PlayerEntity`** — already sets `_pendingAttackType`. In `OnAttackingEntry`:
+
 1. Look up `PlayerMoves.All[animKey]` and assign to `CurrentMove`
 2. Call `ResetAnimationFrameIndex()`
 3. `CurrentMove` is consumed by `ActorEntity.Update()` each frame during the attack
 
 **`FacingDirection`** enum extracted from `PlayerEntity` to its own file `Core/Entities/FacingDirection.cs`:
+
 ```csharp
 public enum FacingDirection { Left, Right }
 ```
 
 ### Integration Flow (`GameLoop.Update()`)
 
-```
+```csharp
 1. entity.Update(gameTime)              // sprite advances, state ticks, hitbox registration inlined
 2. hitboxService.ResolveHits(actors) →  // hit detection against active hurtboxes
      target.TakeDamage(hit.Damage)
@@ -142,7 +147,8 @@ public enum FacingDirection { Left, Right }
 ```
 
 Hitbox registration happens **inside** `ActorEntity.Update()`, not as a separate GameLoop step:
-```
+
+```csharp
 ActorEntity.Update():
   1. detect sprite frame change → _animationFrameIndex++
   2. if CurrentMove != null && new frame → HitboxService.Clear(this) + RegisterFrameHitboxes()
@@ -167,6 +173,7 @@ Future: `MoveData.FrameHurtboxModifiers` can override the hurtbox size dynamical
 ### Debug Visualization
 
 In `ActorEntity.DrawDebug()`:
+
 - Red `DrawRectangle` for each active hitbox (from `HitboxService.GetActiveHitboxBounds()`)
 - Blue outline for `Frame` (hurt area)
 
@@ -183,6 +190,7 @@ The initial plan specified a single `HashSet<(HitboxData, ActorEntity)>`. Review
 Game reset (new game, level restart) did **not** clear `CurrentMove`, `_animationFrameIndex`, or `_hitboxService._activeHitboxes`. Stale hitboxes from the previous game would persist and could resolve against entities in the new game, applying phantom damage. Additionally, a stale non-null `CurrentMove` after reset would cause `ActorEntity.Update()` to register hitboxes against the idle animation's frame counter.
 
 **Fix:**
+
 - `PlayerEntity.Reset()`: set `CurrentMove = null`, call `ResetAnimationFrameIndex()`
 - `GameLoop.ResetGame()`: call `_hitboxService.ClearAll()` before resetting entities
 
@@ -199,6 +207,7 @@ MonoGame.Extended's `AnimatedSprite.Controller.CurrentFrame` returns the global 
 ### 5. Hitbox Register/Resolve Timing
 
 Hitbox registration is **decoupled** from resolution:
+
 - `RegisterFrameHitboxes()` is called inside `ActorEntity.Update()` when a frame change is detected
 - `ResolveHits()` is called in `GameLoop.Update()` AFTER all entities have updated
 - Hitboxes persist across `ResolveHits()` calls until `Clear(owner)` is called (next frame advance or attack end)

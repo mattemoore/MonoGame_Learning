@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGameLearning.Core.Entities;
 
@@ -9,7 +8,6 @@ public record struct HitResult
 {
     public SpatialEntity Target { get; init; }
     public int Damage { get; init; }
-    public Vector2 Knockback { get; init; }
     public SpatialEntity Source { get; init; }
 }
 
@@ -20,7 +18,6 @@ public class HitboxService
         public SpatialEntity Owner { get; init; }
         public RectangleF Bounds { get; init; }
         public int Damage { get; init; }
-        public Vector2 Knockback { get; init; }
         public HitboxData Definition { get; init; }
     }
 
@@ -44,11 +41,6 @@ public class HitboxService
                 Owner = owner,
                 Bounds = hb.CreateRectangle(owner.Position, facing),
                 Damage = move.Damage,
-                Knockback = facing == FacingDirection.Left
-                    // Knockback values in move definitions assume FacingDirection.Right.
-                    // Negate X when facing left so knockback pushes away from the attacker.
-                    ? move.Knockback with { X = -move.Knockback.X }
-                    : move.Knockback,
                 Definition = hb
             });
         }
@@ -76,7 +68,6 @@ public class HitboxService
                 {
                     Target = target,
                     Damage = active.Damage,
-                    Knockback = active.Knockback,
                     Source = active.Owner
                 });
             }
