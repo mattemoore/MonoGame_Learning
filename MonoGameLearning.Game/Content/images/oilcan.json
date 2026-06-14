@@ -1,0 +1,27 @@
+{
+	"textures": [
+		{
+			"filename": "oilcan-texture.png",
+			"format": "RGBA8888",
+			"size": {"w":64,"h":241},
+			"frames": {
+				"oildrum-00":{
+					"frame": {"x":1,"y":1,"w":62,"h":79}
+				},
+				"oildrum-01":{
+					"frame": {"x":1,"y":82,"w":62,"h":78}
+				},
+				"oildrum-02":{
+					"frame": {"x":1,"y":162,"w":62,"h":78}
+				}
+			}
+		}
+	],
+
+	"meta": {
+		"app": "https://www.codeandweb.com/texturepacker",
+		"dataformat": "monogame-extended",
+		"version": "1.2",
+		"smartupdate": "$TexturePacker:SmartUpdate:cc588597d063fcf1fb569401aedd21b2:0687a8f287401f220d90c8c61c8643f4:0d615b1b954dd0977a118e2bfc7bdc13$"
+	}
+}
