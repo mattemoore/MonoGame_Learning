@@ -36,6 +36,7 @@ public static class PlayerMoves
             Name = "Strong Punch",
             AnimationKey = PlayerSprite.AnimationAttack3,
             Damage = 12,
+            Knockdown = true,
             FrameHitboxes = new()
             {
                 [2] = [new() { Offset = new Vector2(80, 0), Size = new Point(60, 40) }],

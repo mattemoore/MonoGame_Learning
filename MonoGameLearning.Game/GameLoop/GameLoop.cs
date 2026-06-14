@@ -135,7 +135,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             {
                 if (hit.Target is ICombatant combatant)
                 {
-                    combatant.TakeDamage(hit.Damage);
+                    combatant.TakeDamage(hit.Damage, knockdown: hit.Knockdown);
                 }
             }
 

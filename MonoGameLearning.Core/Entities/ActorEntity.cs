@@ -92,7 +92,7 @@ public abstract class ActorEntity : SpatialEntity, ICollisionActor, IAnimated, I
 
     public void ResetAnimationFrameIndex() => _frameTracker.Reset();
 
-    public virtual void TakeDamage(int amount)
+    public virtual void TakeDamage(int amount, bool knockdown = false)
     {
     }
 }

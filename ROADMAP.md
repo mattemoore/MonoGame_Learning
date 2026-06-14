@@ -31,11 +31,11 @@ Implement the core collision-based combat mechanics.
   - [X] Implement overlap check: when a `Hitbox` overlaps an active enemy's `Hurtbox`, trigger a hit.
 - [ ] **Health System**:
   - [X] Add `Health` (Current / Max) to `ActorEntity`.
-  - [ ] Add basic damage processing and damage invincibility frames (i-frames) after being hit.
+  - [X] Add basic damage processing and damage invincibility frames (i-frames) after being hit.
 - [ ] **Hit States**:
-  - [ ] Implement a "HitStun" state (actor is temporarily unable to move/attack).
+  - [X] Implement a "HitStun" state (actor is temporarily unable to move/attack).
   - [ ] **Destroyable Prop Support**: Add `IDamageable` interface to allow non-combatant entities (garbage cans, barrels) to receive damage. See [plan](.kilo/plans/add-prop-support.md).
-  - [ ] STRETCH: Implement a "Knockdown" state (actor is knocked onto the floor, becomes invulnerable, then stands back up).
+  - [X] Implement a "Knockdown" state (actor is knocked onto the floor, becomes invulnerable, then stands back up).
 
 ---
 

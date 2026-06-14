@@ -14,6 +14,7 @@ public enum AttackType { Attack1, Attack2, Attack3 }
 public class PlayerEntity : ActorEntity, ICombatant
 {
     private PlayerStateController _stateController;
+    private int _knockdownPhase;
     public int Health { get; private set; }
     public int MaxHealth { get; } = 100;
     public bool IsAlive => Health > 0;
@@ -64,6 +65,17 @@ public class PlayerEntity : ActorEntity, ICombatant
             SubscribeToAnimationEvent();
         },
         OnHurtExit = UnsubscribeFromAnimationEvent,
+        OnKnockdownEntry = () =>
+        {
+            Sprite.SetAnimation(PlayerSprite.AnimationFall);
+            _knockdownPhase = 0;
+            SubscribeToAnimationEvent();
+        },
+        OnKnockdownExit = () =>
+        {
+            UnsubscribeFromAnimationEvent();
+            _knockdownPhase = 0;
+        },
         OnDyingEntry = () =>
         {
             Sprite.SetAnimation(PlayerSprite.AnimationDie);
@@ -75,7 +87,7 @@ public class PlayerEntity : ActorEntity, ICombatant
 
     public override void Update(GameTime gameTime)
     {
-        if (_stateController.State is PlayerState.Dead or PlayerState.Dying)
+        if (_stateController.State is PlayerState.Dead or PlayerState.Dying or PlayerState.Hurt or PlayerState.KnockedDown)
         {
             MovementDirection = Vector2.Zero;
             base.Update(gameTime);
@@ -122,7 +134,7 @@ public class PlayerEntity : ActorEntity, ICombatant
     public void Attack2() { _pendingAttackType = AttackType.Attack2; _stateController.Fire(PlayerTrigger.AttackStart); }
     public void Attack3() { _pendingAttackType = AttackType.Attack3; _stateController.Fire(PlayerTrigger.AttackStart); }
 
-    public override void TakeDamage(int amount)
+    public override void TakeDamage(int amount, bool knockdown = false)
     {
         if (!IsAlive) return;
 
@@ -131,6 +143,10 @@ public class PlayerEntity : ActorEntity, ICombatant
         if (Health <= 0)
         {
             _stateController.Fire(PlayerTrigger.Die);
+        }
+        else if (knockdown)
+        {
+            _stateController.Fire(PlayerTrigger.TakeKnockdown);
         }
         else
         {
@@ -154,11 +170,28 @@ public class PlayerEntity : ActorEntity, ICombatant
         CurrentMove = null;
         ResetAnimationFrameIndex();
         _stateController = CreateStateController();
+        _knockdownPhase = 0;
     }
 
     private void OnAnimationCompleted(IAnimationController controller, AnimationEventTrigger trigger)
     {
         if (trigger != AnimationEventTrigger.AnimationCompleted) return;
+
+        if (_stateController.State == PlayerState.KnockedDown)
+        {
+            if (_knockdownPhase == 0)
+            {
+                Sprite.SetAnimation(PlayerSprite.AnimationGetUp);
+                _knockdownPhase = 1;
+                SubscribeToAnimationEvent();
+            }
+            else
+            {
+                _stateController.Fire(PlayerTrigger.KnockdownCompleted);
+            }
+            return;
+        }
+
         _stateController.Fire(_stateController.State switch
         {
             PlayerState.Hurt => PlayerTrigger.HurtCompleted,

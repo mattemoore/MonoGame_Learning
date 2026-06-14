@@ -9,6 +9,7 @@ public record struct HitResult
     public SpatialEntity Target { get; init; }
     public int Damage { get; init; }
     public SpatialEntity Source { get; init; }
+    public bool Knockdown { get; init; }
 }
 
 public class HitboxService
@@ -18,6 +19,7 @@ public class HitboxService
         public SpatialEntity Owner { get; init; }
         public RectangleF Bounds { get; init; }
         public int Damage { get; init; }
+        public bool Knockdown { get; init; }
         public HitboxData Definition { get; init; }
     }
 
@@ -41,6 +43,7 @@ public class HitboxService
                 Owner = owner,
                 Bounds = hb.CreateRectangle(owner.Position, facing),
                 Damage = move.Damage,
+                Knockdown = move.Knockdown,
                 Definition = hb
             });
         }
@@ -68,7 +71,8 @@ public class HitboxService
                 {
                     Target = target,
                     Damage = active.Damage,
-                    Source = active.Owner
+                    Source = active.Owner,
+                    Knockdown = active.Knockdown
                 });
             }
         }

@@ -308,4 +308,96 @@ public class PlayerStateTests
         controller.Fire(PlayerTrigger.AttackCompleted);
         Assert.That(exitInvoked, Is.True);
     }
+
+    [Test]
+    public void FromIdling_TakeKnockdown_TransitionsToKnockedDown()
+    {
+        _controller.Fire(PlayerTrigger.TakeKnockdown);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.KnockedDown));
+    }
+
+    [Test]
+    public void FromMoving_TakeKnockdown_TransitionsToKnockedDown()
+    {
+        _controller.Fire(PlayerTrigger.MoveStart);
+        _controller.Fire(PlayerTrigger.TakeKnockdown);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.KnockedDown));
+    }
+
+    [Test]
+    public void FromAttacking_TakeKnockdown_InterruptsAttack()
+    {
+        _controller.Fire(PlayerTrigger.AttackStart);
+        _controller.Fire(PlayerTrigger.TakeKnockdown);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.KnockedDown));
+    }
+
+    [Test]
+    public void FromHurt_TakeKnockdown_TransitionsToKnockedDown()
+    {
+        _controller.Fire(PlayerTrigger.TakeDamage);
+        _controller.Fire(PlayerTrigger.TakeKnockdown);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.KnockedDown));
+    }
+
+    [Test]
+    public void FromKnockedDown_KnockdownCompleted_TransitionsToIdling()
+    {
+        _controller.Fire(PlayerTrigger.TakeKnockdown);
+        _controller.Fire(PlayerTrigger.KnockdownCompleted);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.Idling));
+    }
+
+    [Test]
+    public void FromKnockedDown_Die_TransitionsToDying()
+    {
+        _controller.Fire(PlayerTrigger.TakeKnockdown);
+        _controller.Fire(PlayerTrigger.Die);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.Dying));
+    }
+
+    [Test]
+    public void WhileKnockedDown_AttackAndMoveTriggers_AreIgnored()
+    {
+        _controller.Fire(PlayerTrigger.TakeKnockdown);
+        _controller.Fire(PlayerTrigger.AttackStart);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.KnockedDown));
+
+        _controller.Fire(PlayerTrigger.MoveStart);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.KnockedDown));
+
+        _controller.Fire(PlayerTrigger.MoveStop);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.KnockedDown));
+    }
+
+    [Test]
+    public void WhileKnockedDown_TakeDamage_IsIgnored()
+    {
+        _controller.Fire(PlayerTrigger.TakeKnockdown);
+        _controller.Fire(PlayerTrigger.TakeDamage);
+        Assert.That(_controller.State, Is.EqualTo(PlayerState.KnockedDown));
+    }
+
+    [Test]
+    public void KnockdownEntryCallback_IsInvoked()
+    {
+        bool entryInvoked = false;
+        var controller = new PlayerStateController(new() { OnKnockdownEntry = () => entryInvoked = true });
+        controller.Fire(PlayerTrigger.TakeKnockdown);
+        Assert.That(entryInvoked, Is.True);
+    }
+
+    [Test]
+    public void KnockdownExitCallback_IsInvoked()
+    {
+        bool exitInvoked = false;
+        var controller = new PlayerStateController(new()
+        {
+            OnKnockdownEntry = () => { },
+            OnKnockdownExit = () => exitInvoked = true
+        });
+        controller.Fire(PlayerTrigger.TakeKnockdown);
+        controller.Fire(PlayerTrigger.KnockdownCompleted);
+        Assert.That(exitInvoked, Is.True);
+    }
 }
