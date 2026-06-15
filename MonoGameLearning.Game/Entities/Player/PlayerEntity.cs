@@ -136,7 +136,7 @@ public class PlayerEntity : ActorEntity, ICombatant
 
     public override void TakeDamage(int amount, bool knockdown = false)
     {
-        if (!IsAlive) return;
+        if (!IsAlive || _stateController.State == PlayerState.KnockedDown) return;
 
         Health = Math.Max(0, Health - amount);
 

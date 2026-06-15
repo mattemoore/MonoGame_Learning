@@ -9,23 +9,47 @@ namespace MonoGameLearning.Game.Entities.Props;
 public class OilDrumEntity : ActorEntity
 {
     private int _health;
-    private float _hitCooldown;
+    private float _hitStunTimer;
     private const int MaxHealth = 6;
+    private const float HitStunDuration = 0.3f;
+    private readonly OilDrumStateController _stateController;
     public bool IsAlive { get; private set; } = true;
     public event Action<OilDrumEntity> Destroyed;
 
     public OilDrumEntity(string name, Vector2 position, float scale, AnimatedSprite sprite)
         : base(name, position, scale, sprite)
     {
-        sprite.SetAnimation(OilDrumSprite.AnimationIdle);
-        sprite.Origin = new Vector2(sprite.Size.X / 2f, sprite.Size.Y / 2f);
+        _stateController = new(new()
+        {
+            OnNormalEntry = () =>
+            {
+                string anim = _health switch
+                {
+                    <= 2 => OilDrumSprite.AnimationCritical,
+                    <= 4 => OilDrumSprite.AnimationDamaged,
+                    _ => OilDrumSprite.AnimationIdle
+                };
+                sprite.SetAnimation(anim);
+            },
+            OnHitStunEntry = () =>
+            {
+                string anim = _health switch
+                {
+                    <= 2 => OilDrumSprite.AnimationCritical,
+                    <= 4 => OilDrumSprite.AnimationDamaged,
+                    _ => OilDrumSprite.AnimationIdle
+                };
+                sprite.SetAnimation(anim);
+                _hitStunTimer = HitStunDuration;
+            }
+        });
         sprite.Color = Color.White;
         _health = MaxHealth;
     }
 
     public override void TakeDamage(int amount, bool knockdown = false)
     {
-        if (!IsAlive || _hitCooldown > 0) return;
+        if (!IsAlive || _stateController.State == OilDrumState.HitStun) return;
 
         _health -= amount switch
         {
@@ -33,7 +57,6 @@ public class OilDrumEntity : ActorEntity
             >= 8 => 3,
             _ => 2
         };
-        _hitCooldown = 0.3f;
 
         if (_health <= 0)
         {
@@ -42,21 +65,18 @@ public class OilDrumEntity : ActorEntity
             return;
         }
 
-        string anim = _health switch
-        {
-            <= 2 => OilDrumSprite.AnimationCritical,
-            <= 4 => OilDrumSprite.AnimationDamaged,
-            _ => OilDrumSprite.AnimationIdle
-        };
-        Sprite.SetAnimation(anim);
-        Sprite.Origin = new Vector2(Sprite.Size.X / 2f, Sprite.Size.Y / 2f);
+        _stateController.Fire(OilDrumTrigger.Hit);
     }
 
     public override void Update(GameTime gameTime)
     {
         if (!IsAlive) return;
-        if (_hitCooldown > 0)
-            _hitCooldown -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+        if (_stateController.IsInState(OilDrumState.HitStun))
+        {
+            _hitStunTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (_hitStunTimer <= 0)
+                _stateController.Fire(OilDrumTrigger.HitStunCompleted);
+        }
         base.Update(gameTime);
     }
 }
