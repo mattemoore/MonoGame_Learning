@@ -10,9 +10,11 @@ using MonoGameGum;
 using MonoGameGum.GueDeriving;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Interfaces;
 using MonoGameLearning.Core.GameCore;
 using MonoGameLearning.Core.Input;
 using MonoGameLearning.Game.Entities.Player;
+using MonoGameLearning.Game.Entities.Props;
 using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.Sprites;
 using RenderingLibrary.Graphics;
@@ -93,6 +95,12 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _player.Died += OnPlayerDied;
         _player1 = new PlayerEntity("player1", new Vector2(150, 500), 2.0f, playerSprite1);
         _actorEntities = [_player, _player1];
+
+        OilDrumSprite.Load(Content);
+        _actorEntities.Add(CreateOilDrum("can1", new Vector2(700, 450)));
+        _actorEntities.Add(CreateOilDrum("can2", new Vector2(900, 450)));
+        _actorEntities.Add(CreateOilDrum("can3", new Vector2(800, 350)));
+
         _entities = [.. _actorEntities];
 
         foreach (var entity in _actorEntities)
@@ -133,9 +141,9 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             var hitResults = _hitboxService.ResolveHits(_actorEntities);
             foreach (var hit in hitResults)
             {
-                if (hit.Target is ICombatant combatant)
+                if (hit.Target is IDamageable damageable)
                 {
-                    combatant.TakeDamage(hit.Damage, knockdown: hit.Knockdown);
+                    damageable.TakeDamage(hit.Damage, knockdown: hit.Knockdown);
                 }
             }
 
@@ -201,6 +209,21 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _gameState.Fire(GameTrigger.PlayerDied);
     }
 
+    private OilDrumEntity CreateOilDrum(string name, Vector2 position)
+    {
+        var drum = new OilDrumEntity(name, position, 1.0f, OilDrumSprite.Create());
+        drum.Destroyed += OnOilDrumDestroyed;
+        return drum;
+    }
+
+    private void OnOilDrumDestroyed(OilDrumEntity drum)
+    {
+        drum.Destroyed -= OnOilDrumDestroyed;
+        _actorEntities.Remove(drum);
+        _collision.Remove(drum);
+        _entities = [.. _actorEntities];
+    }
+
     private void OnActionTriggered(InputAction action)
     {
         switch (action)
@@ -250,6 +273,24 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _hitboxService.ClearAll();
         _player.Reset(new Vector2(100, 450));
         _player1.Reset(new Vector2(150, 500));
+
+        _actorEntities.RemoveAll(e => e is OilDrumEntity);
+
+        _actorEntities.Add(CreateOilDrum("can1", new Vector2(700, 450)));
+        _actorEntities.Add(CreateOilDrum("can2", new Vector2(900, 450)));
+        _actorEntities.Add(CreateOilDrum("can3", new Vector2(800, 350)));
+
+        foreach (var entity in _actorEntities)
+        {
+            entity.HitboxService = _hitboxService;
+        }
+
+        _collision = new CollisionComponent(new RectangleF(0, 0, GAME_WIDTH * 2, GAME_HEIGHT));
+        foreach (var entity in _actorEntities)
+        {
+            _collision.Insert(entity);
+        }
+
         _entities = [.. _actorEntities];
         _currentLevel = new Level1(Content, GAME_WIDTH, GAME_HEIGHT);
     }

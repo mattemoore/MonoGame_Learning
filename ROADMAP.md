@@ -34,7 +34,7 @@ Implement the core collision-based combat mechanics.
   - [X] Add basic damage processing and damage invincibility frames (i-frames) after being hit.
 - [ ] **Hit States**:
   - [X] Implement a "HitStun" state (actor is temporarily unable to move/attack).
-  - [ ] **Destroyable Prop Support**: Add `IDamageable` interface to allow non-combatant entities (garbage cans, barrels) to receive damage. See [plan](.kilo/plans/add-prop-support.md).
+  - [X] **Destroyable Prop Support**: Add `IDamageable` interface to allow non-combatant entities (garbage cans, barrels) to receive damage. See [plan](.kilo/plans/add-prop-support.md).
   - [X] Implement a "Knockdown" state (actor is knocked onto the floor, becomes invulnerable, then stands back up).
 
 ---

@@ -9,7 +9,7 @@ using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Core.Entities;
 
-public abstract class ActorEntity : SpatialEntity, ICollisionActor, IAnimated, IHitboxProvider, IMoveableEntity
+public abstract class ActorEntity : SpatialEntity, ICollisionActor, IAnimated, IHitboxProvider, IMoveableEntity, IDamageable
 {
     public AnimatedSprite Sprite { get; private set; }
     public float Scale { get; private set; }
