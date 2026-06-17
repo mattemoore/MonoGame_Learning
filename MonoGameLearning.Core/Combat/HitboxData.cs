@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGameLearning.Core.Entities;
@@ -11,6 +12,8 @@ public readonly record struct HitboxData
 
     public RectangleF CreateRectangle(Vector2 center, FacingDirection facing)
     {
+        Debug.Assert(Size.X > 0 && Size.Y > 0, "Hitbox size must be positive");
+
         var offset = facing == FacingDirection.Left
             // Offset values assume FacingDirection.Right. Negate X when facing
             // left so the hitbox projects in front of the attacker.

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using MonoGame.Extended;
 using MonoGameLearning.Core.Entities;
 
@@ -24,12 +25,9 @@ public class HitboxService
     }
 
     private readonly List<ActiveHitbox> _activeHitboxes = [];
-    // Tracks which (hitbox definition, target) pairs have already dealt damage
-    // during the current animation frame, scoped per owner. Persists across
-    // ResolveHits() calls so that a single animation frame's hitboxes don't hit
-    // the same target repeatedly on consecutive game ticks. Cleared by
-    // Clear(owner) when the animation frame advances or the attack ends.
     private readonly Dictionary<SpatialEntity, HashSet<(HitboxData, SpatialEntity)>> _resolvedThisFrame = [];
+    private readonly List<HitResult> _resultBuffer = [];
+    private readonly List<RectangleF> _boundsBuffer = [];
 
     public void RegisterFrameHitboxes(SpatialEntity owner, MoveData move, int frameIndex, FacingDirection facing)
     {
@@ -51,7 +49,7 @@ public class HitboxService
 
     public List<HitResult> ResolveHits(IEnumerable<SpatialEntity> targets)
     {
-        var results = new List<HitResult>();
+        _resultBuffer.Clear();
 
         foreach (var active in _activeHitboxes)
         {
@@ -67,7 +65,7 @@ public class HitboxService
                 if (!active.Bounds.Intersects(target.Frame)) continue;
                 if (!ownerResolved.Add((active.Definition, target))) continue;
 
-                results.Add(new()
+                _resultBuffer.Add(new()
                 {
                     Target = target,
                     Damage = active.Damage,
@@ -77,13 +75,12 @@ public class HitboxService
             }
         }
 
-        return results;
+        return _resultBuffer;
     }
 
-    // Owner-scoped: only removes hitboxes and resolved-frame tracking belonging
-    // to the given entity. Other entities' tracking is unaffected.
     public void Clear(SpatialEntity owner)
     {
+        Debug.Assert(owner is not null, "Clear called with null owner");
         _activeHitboxes.RemoveAll(hb => hb.Owner == owner);
         _resolvedThisFrame.Remove(owner);
     }
@@ -96,12 +93,12 @@ public class HitboxService
 
     public IReadOnlyList<RectangleF> GetActiveHitboxBounds(SpatialEntity owner)
     {
-        var bounds = new List<RectangleF>();
+        _boundsBuffer.Clear();
         foreach (var hb in _activeHitboxes)
         {
             if (hb.Owner == owner)
-                bounds.Add(hb.Bounds);
+                _boundsBuffer.Add(hb.Bounds);
         }
-        return bounds;
+        return _boundsBuffer;
     }
 }

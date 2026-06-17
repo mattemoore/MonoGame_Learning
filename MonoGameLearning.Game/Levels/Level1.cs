@@ -16,7 +16,7 @@ public class Level1 : Level
 
     private static List<BackgroundEntity> CreateBackgrounds(ContentManager content, int gameWidth, int gameHeight)
     {
-        Sprite background = new(content.Load<Texture2D>("backgrounds/background1"));
+        Sprite background = new(content.Load<Texture2D>("backgrounds/background"));
         Sprite background1 = new(content.Load<Texture2D>("backgrounds/background1"));
 
         float bgCenterX = gameWidth / 2f;

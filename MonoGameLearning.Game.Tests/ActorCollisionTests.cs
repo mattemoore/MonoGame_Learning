@@ -8,6 +8,7 @@ namespace MonoGameLearning.Game.Tests;
 public class TestActorEntity(string name, Vector2 position, int width, int height)
     : ActorEntity(name, position, width, height)
 {
+    public override void TakeDamage(int amount, bool knockdown = false) { }
 }
 
 [TestFixture]

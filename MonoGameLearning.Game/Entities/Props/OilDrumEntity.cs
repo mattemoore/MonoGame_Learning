@@ -1,24 +1,30 @@
 using System;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using MonoGame.Extended;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Game.Sprites;
 
 namespace MonoGameLearning.Game.Entities.Props;
 
-public class OilDrumEntity : ActorEntity
+public class OilDrumEntity : PropEntity
 {
     private int _health;
     private float _hitStunTimer;
     private const int MaxHealth = 6;
     private const float HitStunDuration = 0.3f;
     private readonly OilDrumStateController _stateController;
+    private readonly AnimatedSprite _sprite;
+    private readonly float _scale;
     public bool IsAlive { get; private set; } = true;
     public event Action<OilDrumEntity> Destroyed;
 
     public OilDrumEntity(string name, Vector2 position, float scale, AnimatedSprite sprite)
-        : base(name, position, scale, sprite)
+        : base(name, position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale))
     {
+        _sprite = sprite;
+        _scale = scale;
         _stateController = new(new()
         {
             OnNormalEntry = () =>
@@ -29,7 +35,7 @@ public class OilDrumEntity : ActorEntity
                     <= 4 => OilDrumSprite.AnimationDamaged,
                     _ => OilDrumSprite.AnimationIdle
                 };
-                sprite.SetAnimation(anim);
+                _sprite.SetAnimation(anim);
             },
             OnHitStunEntry = () =>
             {
@@ -39,11 +45,11 @@ public class OilDrumEntity : ActorEntity
                     <= 4 => OilDrumSprite.AnimationDamaged,
                     _ => OilDrumSprite.AnimationIdle
                 };
-                sprite.SetAnimation(anim);
+                _sprite.SetAnimation(anim);
                 _hitStunTimer = HitStunDuration;
             }
         });
-        sprite.Color = Color.White;
+        _sprite.Color = Color.White;
         _health = MaxHealth;
     }
 
@@ -77,6 +83,18 @@ public class OilDrumEntity : ActorEntity
             if (_hitStunTimer <= 0)
                 _stateController.Fire(OilDrumTrigger.HitStunCompleted);
         }
+        _sprite.Update(gameTime);
         base.Update(gameTime);
+    }
+
+    public override void Draw(SpriteBatch spriteBatch)
+    {
+        spriteBatch.Draw(_sprite, Position, MathHelper.ToRadians(Rotation), new Vector2(_scale));
+    }
+
+    public override void DrawDebug(SpriteBatch spriteBatch)
+    {
+        base.DrawDebug(spriteBatch);
+        spriteBatch.DrawRectangle(Frame, Color.Blue);
     }
 }
