@@ -124,11 +124,12 @@ public class OilDrumStateControllerTests
     }
 }
 
-public class TestDamageableEntity : SpatialEntity, IDamageable
+public class TestDamageableEntity : PropEntity
 {
     private readonly OilDrumStateController _stateController;
     public int Health { get; private set; } = 6;
     public bool IsAlive => Health > 0;
+    public event Action<TestDamageableEntity>? Destroyed;
 
     public TestDamageableEntity(string name, Vector2 position, int width, int height)
         : base(name, position, width, height)
@@ -136,7 +137,7 @@ public class TestDamageableEntity : SpatialEntity, IDamageable
         _stateController = new();
     }
 
-    public void TakeDamage(int amount, bool knockdown = false)
+    public override void TakeDamage(int amount, bool knockdown = false)
     {
         if (!IsAlive || _stateController.State == OilDrumState.HitStun) return;
 
@@ -147,7 +148,11 @@ public class TestDamageableEntity : SpatialEntity, IDamageable
             _ => 2
         };
 
-        if (Health <= 0) return;
+        if (Health <= 0)
+        {
+            Destroyed?.Invoke(this);
+            return;
+        }
 
         _stateController.Fire(OilDrumTrigger.Hit);
     }

@@ -28,9 +28,13 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     public const int RESOLUTION_WIDTH = 1024;
     public const int RESOLUTION_HEIGHT = 768;
     public const bool IS_FULL_SCREEN = false;
-    private PlayerEntity _player, _player1;
+    private PlayerEntity _player;
+    // _player1 reserved for future co-op support — instantiated, added to entities/collision,
+    // but not yet wired to input. Kept alive in the loop to prevent rot.
+    private PlayerEntity _player1;
     private Level _currentLevel;
     private List<ActorEntity> _actorEntities;
+    private List<PropEntity> _props;
     private List<Entity> _entities;
     private InputManager _input;
     private TextRuntime _debugWindow1, _debugWindow2;
@@ -41,6 +45,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private GameStateController _gameState;
     private CameraController _cameraController;
     private MenuManager _menuManager;
+    private readonly List<SpatialEntity> _hitTargets = [];
     private HitboxService _hitboxService;
 
     protected override void Initialize()
@@ -89,19 +94,23 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
         _currentLevel = new Level1(Content, GAME_WIDTH, GAME_HEIGHT);
 
-        AnimatedSprite playerSprite = PlayerSprite.GetPlayerSprite(Content);
-        AnimatedSprite playerSprite1 = PlayerSprite.GetPlayerSprite(Content);
+        PlayerSprite.Load(Content);
+        AnimatedSprite playerSprite = PlayerSprite.Create();
+        AnimatedSprite playerSprite1 = PlayerSprite.Create();
         _player = new PlayerEntity("player", new Vector2(100, 450), 2.0f, playerSprite);
         _player.Died += OnPlayerDied;
         _player1 = new PlayerEntity("player1", new Vector2(150, 500), 2.0f, playerSprite1);
         _actorEntities = [_player, _player1];
 
         OilDrumSprite.Load(Content);
-        _actorEntities.Add(CreateOilDrum("can1", new Vector2(700, 450)));
-        _actorEntities.Add(CreateOilDrum("can2", new Vector2(900, 450)));
-        _actorEntities.Add(CreateOilDrum("can3", new Vector2(800, 350)));
+        _props =
+        [
+            CreateOilDrum("can1", new Vector2(700, 450)),
+            CreateOilDrum("can2", new Vector2(900, 450)),
+            CreateOilDrum("can3", new Vector2(800, 350))
+        ];
 
-        _entities = [.. _actorEntities];
+        _entities = [.. _actorEntities, .. _props];
 
         foreach (var entity in _actorEntities)
         {
@@ -126,10 +135,9 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             _cameraController.Update(Camera);
 
             _player.MovementDirection = _input.MovementDirection;
+
             foreach (var entity in _actorEntities)
-            {
                 entity.MovementBounds = _currentLevel.MovementBounds;
-            }
 
             _currentLevel.Update(gameTime);
 
@@ -138,7 +146,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                 entity.Update(gameTime);
             }
 
-            var hitResults = _hitboxService.ResolveHits(_actorEntities);
+            _hitTargets.Clear();
+            _hitTargets.AddRange(_actorEntities);
+            _hitTargets.AddRange(_props);
+            var hitResults = _hitboxService.ResolveHits(_hitTargets);
             foreach (var hit in hitResults)
             {
                 if (hit.Target is IDamageable damageable)
@@ -182,11 +193,24 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                 }
             }
 
+            foreach (var prop in _props)
+            {
+                if (cameraBounds.Intersects(prop.Frame))
+                {
+                    prop.Draw(SpriteBatch);
+                    _numEntitiesDrawn++;
+                }
+            }
+
             if (IsDebug)
             {
                 foreach (var entity in _actorEntities)
                 {
                     entity.DrawDebug(SpriteBatch);
+                }
+                foreach (var prop in _props)
+                {
+                    prop.DrawDebug(SpriteBatch);
                 }
                 _currentLevel.DrawDebug(SpriteBatch);
                 _debugWindow1.Text = $"FPS: {FPSCounter.FramesPerSecond}\n" +
@@ -219,9 +243,9 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private void OnOilDrumDestroyed(OilDrumEntity drum)
     {
         drum.Destroyed -= OnOilDrumDestroyed;
-        _actorEntities.Remove(drum);
+        _props.Remove(drum);
         _collision.Remove(drum);
-        _entities = [.. _actorEntities];
+        _entities = [.. _actorEntities, .. _props];
     }
 
     private void OnActionTriggered(InputAction action)
@@ -274,11 +298,11 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _player.Reset(new Vector2(100, 450));
         _player1.Reset(new Vector2(150, 500));
 
-        _actorEntities.RemoveAll(e => e is OilDrumEntity);
+        _props.Clear();
 
-        _actorEntities.Add(CreateOilDrum("can1", new Vector2(700, 450)));
-        _actorEntities.Add(CreateOilDrum("can2", new Vector2(900, 450)));
-        _actorEntities.Add(CreateOilDrum("can3", new Vector2(800, 350)));
+        _props.Add(CreateOilDrum("can1", new Vector2(700, 450)));
+        _props.Add(CreateOilDrum("can2", new Vector2(900, 450)));
+        _props.Add(CreateOilDrum("can3", new Vector2(800, 350)));
 
         foreach (var entity in _actorEntities)
         {
@@ -290,8 +314,12 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         {
             _collision.Insert(entity);
         }
+        foreach (var prop in _props)
+        {
+            _collision.Insert(prop);
+        }
 
-        _entities = [.. _actorEntities];
+        _entities = [.. _actorEntities, .. _props];
         _currentLevel = new Level1(Content, GAME_WIDTH, GAME_HEIGHT);
     }
 }

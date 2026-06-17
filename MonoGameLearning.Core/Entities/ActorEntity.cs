@@ -65,8 +65,10 @@ public abstract class ActorEntity : SpatialEntity, ICollisionActor, IAnimated, I
         }
     }
 
-    public void Draw(SpriteBatch spriteBatch)
+    public virtual void Draw(SpriteBatch spriteBatch)
     {
+        Debug.Assert(Sprite is not null, $"ActorEntity [{Name}] has no Sprite assigned");
+        if (Sprite is null) return;
         spriteBatch.Draw(Sprite,
                         Position,
                         MathHelper.ToRadians(Rotation),
@@ -92,7 +94,5 @@ public abstract class ActorEntity : SpatialEntity, ICollisionActor, IAnimated, I
 
     public void ResetAnimationFrameIndex() => _frameTracker.Reset();
 
-    public virtual void TakeDamage(int amount, bool knockdown = false)
-    {
-    }
+    public abstract void TakeDamage(int amount, bool knockdown = false);
 }

@@ -12,9 +12,12 @@ public static class OilDrumSprite
     public const string AnimationCritical = "critical";
 
     private static SpriteSheet _spriteSheet;
+    private static bool _loaded;
 
     public static void Load(ContentManager content)
     {
+        if (_loaded) return;
+        _loaded = true;
         Texture2DAtlas atlas = content.Load<Texture2DAtlas>("images/oilcan");
         _spriteSheet = new("oilcan", atlas);
 

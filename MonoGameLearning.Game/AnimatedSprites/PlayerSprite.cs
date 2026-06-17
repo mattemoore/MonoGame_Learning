@@ -1,4 +1,5 @@
 using System;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using MonoGame.Extended.Graphics;
 
@@ -17,27 +18,38 @@ public static class PlayerSprite
     public const string AnimationGetUp = "getup";
     private const double FrameDuration = 0.1;
 
-    public static AnimatedSprite GetPlayerSprite(ContentManager content)
+    private static SpriteSheet _spriteSheet;
+    private static bool _loaded;
+
+    public static void Load(ContentManager content)
     {
+        if (_loaded) return;
+        _loaded = true;
+
         Texture2DAtlas atlas = content.Load<Texture2DAtlas>("images/adventurer");
-        SpriteSheet spriteSheet = new("adventurer", atlas);
+        _spriteSheet = new("adventurer", atlas);
 
-        DefineAnimation(spriteSheet, AnimationIdle, "adventurer-idle", 4, true);
-        DefineAnimation(spriteSheet, AnimationAttack1, "adventurer-attack1", 4, false);
-        DefineAnimation(spriteSheet, AnimationAttack2, "adventurer-attack2", 4, false);
-        DefineAnimation(spriteSheet, AnimationAttack3, "adventurer-attack3", 4, false);
-        DefineAnimation(spriteSheet, AnimationRun, "adventurer-run", 6, true);
-        DefineAnimation(spriteSheet, AnimationHurt, "adventurer-hurt", 3, false);
-        DefineAnimation(spriteSheet, AnimationDie, "adventurer-die", 7, false);
-        DefineAnimation(spriteSheet, AnimationFall, "adventurer-fall", 2, false);
-        DefineAnimation(spriteSheet, AnimationGetUp, "adventurer-stand", 3, false);
-
-        return new(spriteSheet, AnimationIdle);
+        DefineAnimation(AnimationIdle, "adventurer-idle", 4, true);
+        DefineAnimation(AnimationAttack1, "adventurer-attack1", 4, false);
+        DefineAnimation(AnimationAttack2, "adventurer-attack2", 4, false);
+        DefineAnimation(AnimationAttack3, "adventurer-attack3", 4, false);
+        DefineAnimation(AnimationRun, "adventurer-run", 6, true);
+        DefineAnimation(AnimationHurt, "adventurer-hurt", 3, false);
+        DefineAnimation(AnimationDie, "adventurer-die", 7, false);
+        DefineAnimation(AnimationFall, "adventurer-fall", 2, false);
+        DefineAnimation(AnimationGetUp, "adventurer-stand", 3, false);
     }
 
-    private static void DefineAnimation(SpriteSheet spriteSheet, string animationName, string prefix, int frameCount, bool isLooping)
+    public static AnimatedSprite Create()
     {
-        spriteSheet.DefineAnimation(animationName, builder =>
+        var sprite = new AnimatedSprite(_spriteSheet, AnimationIdle);
+        sprite.Origin = new Vector2(sprite.Size.X / 2f, sprite.Size.Y / 2f);
+        return sprite;
+    }
+
+    private static void DefineAnimation(string animationName, string prefix, int frameCount, bool isLooping)
+    {
+        _spriteSheet.DefineAnimation(animationName, builder =>
         {
             builder.IsLooping(isLooping);
             for (int i = 0; i < frameCount; i++)

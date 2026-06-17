@@ -1,8 +1,7 @@
 # TODO
-- Is `SpatialEntity` the right base for non-rendering entities (trigger zones, etc.) or should there be a lighter-weight interface?
-  - `TestCollisionEntity` and `TestActor` extend `SpatialEntity` and bolt on `ICollisionActor` / `TakeDamage`, effectively re-implementing parts of `ActorEntity`. This suggests the split between "has a frame" and "is an actor" might not be clean.
-  - Consider whether the test pattern (extending `SpatialEntity` directly) indicates the hierarchy should be flatter, or whether the base classes are well-factored and the test stubs are just pragmatic.
 
-- `OilDrumEntity` extends `ActorEntity` but is a simple prop with no state machine, no movement, and no combat logic. Review whether a lighter base (e.g., directly extending `SpatialEntity` with `ICollisionActor` and `IDamageable`) would be more appropriate for non-combatant breakable props.
+1. Refactor out so that all props get damaged and have same state machine
 
-- `ActorEntity.TakeDamage` is a `virtual` no-op that is never called by `PlayerEntity.TakeDamage` or `OilDrumEntity.TakeDamage` (neither calls `base.TakeDamage()`). Decide whether: (a) the base should be `abstract` instead, (b) overrides should call `base.TakeDamage()` for shared logic, or (c) the current pattern is fine.
+2. Move props and player1 loading into level1.cs.  Make reset() in GameLoop call Level.load() or something similar.  Also make sure on level unload all things are released like sprites etc.
+
+3.
