@@ -1,5 +1,6 @@
 using System;
 using Microsoft.Xna.Framework;
+using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Game.GameLoop;
 
 namespace MonoGameLearning.Game.Tests;
@@ -22,7 +23,7 @@ public class OilDrumLifecycleTests
     {
         var entity = new TestDamageableEntity("drum", Vector2.Zero, 50, 50);
         int callCount = 0;
-        Action<TestDamageableEntity> handler = _ => callCount++;
+        Action<PropEntity> handler = _ => callCount++;
         entity.Destroyed += handler;
         entity.TakeDamage(50);
         entity.Destroyed -= handler;

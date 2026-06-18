@@ -21,18 +21,18 @@ Establish the high-level states of the application to support game transitions.
 
 ---
 
-## [ ] Milestone 2: Combat Engine (Hitboxes, Hurtboxes, and Health)
+## [X] Milestone 2: Combat Engine (Hitboxes, Hurtboxes, and Health)
 
 Implement the core collision-based combat mechanics.
 
-- [ ] **Hitbox/Hurtbox Component**:
+- [X] **Hitbox/Hurtbox Component**:
   - [X] Add support for defining attack `Hitboxes`
   - [X] Add support for `Hurtboxes` (collision areas on actors that can receive damage).
   - [X] Implement overlap check: when a `Hitbox` overlaps an active enemy's `Hurtbox`, trigger a hit.
 - [ ] **Health System**:
   - [X] Add `Health` (Current / Max) to `ActorEntity`.
   - [X] Add basic damage processing and damage invincibility frames (i-frames) after being hit.
-- [ ] **Hit States**:
+- [X] **Hit States**:
   - [X] Implement a "HitStun" state (actor is temporarily unable to move/attack).
   - [X] **Destroyable Prop Support**: Add `IDamageable` interface to allow non-combatant entities (garbage cans, barrels) to receive damage. See [plan](.kilo/plans/add-prop-support.md).
   - [X] Implement a "Knockdown" state (actor is knocked onto the floor, becomes invulnerable, then stands back up).
