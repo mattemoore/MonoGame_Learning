@@ -240,7 +240,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         return drum;
     }
 
-    private void OnOilDrumDestroyed(OilDrumEntity drum)
+    private void OnOilDrumDestroyed(PropEntity drum)
     {
         drum.Destroyed -= OnOilDrumDestroyed;
         _props.Remove(drum);

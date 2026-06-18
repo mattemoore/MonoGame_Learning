@@ -127,13 +127,12 @@ public class OilDrumStateControllerTests
 public class TestDamageableEntity : PropEntity
 {
     private readonly OilDrumStateController _stateController;
-    public int Health { get; private set; } = 6;
-    public bool IsAlive => Health > 0;
-    public event Action<TestDamageableEntity>? Destroyed;
 
     public TestDamageableEntity(string name, Vector2 position, int width, int height)
         : base(name, position, width, height)
     {
+        Health = 6;
+        MaxHealth = 6;
         _stateController = new();
     }
 
@@ -150,7 +149,8 @@ public class TestDamageableEntity : PropEntity
 
         if (Health <= 0)
         {
-            Destroyed?.Invoke(this);
+            IsAlive = false;
+            OnDestroyed();
             return;
         }
 
