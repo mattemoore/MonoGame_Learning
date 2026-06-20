@@ -94,5 +94,19 @@ public abstract class ActorEntity : SpatialEntity, ICollisionActor, IAnimated, I
 
     public void ResetAnimationFrameIndex() => _frameTracker.Reset();
 
+    protected void UpdateFacingDirection(Vector2 direction)
+    {
+        if (direction.X < 0 && Direction != FacingDirection.Left)
+        {
+            Direction = FacingDirection.Left;
+            Sprite.Effect = SpriteEffects.FlipHorizontally;
+        }
+        else if (direction.X > 0 && Direction != FacingDirection.Right)
+        {
+            Direction = FacingDirection.Right;
+            Sprite.Effect = SpriteEffects.None;
+        }
+    }
+
     public abstract void TakeDamage(int amount, bool knockdown = false);
 }

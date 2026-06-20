@@ -15,6 +15,7 @@ public class PlayerEntity : ActorEntity, ICombatant
 {
     private PlayerStateController _stateController;
     private int _knockdownPhase;
+    private float _invincibilityTimer;
     public int Health { get; private set; }
     public int MaxHealth { get; } = 100;
     public bool IsAlive => Health > 0;
@@ -27,6 +28,8 @@ public class PlayerEntity : ActorEntity, ICombatant
                         AnimatedSprite sprite) : base(name, position, scale, sprite)
     {
         Health = MaxHealth;
+        Width = 48;
+        Height = 60;
         _stateController = CreateStateController();
     }
 
@@ -87,6 +90,9 @@ public class PlayerEntity : ActorEntity, ICombatant
 
     public override void Update(GameTime gameTime)
     {
+        if (_invincibilityTimer > 0)
+            _invincibilityTimer = Math.Max(0, _invincibilityTimer - (float)gameTime.ElapsedGameTime.TotalSeconds);
+
         if (_stateController.State is PlayerState.Dead or PlayerState.Dying or PlayerState.Hurt or PlayerState.KnockedDown)
         {
             MovementDirection = Vector2.Zero;
@@ -111,20 +117,6 @@ public class PlayerEntity : ActorEntity, ICombatant
         base.Update(gameTime);
     }
 
-    private void UpdateFacingDirection(Vector2 direction)
-    {
-        if (direction.X < 0 && Direction != FacingDirection.Left)
-        {
-            Direction = FacingDirection.Left;
-            Sprite.Effect = SpriteEffects.FlipHorizontally;
-        }
-        else if (direction.X > 0 && Direction != FacingDirection.Right)
-        {
-            Direction = FacingDirection.Right;
-            Sprite.Effect = SpriteEffects.None;
-        }
-    }
-
     private static Vector2 PreventDiagonal(Vector2 direction) =>
         Math.Abs(direction.X) > Math.Abs(direction.Y)
             ? new Vector2(direction.X, 0)
@@ -136,7 +128,7 @@ public class PlayerEntity : ActorEntity, ICombatant
 
     public override void TakeDamage(int amount, bool knockdown = false)
     {
-        if (!IsAlive || _stateController.State == PlayerState.KnockedDown) return;
+        if (!IsAlive || _invincibilityTimer > 0 || _stateController.State == PlayerState.KnockedDown) return;
 
         Health = Math.Max(0, Health - amount);
 
@@ -146,10 +138,12 @@ public class PlayerEntity : ActorEntity, ICombatant
         }
         else if (knockdown)
         {
+            _invincibilityTimer = 1.5f;
             _stateController.Fire(PlayerTrigger.TakeKnockdown);
         }
         else
         {
+            _invincibilityTimer = 1.0f;
             _stateController.Fire(PlayerTrigger.TakeDamage);
         }
     }
