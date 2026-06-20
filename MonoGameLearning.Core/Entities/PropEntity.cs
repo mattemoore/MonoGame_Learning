@@ -57,10 +57,7 @@ public abstract class PropEntity : SpatialEntity, ICollisionActor, IDamageable
         spriteBatch.DrawRectangle(Frame, Color.Blue);
     }
 
-    public virtual void OnCollision(CollisionEventArgs collisionInfo)
-    {
-        Position -= collisionInfo.PenetrationVector;
-    }
+    public virtual void OnCollision(CollisionEventArgs collisionInfo) { }
 
     public virtual void TakeDamage(int amount, bool knockdown = false)
     {
