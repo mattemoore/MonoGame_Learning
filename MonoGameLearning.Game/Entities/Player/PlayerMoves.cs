@@ -16,8 +16,8 @@ public static class PlayerMoves
             Damage = 5,
             FrameHitboxes = new()
             {
-                [1] = [new() { Offset = new Vector2(60, 0), Size = new Point(40, 40) }],
-                [2] = [new() { Offset = new Vector2(60, 0), Size = new Point(40, 40) }],
+                [1] = [new() { Offset = new Vector2(35, 0), Size = new Point(45, 40) }],
+                [2] = [new() { Offset = new Vector2(35, 0), Size = new Point(45, 40) }],
             }
         },
         ["attack2"] = new()
@@ -27,8 +27,8 @@ public static class PlayerMoves
             Damage = 8,
             FrameHitboxes = new()
             {
-                [1] = [new() { Offset = new Vector2(70, -10), Size = new Point(50, 50) }],
-                [2] = [new() { Offset = new Vector2(70, -10), Size = new Point(50, 50) }],
+                [1] = [new() { Offset = new Vector2(45, -10), Size = new Point(50, 50) }],
+                [2] = [new() { Offset = new Vector2(45, -10), Size = new Point(50, 50) }],
             }
         },
         ["attack3"] = new()
@@ -39,7 +39,7 @@ public static class PlayerMoves
             Knockdown = true,
             FrameHitboxes = new()
             {
-                [2] = [new() { Offset = new Vector2(80, 0), Size = new Point(60, 40) }],
+                [2] = [new() { Offset = new Vector2(50, 0), Size = new Point(55, 40) }],
             }
         },
     };

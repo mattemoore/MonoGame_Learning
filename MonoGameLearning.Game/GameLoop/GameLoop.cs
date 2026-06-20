@@ -13,6 +13,7 @@ using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Interfaces;
 using MonoGameLearning.Core.GameCore;
 using MonoGameLearning.Core.Input;
+using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.Entities.Player;
 using MonoGameLearning.Game.Entities.Props;
 using MonoGameLearning.Game.Levels;
@@ -29,9 +30,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     public const int RESOLUTION_HEIGHT = 768;
     public const bool IS_FULL_SCREEN = false;
     private PlayerEntity _player;
-    // _player1 reserved for future co-op support — instantiated, added to entities/collision,
-    // but not yet wired to input. Kept alive in the loop to prevent rot.
-    private PlayerEntity _player1;
+    private List<EnemyEntity> _enemies;
     private Level _currentLevel;
     private List<ActorEntity> _actorEntities;
     private List<PropEntity> _props;
@@ -96,25 +95,35 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
         PlayerSprite.Load(Content);
         AnimatedSprite playerSprite = PlayerSprite.Create();
-        AnimatedSprite playerSprite1 = PlayerSprite.Create();
         _player = new PlayerEntity("player", new Vector2(100, 450), 2.0f, playerSprite);
         _player.Died += OnPlayerDied;
-        _player1 = new PlayerEntity("player1", new Vector2(150, 500), 2.0f, playerSprite1);
-        _actorEntities = [_player, _player1];
+        _actorEntities = [_player];
+
+        EnemySprite.Load(Content);
+        _enemies =
+        [
+            CreateEnemy("enemy1", new Vector2(500, 550)),
+            CreateEnemy("enemy2", new Vector2(700, 550))
+        ];
 
         OilDrumSprite.Load(Content);
         _props =
         [
             CreateOilDrum("can1", new Vector2(700, 450)),
             CreateOilDrum("can2", new Vector2(900, 450)),
-            CreateOilDrum("can3", new Vector2(800, 350))
+            CreateOilDrum("can3", new Vector2(800, 450))
         ];
 
-        _entities = [.. _actorEntities, .. _props];
+        _entities = [.. _actorEntities, .. _enemies, .. _props];
 
         foreach (var entity in _actorEntities)
         {
             entity.HitboxService = _hitboxService;
+        }
+
+        foreach (var enemy in _enemies)
+        {
+            enemy.HitboxService = _hitboxService;
         }
 
         _cameraController = new CameraController(_player, GAME_WIDTH, GAME_HEIGHT, GAME_WIDTH * 2);
@@ -122,6 +131,11 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         foreach (var entity in _actorEntities)
         {
             _collision.Insert(entity);
+        }
+
+        foreach (var enemy in _enemies)
+        {
+            _collision.Insert(enemy);
         }
     }
 
@@ -139,6 +153,9 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             foreach (var entity in _actorEntities)
                 entity.MovementBounds = _currentLevel.MovementBounds;
 
+            foreach (var enemy in _enemies)
+                enemy.MovementBounds = _currentLevel.MovementBounds;
+
             _currentLevel.Update(gameTime);
 
             foreach (var entity in _entities)
@@ -148,10 +165,12 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
             _hitTargets.Clear();
             _hitTargets.AddRange(_actorEntities);
+            _hitTargets.AddRange(_enemies);
             _hitTargets.AddRange(_props);
             var hitResults = _hitboxService.ResolveHits(_hitTargets);
             foreach (var hit in hitResults)
             {
+                if (hit.Source is EnemyEntity && hit.Target is EnemyEntity) continue;
                 if (hit.Target is IDamageable damageable)
                 {
                     damageable.TakeDamage(hit.Damage, knockdown: hit.Knockdown);
@@ -162,6 +181,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             foreach (var entity in _actorEntities)
             {
                 entity.ClampToBounds();
+            }
+            foreach (var enemy in _enemies)
+            {
+                enemy.ClampToBounds();
             }
         }
 
@@ -193,6 +216,15 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                 }
             }
 
+            foreach (var enemy in _enemies)
+            {
+                if (cameraBounds.Intersects(enemy.Frame))
+                {
+                    enemy.Draw(SpriteBatch);
+                    _numEntitiesDrawn++;
+                }
+            }
+
             foreach (var prop in _props)
             {
                 if (cameraBounds.Intersects(prop.Frame))
@@ -211,6 +243,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                 foreach (var prop in _props)
                 {
                     prop.DrawDebug(SpriteBatch);
+                }
+                foreach (var enemy in _enemies)
+                {
+                    enemy.DrawDebug(SpriteBatch);
                 }
                 _currentLevel.DrawDebug(SpriteBatch);
                 _debugWindow1.Text = $"FPS: {FPSCounter.FramesPerSecond}\n" +
@@ -245,7 +281,24 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         drum.Destroyed -= OnOilDrumDestroyed;
         _props.Remove(drum);
         _collision.Remove(drum);
-        _entities = [.. _actorEntities, .. _props];
+        _entities = [.. _actorEntities, .. _enemies, .. _props];
+    }
+
+    private EnemyEntity CreateEnemy(string name, Vector2 position)
+    {
+        var enemy = new EnemyEntity(name, position, 2.0f, EnemySprite.Create());
+        enemy.Target = _player;
+        enemy.Died += OnEnemyDied;
+        return enemy;
+    }
+
+    private void OnEnemyDied(object sender, EventArgs e)
+    {
+        if (sender is not EnemyEntity enemy) return;
+        enemy.Died -= OnEnemyDied;
+        _enemies.Remove(enemy);
+        _collision.Remove(enemy);
+        _entities = [.. _actorEntities, .. _enemies, .. _props];
     }
 
     private void OnActionTriggered(InputAction action)
@@ -296,17 +349,25 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     {
         _hitboxService.ClearAll();
         _player.Reset(new Vector2(100, 450));
-        _player1.Reset(new Vector2(150, 500));
 
         _props.Clear();
+        _enemies.Clear();
 
         _props.Add(CreateOilDrum("can1", new Vector2(700, 450)));
         _props.Add(CreateOilDrum("can2", new Vector2(900, 450)));
-        _props.Add(CreateOilDrum("can3", new Vector2(800, 350)));
+        _props.Add(CreateOilDrum("can3", new Vector2(800, 450)));
+
+        _enemies.Add(CreateEnemy("enemy1", new Vector2(500, 550)));
+        _enemies.Add(CreateEnemy("enemy2", new Vector2(700, 550)));
 
         foreach (var entity in _actorEntities)
         {
             entity.HitboxService = _hitboxService;
+        }
+
+        foreach (var enemy in _enemies)
+        {
+            enemy.HitboxService = _hitboxService;
         }
 
         _collision = new CollisionComponent(new RectangleF(0, 0, GAME_WIDTH * 2, GAME_HEIGHT));
@@ -314,12 +375,16 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         {
             _collision.Insert(entity);
         }
+        foreach (var enemy in _enemies)
+        {
+            _collision.Insert(enemy);
+        }
         foreach (var prop in _props)
         {
             _collision.Insert(prop);
         }
 
-        _entities = [.. _actorEntities, .. _props];
+        _entities = [.. _actorEntities, .. _enemies, .. _props];
         _currentLevel = new Level1(Content, GAME_WIDTH, GAME_HEIGHT);
     }
 }
