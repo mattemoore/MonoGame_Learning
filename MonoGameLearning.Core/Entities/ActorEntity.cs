@@ -13,6 +13,7 @@ public abstract class ActorEntity : SpatialEntity, ICollisionActor, IAnimated, I
 {
     public AnimatedSprite Sprite { get; private set; }
     public float Scale { get; private set; }
+    public string LayerName => "actors";
     public IShapeF Bounds => Frame;
 
     public RectangleF MovementBounds { get; set; }

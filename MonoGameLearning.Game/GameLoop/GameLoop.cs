@@ -52,6 +52,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _input = new InputManager();
         _input.ActionTriggered += OnActionTriggered;
         _collision = new CollisionComponent(new RectangleF(0, 0, GAME_WIDTH * 2, GAME_HEIGHT));
+        _collision.Add("actors", new MonoGame.Extended.Collisions.Layers.Layer(new MonoGame.Extended.Collisions.QuadTree.QuadTreeSpace(new RectangleF(0, 0, GAME_WIDTH * 2, GAME_HEIGHT))));
         _hitboxService = new();
 
         _gameState = new GameStateController();
@@ -371,6 +372,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         }
 
         _collision = new CollisionComponent(new RectangleF(0, 0, GAME_WIDTH * 2, GAME_HEIGHT));
+        _collision.Add("actors", new MonoGame.Extended.Collisions.Layers.Layer(new MonoGame.Extended.Collisions.QuadTree.QuadTreeSpace(new RectangleF(0, 0, GAME_WIDTH * 2, GAME_HEIGHT))));
         foreach (var entity in _actorEntities)
         {
             _collision.Insert(entity);
