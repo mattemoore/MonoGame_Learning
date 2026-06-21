@@ -1,8 +1,4 @@
-using System;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using MonoGame.Extended;
-using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;

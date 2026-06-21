@@ -1,4 +1,3 @@
-using System;
 using Microsoft.Xna.Framework;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
