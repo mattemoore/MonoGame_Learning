@@ -22,6 +22,8 @@ public abstract class ActorEntity : SpatialEntity, ICollisionActor, IAnimated, I
     public HitboxService HitboxService { get; set; }
     public MoveData CurrentMove { get; set; }
     public FacingDirection Direction { get; set; } = FacingDirection.Right;
+    public int Health { get; protected set; }
+    public int MaxHealth { get; protected set; }
 
     private readonly AnimationFrameTracker _frameTracker = new();
 
@@ -86,6 +88,9 @@ public abstract class ActorEntity : SpatialEntity, ICollisionActor, IAnimated, I
             foreach (var bounds in HitboxService.GetActiveHitboxBounds(this))
                 spriteBatch.DrawRectangle(bounds, Color.Red);
         }
+
+        if (GameCore.GameCore.DebugFont is not null)
+            HealthDisplay.Draw(spriteBatch, Frame, Health, MaxHealth);
     }
 
     public virtual void OnCollision(CollisionEventArgs collisionInfo)

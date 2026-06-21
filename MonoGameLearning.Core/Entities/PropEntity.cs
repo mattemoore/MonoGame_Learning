@@ -55,6 +55,9 @@ public abstract class PropEntity : SpatialEntity, ICollisionActor, IDamageable
     {
         base.DrawDebug(spriteBatch);
         spriteBatch.DrawRectangle(Frame, Color.Blue);
+
+        if (GameCore.GameCore.DebugFont is not null)
+            HealthDisplay.Draw(spriteBatch, Frame, Health, MaxHealth);
     }
 
     public virtual void OnCollision(CollisionEventArgs collisionInfo) { }

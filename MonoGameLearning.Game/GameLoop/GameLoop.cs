@@ -92,6 +92,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     {
         base.LoadContent();
 
+        GameCore.DebugFont = Content.Load<SpriteFont>("fonts/DebugFont");
+
         _currentLevel = new Level1(Content, GAME_WIDTH, GAME_HEIGHT);
 
         PlayerSprite.Load(Content);
