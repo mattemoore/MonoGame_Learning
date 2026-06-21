@@ -136,7 +136,7 @@ public class TestDamageableEntity : Entity, IDamageable, IHasHealth, ICollisionA
     public int Health => _health.Value;
     public int MaxHealth => _health.MaxHealth;
     public bool IsAlive => _health.IsAlive;
-    public event Action<Entity> Destroyed;
+    public event Action<Entity> Destroyed = null!;
 
     public TestDamageableEntity(string name, Vector2 position, int width, int height)
         : base(name, position, width, height)
