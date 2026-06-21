@@ -16,7 +16,9 @@ public class TestSpatialEntity : Entity, ICombatant, ICollisionActor
     public int Health => _health.Value;
     public int MaxHealth => _health.MaxHealth;
     public bool IsAlive => _health.IsAlive;
-    public event EventHandler Died;
+#pragma warning disable CS0067, CS0414
+    public event EventHandler Died = null!;
+#pragma warning restore CS0067, CS0414
 
     public TestSpatialEntity(string name, Vector2 position, int width, int height, Faction faction = default)
         : base(name, position, width, height)
