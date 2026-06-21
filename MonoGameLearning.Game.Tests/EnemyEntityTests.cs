@@ -1,11 +1,9 @@
-using System;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Helpers;
-using MonoGameLearning.Core.Entities.Interfaces;
 using MonoGameLearning.Game.Entities.Enemy;
 
 namespace MonoGameLearning.Game.Tests;
