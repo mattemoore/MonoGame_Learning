@@ -96,3 +96,10 @@
 /processorParam:TextureFormat=Color
 /build:images/logo.png
 
+#begin fonts/DebugFont.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:fonts/DebugFont.spritefont
+

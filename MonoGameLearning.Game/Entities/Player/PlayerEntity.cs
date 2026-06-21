@@ -16,8 +16,6 @@ public class PlayerEntity : ActorEntity, ICombatant
     private PlayerStateController _stateController;
     private int _knockdownPhase;
     private float _invincibilityTimer;
-    public int Health { get; private set; }
-    public int MaxHealth { get; } = 100;
     public bool IsAlive => Health > 0;
     public event EventHandler Died;
     private AttackType _pendingAttackType;
@@ -27,6 +25,7 @@ public class PlayerEntity : ActorEntity, ICombatant
                         float scale,
                         AnimatedSprite sprite) : base(name, position, scale, sprite)
     {
+        MaxHealth = 100;
         Health = MaxHealth;
         Width = 48;
         Height = 60;

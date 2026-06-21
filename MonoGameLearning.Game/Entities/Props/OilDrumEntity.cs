@@ -47,6 +47,10 @@ public class OilDrumEntity : PropEntity
     {
         if (_stateController.State == OilDrumState.HitStun) return;
 
+        // Non-linear damage scaling gives heavy attacks a disproportionate advantage
+        // against solid objects vs chip damage. Simple HP scaling keeps ratios linear
+        // (Attack3 always 2.4× Attack1). This table makes Attack3 feel 3× more
+        // effective while preventing light attacks from feeling tedious. Game feel tuning.
         int effectiveDamage = amount switch
         {
             >= 12 => 6,

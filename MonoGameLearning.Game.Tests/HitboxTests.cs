@@ -5,13 +5,18 @@ using MonoGameLearning.Core.Entities;
 
 namespace MonoGameLearning.Game.Tests;
 
-public class TestSpatialEntity(string name, Vector2 position, int width, int height)
-    : ActorEntity(name, position, width, height), ICombatant
+public class TestSpatialEntity : ActorEntity, ICombatant
 {
-    public int Health { get; private set; } = 100;
-    public int MaxHealth => 100;
     public bool IsAlive => Health > 0;
     public event EventHandler? Died;
+
+    public TestSpatialEntity(string name, Vector2 position, int width, int height)
+        : base(name, position, width, height)
+    {
+        MaxHealth = 100;
+        Health = 100;
+    }
+
     public override void TakeDamage(int amount, bool knockdown = false) => Health -= amount;
 }
 

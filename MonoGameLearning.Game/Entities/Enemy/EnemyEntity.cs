@@ -19,8 +19,6 @@ public class EnemyEntity : ActorEntity, ICombatant
     private float _directionUpdateTimer;
     private const float AttackDelayDuration = 1.0f;
     private const float DirectionUpdateInterval = 0.35f;
-    public int Health { get; private set; }
-    public int MaxHealth { get; } = 30;
     public bool IsAlive => Health > 0;
     public event EventHandler Died;
     public ActorEntity Target { get; set; }
@@ -32,6 +30,7 @@ public class EnemyEntity : ActorEntity, ICombatant
                        float scale,
                        AnimatedSprite sprite) : base(name, position, scale, sprite)
     {
+        MaxHealth = 30;
         Health = MaxHealth;
         Speed = 120f;
         Sprite.Color = Color.Red;

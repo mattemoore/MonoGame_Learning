@@ -8,8 +8,6 @@ namespace MonoGameLearning.Game.Tests;
 public class TestEnemyEntity : ActorEntity
 {
     public EnemyStateController StateController { get; }
-    public int Health { get; private set; }
-    public int MaxHealth { get; } = 30;
     public bool IsAlive => Health > 0;
     public event EventHandler? Died;
     public ActorEntity? Target { get; set; }
@@ -23,6 +21,7 @@ public class TestEnemyEntity : ActorEntity
     public TestEnemyEntity(string name, Vector2 position, int width, int height)
         : base(name, position, width, height)
     {
+        MaxHealth = 30;
         Health = MaxHealth;
         Speed = 120f;
         StateController = new EnemyStateController(new()
