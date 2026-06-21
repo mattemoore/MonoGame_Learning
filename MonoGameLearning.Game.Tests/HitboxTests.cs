@@ -1,30 +1,47 @@
 using System;
 using Microsoft.Xna.Framework;
+using MonoGame.Extended;
+using MonoGame.Extended.Collisions;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Helpers;
+using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Game.Tests;
 
-public class TestSpatialEntity : ActorEntity, ICombatant
+public class TestSpatialEntity : Entity, ICombatant, ICollisionActor
 {
-    public bool IsAlive => Health > 0;
-    public event EventHandler? Died;
+    private readonly Health _health;
+    public IShapeF Bounds => Frame;
+    public Faction Faction { get; protected set; }
+    public int Health => _health.Value;
+    public int MaxHealth => _health.MaxHealth;
+    public bool IsAlive => _health.IsAlive;
+    public event EventHandler Died;
 
-    public TestSpatialEntity(string name, Vector2 position, int width, int height)
+    public TestSpatialEntity(string name, Vector2 position, int width, int height, Faction faction = default)
         : base(name, position, width, height)
     {
-        MaxHealth = 100;
-        Health = 100;
+        _health = new(100);
+        Faction = faction;
     }
 
-    public override void TakeDamage(int amount, bool knockdown = false) => Health -= amount;
+    public void TakeDamage(DamageInfo info) => CombatService.ApplyDamage(this, info);
+
+    bool ICombatant.CanTakeDamage() => _health.IsAlive;
+    void ICombatant.ReduceHealth(int amount) => _health.Subtract(amount);
+    void ICombatant.OnDeath() { }
+    void ICombatant.OnKnockdown(DamageInfo info) { }
+    void ICombatant.OnHit(DamageInfo info) { }
+
+    public void OnCollision(CollisionEventArgs collisionInfo) { }
 }
 
 [TestFixture]
 public class HitboxTests
 {
-    private static TestSpatialEntity MakeActor(float x, float y, int size = 50) =>
-        new("actor", new Vector2(x, y), size, size);
+    private static TestSpatialEntity MakeActor(float x, float y, int size = 50, Faction faction = Faction.Enemy) =>
+        new("actor", new Vector2(x, y), size, size, faction);
 
     private static MoveData MakeTestMove(int damage = 10) => new()
     {
@@ -36,10 +53,6 @@ public class HitboxTests
             [0] = [new() { Offset = new Vector2(30, 0), Size = new Point(40, 40) }],
         }
     };
-
-    // ==============================================
-    // HitboxData.CreateRectangle
-    // ==============================================
 
     [Test]
     public void CreateRectangle_RightFacing()
@@ -64,10 +77,6 @@ public class HitboxTests
         Assert.That(rect.Width, Is.EqualTo(40));
         Assert.That(rect.Height, Is.EqualTo(40));
     }
-
-    // ==============================================
-    // MoveData.FrameHitboxes lookup
-    // ==============================================
 
     [Test]
     public void FrameHitboxLookup_ValidFrame()
@@ -96,15 +105,11 @@ public class HitboxTests
         Assert.That(hitboxes, Is.Null);
     }
 
-    // ==============================================
-    // HitboxService — hit detection
-    // ==============================================
-
     [Test]
     public void RegisterAndResolve_Hit()
     {
         var service = new HitboxService();
-        var owner = MakeActor(0, 0);
+        var owner = MakeActor(0, 0, faction: Faction.Player);
         var target = MakeActor(35, 0);
         var move = MakeTestMove();
 
@@ -148,7 +153,7 @@ public class HitboxTests
     public void DoubleHitPrevention()
     {
         var service = new HitboxService();
-        var owner = MakeActor(0, 0);
+        var owner = MakeActor(0, 0, faction: Faction.Player);
         var target = MakeActor(35, 0);
         var move = MakeTestMove();
 
@@ -163,7 +168,7 @@ public class HitboxTests
     public void ClearsAfterResolve()
     {
         var service = new HitboxService();
-        var owner = MakeActor(0, 0);
+        var owner = MakeActor(0, 0, faction: Faction.Player);
         var target = MakeActor(35, 0);
         var move = MakeTestMove();
 
@@ -179,7 +184,7 @@ public class HitboxTests
     public void MultipleTargets_OnlyOverlappingGetsHit()
     {
         var service = new HitboxService();
-        var owner = MakeActor(0, 0);
+        var owner = MakeActor(0, 0, faction: Faction.Player);
         var target1 = MakeActor(35, 0);
         var target2 = MakeActor(200, 0);
         var move = MakeTestMove();
@@ -195,7 +200,7 @@ public class HitboxTests
     public void TakeDamage_ReducesHealth()
     {
         var target = MakeActor(0, 0, 50);
-        target.TakeDamage(25);
+        target.TakeDamage(new DamageInfo { Amount = 25 });
         Assert.That(target.Health, Is.EqualTo(75));
     }
 
@@ -203,7 +208,7 @@ public class HitboxTests
     public void HitboxService_HitAppliesDamage()
     {
         var service = new HitboxService();
-        var owner = MakeActor(0, 0);
+        var owner = MakeActor(0, 0, faction: Faction.Player);
         var target = MakeActor(35, 0);
         var move = MakeTestMove(damage: 7);
 
@@ -214,7 +219,63 @@ public class HitboxTests
         Assert.That(hits[0].Damage, Is.EqualTo(7));
 
         if (hits[0].Target is ICombatant combatant)
-            combatant.TakeDamage(hits[0].Damage);
+            combatant.TakeDamage(new DamageInfo { Amount = hits[0].Damage });
         Assert.That(target.Health, Is.EqualTo(93));
+    }
+
+    [Test]
+    public void SameFaction_NoHit()
+    {
+        var service = new HitboxService();
+        var owner = MakeActor(0, 0, faction: Faction.Player);
+        var target = MakeActor(35, 0, faction: Faction.Player);
+        var move = MakeTestMove();
+
+        service.RegisterFrameHitboxes(owner, move, 0, FacingDirection.Right);
+        var hits = service.ResolveHits([owner, target]);
+
+        Assert.That(hits, Is.Empty);
+    }
+
+    [Test]
+    public void CrossFaction_Hits()
+    {
+        var service = new HitboxService();
+        var owner = MakeActor(0, 0, faction: Faction.Player);
+        var target = MakeActor(35, 0, faction: Faction.Enemy);
+        var move = MakeTestMove();
+
+        service.RegisterFrameHitboxes(owner, move, 0, FacingDirection.Right);
+        var hits = service.ResolveHits([owner, target]);
+
+        Assert.That(hits, Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public void PropTarget_AlwaysHittable()
+    {
+        var service = new HitboxService();
+        var owner = MakeActor(0, 0, faction: Faction.Player);
+        var prop = new TestPropForHit("prop", new Vector2(35, 0), 50, 50);
+        var move = MakeTestMove();
+
+        service.RegisterFrameHitboxes(owner, move, 0, FacingDirection.Right);
+        var hits = service.ResolveHits([owner, prop]);
+
+        Assert.That(hits, Has.Count.EqualTo(1));
+        Assert.That(hits[0].Target, Is.EqualTo(prop));
+    }
+
+    private class TestPropForHit : Entity, IDamageable, IHasHealth, ICollisionActor
+    {
+        public IShapeF Bounds => Frame;
+        public int Health => 100;
+        public int MaxHealth => 100;
+
+        public TestPropForHit(string name, Vector2 position, int width, int height)
+            : base(name, position, width, height) { }
+
+        public void TakeDamage(DamageInfo info) { }
+        public void OnCollision(CollisionEventArgs collisionInfo) { }
     }
 }

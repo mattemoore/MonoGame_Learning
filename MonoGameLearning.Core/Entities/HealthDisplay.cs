@@ -8,11 +8,8 @@ public static class HealthDisplay
 {
     public static string Format(int health, int maxHealth) => $"{health}/{maxHealth}";
 
-    public static void Draw(SpriteBatch spriteBatch, RectangleF frame, int health, int maxHealth)
+    public static void Draw(SpriteBatch spriteBatch, SpriteFont font, RectangleF frame, int health, int maxHealth)
     {
-        var font = GameCore.GameCore.DebugFont;
-        if (font is null) return;
-
         var text = Format(health, maxHealth);
         var size = font.MeasureString(text);
         spriteBatch.DrawString(font, text,

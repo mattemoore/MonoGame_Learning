@@ -14,6 +14,7 @@ public static class PlayerMoves
             Name = "Punch",
             AnimationKey = PlayerSprite.AnimationAttack1,
             Damage = 5,
+            Strength = AttackStrength.Light,
             FrameHitboxes = new()
             {
                 [1] = [new() { Offset = new Vector2(35, 0), Size = new Point(45, 40) }],
@@ -25,6 +26,7 @@ public static class PlayerMoves
             Name = "Uppercut",
             AnimationKey = PlayerSprite.AnimationAttack2,
             Damage = 8,
+            Strength = AttackStrength.Medium,
             FrameHitboxes = new()
             {
                 [1] = [new() { Offset = new Vector2(45, -10), Size = new Point(50, 50) }],
@@ -37,6 +39,7 @@ public static class PlayerMoves
             AnimationKey = PlayerSprite.AnimationAttack3,
             Damage = 12,
             Knockdown = true,
+            Strength = AttackStrength.Heavy,
             FrameHitboxes = new()
             {
                 [2] = [new() { Offset = new Vector2(50, 0), Size = new Point(55, 40) }],

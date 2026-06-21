@@ -34,8 +34,6 @@ public class GameCore : Game
     public static OrthographicCamera Camera { get; private set; }
     /// <summary>Globally accessible BoxingViewportAdapter for resolution independence.</summary>
     public static BoxingViewportAdapter ViewportAdapter { get; private set; }
-    /// <summary>Globally accessible debug SpriteFont for in-world debug text.</summary>
-    public static SpriteFont DebugFont { get; set; }
 
     public bool IsDebug { get; set; }
     public FramesPerSecondCounter FPSCounter { get; } = new();

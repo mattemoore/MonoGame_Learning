@@ -1,5 +1,5 @@
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+using MonoGame.Extended;
 
 namespace MonoGameLearning.Core.Entities;
 
@@ -11,6 +11,10 @@ public abstract class Entity(string name, Vector2 position, int width, int heigh
     public int Height { get; set; } = height;
     public string Name { get; } = name;
 
-    public abstract void Update(GameTime gameTime);
-    public abstract void DrawDebug(SpriteBatch spriteBatch);
+    public RectangleF Frame => new(
+        Position.X - (Width / 2f),
+        Position.Y - (Height / 2f),
+        Width,
+        Height
+    );
 }

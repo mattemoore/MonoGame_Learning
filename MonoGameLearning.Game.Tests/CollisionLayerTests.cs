@@ -3,14 +3,30 @@ using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
+using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Game.Tests;
 
 public class TestProp(string name, Vector2 position, int width, int height)
-    : PropEntity(name, position, width, height)
+    : Entity(name, position, width, height), ICollisionActor, IDamageable, IHasHealth
 {
-    public override void TakeDamage(int amount, bool knockdown = false) { }
+    public IShapeF Bounds => Frame;
+    public int Health { get; protected set; }
+    public int MaxHealth { get; protected set; }
+
+    public void OnCollision(CollisionEventArgs collisionInfo) { }
+
+    public void TakeDamage(DamageInfo info) { }
+}
+
+public class PassThroughActor(string name, Vector2 position, int width, int height)
+    : Entity(name, position, width, height), ICollisionActor
+{
+    public IShapeF Bounds => Frame;
+
+    public void OnCollision(CollisionEventArgs collisionInfo) { }
 }
 
 [TestFixture]
@@ -37,8 +53,8 @@ public class CollisionLayerTests
     public void ActorActor_SameLayer_PassThrough()
     {
         var cc = CreateCollision();
-        var a1 = MakeActor(100, 100);
-        var a2 = MakeActor(110, 100);
+        var a1 = new PassThroughActor("actor", new Vector2(100, 100), EntitySize, EntitySize);
+        var a2 = new PassThroughActor("actor", new Vector2(110, 100), EntitySize, EntitySize);
 
         cc.Insert(a1);
         cc.Insert(a2);

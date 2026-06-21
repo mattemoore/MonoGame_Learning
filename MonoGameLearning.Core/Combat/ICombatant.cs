@@ -3,10 +3,14 @@ using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Core.Combat;
 
-public interface ICombatant : IDamageable
+public interface ICombatant : IHasHealth, IDamageable
 {
-    int Health { get; }
-    int MaxHealth { get; }
+    Faction Faction { get; }
     bool IsAlive { get; }
     event EventHandler Died;
+    bool CanTakeDamage();
+    void OnDeath();
+    void OnKnockdown(DamageInfo info);
+    void OnHit(DamageInfo info);
+    void ReduceHealth(int amount);
 }
