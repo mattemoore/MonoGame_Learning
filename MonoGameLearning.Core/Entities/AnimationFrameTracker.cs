@@ -12,7 +12,7 @@ public class AnimationFrameTracker
     public void Reset()
     {
         _frameIndex = 0;
-_lastRegisteredFrame = 0;
+        _lastRegisteredFrame = 0;
     }
 
     public void AdvanceOnFrameChange(AnimatedSprite sprite, GameTime gameTime)

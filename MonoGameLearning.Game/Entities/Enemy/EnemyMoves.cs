@@ -14,6 +14,7 @@ public static class EnemyMoves
             Name = "Punch",
             AnimationKey = EnemySprite.AnimationAttack1,
             Damage = 5,
+            Strength = AttackStrength.Light,
             FrameHitboxes = new()
             {
                 [1] = [new() { Offset = new Vector2(35, 0), Size = new Point(45, 40) }],

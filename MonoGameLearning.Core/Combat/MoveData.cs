@@ -8,5 +8,6 @@ public class MoveData
     public string AnimationKey { get; init; }
     public int Damage { get; init; }
     public bool Knockdown { get; init; }
+    public AttackStrength Strength { get; init; }
     public Dictionary<int, List<HitboxData>> FrameHitboxes { get; init; } = [];
 }

@@ -1,5 +1,9 @@
 using Microsoft.Xna.Framework;
+using MonoGame.Extended;
+using MonoGame.Extended.Collisions;
+using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Helpers;
 using MonoGameLearning.Core.Entities.Interfaces;
 using MonoGameLearning.Game.Entities.Props;
 
@@ -124,46 +128,45 @@ public class OilDrumStateControllerTests
     }
 }
 
-public class TestDamageableEntity : PropEntity
+public class TestDamageableEntity : Entity, IDamageable, IHasHealth, ICollisionActor
 {
+    private readonly Health _health;
     private readonly OilDrumStateController _stateController;
+    public IShapeF Bounds => Frame;
+    public int Health => _health.Value;
+    public int MaxHealth => _health.MaxHealth;
+    public bool IsAlive => _health.IsAlive;
+    public event Action<Entity> Destroyed;
 
     public TestDamageableEntity(string name, Vector2 position, int width, int height)
         : base(name, position, width, height)
     {
-        Health = 6;
-        MaxHealth = 6;
+        _health = new(6);
         _stateController = new();
     }
 
-    public override void TakeDamage(int amount, bool knockdown = false)
+    public void TakeDamage(DamageInfo info)
     {
-        if (!IsAlive || _stateController.State == OilDrumState.HitStun) return;
+        if (!_health.IsAlive || _stateController.State == OilDrumState.HitStun) return;
 
-        Health -= amount switch
-        {
-            >= 12 => 6,
-            >= 8 => 3,
-            _ => 2
-        };
+        int effective = info.Strength switch { AttackStrength.Heavy => 6, AttackStrength.Medium => 3, _ => 2 };
 
-        if (Health <= 0)
-        {
-            IsAlive = false;
-            OnDestroyed();
-            return;
-        }
+        _health.Subtract(effective);
 
-        _stateController.Fire(OilDrumTrigger.Hit);
+        if (!_health.IsAlive)
+            Destroyed?.Invoke(this);
+        else
+            _stateController.Fire(OilDrumTrigger.Hit);
     }
 
     public void UpdateHitStun(float deltaSeconds)
     {
-        if (!IsAlive || !_stateController.IsInState(OilDrumState.HitStun)) return;
+        if (!_health.IsAlive || !_stateController.IsInState(OilDrumState.HitStun)) return;
         _stateController.Fire(OilDrumTrigger.HitStunCompleted);
     }
 
-    public bool CanTakeDamage => IsAlive && _stateController.State != OilDrumState.HitStun;
+    public bool CanTakeDamage => _health.IsAlive && _stateController.State != OilDrumState.HitStun;
+    public void OnCollision(CollisionEventArgs collisionInfo) { }
 }
 
 [TestFixture]
@@ -177,33 +180,33 @@ public class OilDrumEntityBehaviorTests
     [Test]
     public void TakeDamage_FirstHit_ReducesHealth()
     {
-        _entity.TakeDamage(5);
+        _entity.TakeDamage(new DamageInfo { Amount = 5, Strength = AttackStrength.Light });
         Assert.That(_entity.Health, Is.EqualTo(4));
     }
 
     [Test]
     public void HitStunState_PreventsDoubleHit()
     {
-        _entity.TakeDamage(5);
+        _entity.TakeDamage(new DamageInfo { Amount = 5, Strength = AttackStrength.Light });
         int healthAfterFirst = _entity.Health;
-        _entity.TakeDamage(5);
+        _entity.TakeDamage(new DamageInfo { Amount = 5, Strength = AttackStrength.Light });
         Assert.That(_entity.Health, Is.EqualTo(healthAfterFirst));
     }
 
     [Test]
     public void HitStunCompleted_AllowsNextHit()
     {
-        _entity.TakeDamage(5);
+        _entity.TakeDamage(new DamageInfo { Amount = 5, Strength = AttackStrength.Light });
         _entity.UpdateHitStun(0);
         int healthAfterFirst = _entity.Health;
-        _entity.TakeDamage(5);
+        _entity.TakeDamage(new DamageInfo { Amount = 5, Strength = AttackStrength.Light });
         Assert.That(_entity.Health, Is.LessThan(healthAfterFirst));
     }
 
     [Test]
     public void Destroyed_WhenHealthDepleted()
     {
-        _entity.TakeDamage(50);
+        _entity.TakeDamage(new DamageInfo { Amount = 50, Strength = AttackStrength.Heavy });
         Assert.That(_entity.Health, Is.LessThanOrEqualTo(0));
         Assert.That(_entity.IsAlive, Is.False);
     }
@@ -211,37 +214,37 @@ public class OilDrumEntityBehaviorTests
     [Test]
     public void DeadEntity_IgnoresFurtherDamage()
     {
-        _entity.TakeDamage(50);
+        _entity.TakeDamage(new DamageInfo { Amount = 50, Strength = AttackStrength.Heavy });
         int healthAfterDeath = _entity.Health;
-        _entity.TakeDamage(5);
+        _entity.TakeDamage(new DamageInfo { Amount = 5, Strength = AttackStrength.Light });
         Assert.That(_entity.Health, Is.EqualTo(healthAfterDeath));
     }
 
     [Test]
-    public void DamageScaling_LowDamage_ReducesBy2()
+    public void DamageScaling_Light_ReducesBy2()
     {
-        _entity.TakeDamage(3);
+        _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Light });
         Assert.That(_entity.Health, Is.EqualTo(4));
     }
 
     [Test]
-    public void DamageScaling_HighDamage_ReducesBy6()
+    public void DamageScaling_Heavy_ReducesBy6()
     {
-        _entity.TakeDamage(12);
+        _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Heavy });
         Assert.That(_entity.Health, Is.EqualTo(0));
     }
 
     [Test]
-    public void DamageScaling_MediumDamage_ReducesBy3()
+    public void DamageScaling_Medium_ReducesBy3()
     {
-        _entity.TakeDamage(8);
+        _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Medium });
         Assert.That(_entity.Health, Is.EqualTo(3));
     }
 
     [Test]
     public void AlreadyDead_CanTakeDamage_ReturnsFalse()
     {
-        _entity.TakeDamage(50);
+        _entity.TakeDamage(new DamageInfo { Amount = 50, Strength = AttackStrength.Heavy });
         Assert.That(_entity.IsAlive, Is.False);
         Assert.That(_entity.CanTakeDamage, Is.False);
     }

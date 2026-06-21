@@ -1,29 +1,41 @@
+using System;
 using Microsoft.Xna.Framework;
+using MonoGame.Extended;
+using MonoGame.Extended.Collisions;
+using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Helpers;
 using MonoGameLearning.Core.Entities.Interfaces;
 using MonoGameLearning.Game.Entities.Enemy;
 
 namespace MonoGameLearning.Game.Tests;
 
-public class TestEnemyEntity : ActorEntity
+public class TestEnemyEntity : Entity, ICombatant, ICollisionActor
 {
+    public IShapeF Bounds => Frame;
     public EnemyStateController StateController { get; }
-    public bool IsAlive => Health > 0;
-    public event EventHandler? Died;
-    public ActorEntity? Target { get; set; }
+    public Entity Target { get; set; }
     public float AttackRange { get; set; } = 70f;
     public float MinChaseDistance { get; set; } = 60f;
     public float AttackCooldown { get; set; }
     public float AttackDelayTimer { get; set; }
     public int KnockdownPhase { get; set; }
     private const float AttackDelayDuration = 1.0f;
+    private readonly Health _health;
+
+    public Faction Faction { get; protected set; }
+    public int Health => _health.Value;
+    public int MaxHealth => _health.MaxHealth;
+    public bool IsAlive => _health.IsAlive;
+    public event EventHandler Died = null!;
+    public Vector2 MovementDirection { get; set; }
+    public float Speed { get; set; } = 120f;
+    public bool CanBeDamaged => _health.IsAlive && StateController.State != EnemyState.KnockedDown;
 
     public TestEnemyEntity(string name, Vector2 position, int width, int height)
         : base(name, position, width, height)
     {
-        MaxHealth = 30;
-        Health = MaxHealth;
-        Speed = 120f;
+        _health = new(30);
         StateController = new EnemyStateController(new()
         {
             OnIdleEntry = () => { },
@@ -36,29 +48,23 @@ public class TestEnemyEntity : ActorEntity
             OnKnockdownExit = () => { },
             OnDyingEntry = () => { },
             OnDyingExit = () => { },
-            OnDeadEntry = () => Died?.Invoke(this, EventArgs.Empty)
+            OnDeadEntry = () => RaiseDied()
         });
     }
 
-    public override void TakeDamage(int amount, bool knockdown = false)
-    {
-        if (!IsAlive || StateController.State == EnemyState.KnockedDown) return;
+    public void TakeDamage(DamageInfo info) => CombatService.ApplyDamage(this, info);
 
-        Health = Math.Max(0, Health - amount);
+    public bool CanTakeDamage => _health.IsAlive && StateController.State != EnemyState.KnockedDown;
+    void ICombatant.ReduceHealth(int amount) => _health.Subtract(amount);
 
-        if (Health <= 0)
-        {
-            StateController.Fire(EnemyTrigger.Die);
-        }
-        else if (knockdown)
-        {
-            StateController.Fire(EnemyTrigger.TakeKnockdown);
-        }
-        else
-        {
-            StateController.Fire(EnemyTrigger.TakeDamage);
-        }
-    }
+    bool ICombatant.CanTakeDamage() => _health.IsAlive && StateController.State != EnemyState.KnockedDown;
+    void ICombatant.OnDeath() => StateController.Fire(EnemyTrigger.Die);
+    void ICombatant.OnKnockdown(DamageInfo info) => StateController.Fire(EnemyTrigger.TakeKnockdown);
+    void ICombatant.OnHit(DamageInfo info) => StateController.Fire(EnemyTrigger.TakeDamage);
+
+    private void RaiseDied() => Died?.Invoke(this, EventArgs.Empty);
+
+    public void OnCollision(CollisionEventArgs collisionInfo) { }
 
     public void UpdateAI(float deltaSeconds)
     {
@@ -119,13 +125,9 @@ public class TestEnemyEntity : ActorEntity
         if (StateController.State == EnemyState.KnockedDown)
         {
             if (KnockdownPhase == 0)
-            {
                 KnockdownPhase = 1;
-            }
             else
-            {
                 StateController.Fire(EnemyTrigger.KnockdownCompleted);
-            }
             return;
         }
 
@@ -142,8 +144,6 @@ public class TestEnemyEntity : ActorEntity
         AttackCooldown = 1.5f;
         return EnemyTrigger.AttackCompleted;
     }
-
-    public bool CanTakeDamage => IsAlive && StateController.State != EnemyState.KnockedDown;
 }
 
 [TestFixture]
@@ -170,14 +170,14 @@ public class EnemyEntityBehaviorTests
     [Test]
     public void TakeDamage_ReducesHealth()
     {
-        _entity.TakeDamage(10);
+        _entity.TakeDamage(new DamageInfo { Amount = 10 });
         Assert.That(_entity.Health, Is.EqualTo(20));
     }
 
     [Test]
     public void TakeDamage_ToZero_TriggersDeath()
     {
-        _entity.TakeDamage(30);
+        _entity.TakeDamage(new DamageInfo { Amount = 30 });
         Assert.That(_entity.Health, Is.EqualTo(0));
         Assert.That(_entity.StateController.State, Is.EqualTo(EnemyState.Dying));
     }
@@ -185,20 +185,20 @@ public class EnemyEntityBehaviorTests
     [Test]
     public void TakeDamage_Overkill_ClampsToZero()
     {
-        _entity.TakeDamage(100);
+        _entity.TakeDamage(new DamageInfo { Amount = 100 });
         Assert.That(_entity.Health, Is.EqualTo(0));
     }
 
     [Test]
     public void DeadEntity_IgnoresFurtherDamage()
     {
-        _entity.TakeDamage(30);
+        _entity.TakeDamage(new DamageInfo { Amount = 30 });
         Assert.That(_entity.StateController.State, Is.EqualTo(EnemyState.Dying));
 
         _entity.CompleteCurrentAnimation();
         Assert.That(_entity.StateController.State, Is.EqualTo(EnemyState.Dead));
 
-        _entity.TakeDamage(10);
+        _entity.TakeDamage(new DamageInfo { Amount = 10 });
         Assert.That(_entity.Health, Is.EqualTo(0));
         Assert.That(_entity.StateController.State, Is.EqualTo(EnemyState.Dead));
     }
@@ -206,23 +206,23 @@ public class EnemyEntityBehaviorTests
     [Test]
     public void TakeDamage_Knockdown_TransitionsToKnockedDown()
     {
-        _entity.TakeDamage(5, knockdown: true);
+        _entity.TakeDamage(new DamageInfo { Amount = 5, Knockdown = true });
         Assert.That(_entity.StateController.State, Is.EqualTo(EnemyState.KnockedDown));
     }
 
     [Test]
     public void TakeDamage_WithoutKnockdown_TransitionsToHurt()
     {
-        _entity.TakeDamage(5);
+        _entity.TakeDamage(new DamageInfo { Amount = 5 });
         Assert.That(_entity.StateController.State, Is.EqualTo(EnemyState.Hurt));
     }
 
     [Test]
     public void WhileKnockedDown_TakeDamage_IsIgnored()
     {
-        _entity.TakeDamage(5, knockdown: true);
+        _entity.TakeDamage(new DamageInfo { Amount = 5, Knockdown = true });
         int healthBefore = _entity.Health;
-        _entity.TakeDamage(5);
+        _entity.TakeDamage(new DamageInfo { Amount = 5 });
         Assert.That(_entity.Health, Is.EqualTo(healthBefore));
         Assert.That(_entity.StateController.State, Is.EqualTo(EnemyState.KnockedDown));
     }
@@ -239,8 +239,7 @@ public class EnemyEntityBehaviorTests
     public void ChaseAI_MovesTowardTarget_FromLeft()
     {
         _entity = new("enemy", new Vector2(200, 0), 40, 60);
-        _entity.Target = _target; // target at (200, 0), enemy at (200, 0)
-
+        _entity.Target = _target;
         _target.Position = new Vector2(100, 0);
         _entity.UpdateAI(1.0f);
         Assert.That(_entity.StateController.State, Is.EqualTo(EnemyState.Chasing));
@@ -281,7 +280,7 @@ public class EnemyEntityBehaviorTests
     [Test]
     public void Knockdown_TwoPhase_WorksCorrectly()
     {
-        _entity.TakeDamage(5, knockdown: true);
+        _entity.TakeDamage(new DamageInfo { Amount = 5, Knockdown = true });
         Assert.That(_entity.StateController.State, Is.EqualTo(EnemyState.KnockedDown));
 
         _entity.CompleteCurrentAnimation();
@@ -294,7 +293,7 @@ public class EnemyEntityBehaviorTests
     [Test]
     public void Death_CanBeCompleted_ToDead()
     {
-        _entity.TakeDamage(30);
+        _entity.TakeDamage(new DamageInfo { Amount = 30 });
         Assert.That(_entity.StateController.State, Is.EqualTo(EnemyState.Dying));
 
         _entity.CompleteCurrentAnimation();
@@ -304,7 +303,7 @@ public class EnemyEntityBehaviorTests
     [Test]
     public void Hurt_CanBeCompleted_ToIdle()
     {
-        _entity.TakeDamage(5);
+        _entity.TakeDamage(new DamageInfo { Amount = 5 });
         Assert.That(_entity.StateController.State, Is.EqualTo(EnemyState.Hurt));
 
         _entity.CompleteCurrentAnimation();
@@ -317,7 +316,7 @@ public class EnemyEntityBehaviorTests
         bool died = false;
         _entity.Died += (_, _) => died = true;
 
-        _entity.TakeDamage(30);
+        _entity.TakeDamage(new DamageInfo { Amount = 30 });
         _entity.CompleteCurrentAnimation();
         Assert.That(died, Is.True);
     }
@@ -325,15 +324,15 @@ public class EnemyEntityBehaviorTests
     [Test]
     public void CannotTakeDamage_WhenDead()
     {
-        _entity.TakeDamage(30);
+        _entity.TakeDamage(new DamageInfo { Amount = 30 });
         _entity.CompleteCurrentAnimation();
-        Assert.That(_entity.CanTakeDamage, Is.False);
+        Assert.That(_entity.CanBeDamaged, Is.False);
     }
 
     [Test]
     public void CannotTakeDamage_WhenKnockedDown()
     {
-        _entity.TakeDamage(5, knockdown: true);
-        Assert.That(_entity.CanTakeDamage, Is.False);
+        _entity.TakeDamage(new DamageInfo { Amount = 5, Knockdown = true });
+        Assert.That(_entity.CanBeDamaged, Is.False);
     }
 }

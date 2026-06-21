@@ -1,7 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
+using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
-using MonoGameLearning.Game.GameLoop;
 
 namespace MonoGameLearning.Game.Tests;
 
@@ -14,7 +14,7 @@ public class OilDrumLifecycleTests
         var entity = new TestDamageableEntity("drum", Vector2.Zero, 50, 50);
         bool destroyed = false;
         entity.Destroyed += _ => destroyed = true;
-        entity.TakeDamage(50);
+        entity.TakeDamage(new DamageInfo { Amount = 50, Strength = AttackStrength.Heavy });
         Assert.That(destroyed, Is.True);
     }
 
@@ -23,11 +23,10 @@ public class OilDrumLifecycleTests
     {
         var entity = new TestDamageableEntity("drum", Vector2.Zero, 50, 50);
         int callCount = 0;
-        Action<PropEntity> handler = _ => callCount++;
+        Action<Entity> handler = _ => callCount++;
         entity.Destroyed += handler;
-        entity.TakeDamage(50);
+        entity.TakeDamage(new DamageInfo { Amount = 50, Strength = AttackStrength.Heavy });
         entity.Destroyed -= handler;
-        // After unsubscribing, firing again should not invoke handler
         Assert.That(callCount, Is.EqualTo(1));
     }
 
@@ -37,7 +36,7 @@ public class OilDrumLifecycleTests
         var entity = new TestDamageableEntity("drum", Vector2.Zero, 50, 50);
         bool destroyed = false;
         entity.Destroyed += _ => destroyed = true;
-        entity.TakeDamage(2);
+        entity.TakeDamage(new DamageInfo { Amount = 2, Strength = AttackStrength.Light });
         Assert.That(destroyed, Is.False);
     }
 }
