@@ -19,7 +19,7 @@ public class LevelValidationTests
         // They touch at x=50.
         var bg2 = new BackgroundEntity("bg2", null, new Vector2(100, 0), 100, 100);
 
-        var backgrounds = new List<BackgroundEntity> { bg1, bg2 };
+        List<BackgroundEntity> backgrounds = [bg1, bg2];
 
         // Act & Assert
         Assert.DoesNotThrow(() => Level.ValidateConnectivity(backgrounds));
@@ -36,7 +36,7 @@ public class LevelValidationTests
         // Gap = 100.
         var bg2 = new BackgroundEntity("bg2", null, new Vector2(200, 0), 100, 100);
 
-        var backgrounds = new List<BackgroundEntity> { bg1, bg2 };
+        List<BackgroundEntity> backgrounds = [bg1, bg2];
 
         // Act & Assert
         var ex = Assert.Throws<InvalidOperationException>(() => Level.ValidateConnectivity(backgrounds));

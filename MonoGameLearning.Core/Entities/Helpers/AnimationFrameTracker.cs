@@ -2,7 +2,7 @@ using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended.Graphics;
 
-namespace MonoGameLearning.Core.Entities;
+namespace MonoGameLearning.Core.Entities.Helpers;
 
 public class AnimationFrameTracker
 {

@@ -44,7 +44,13 @@ public abstract class PropBase : Entity, IRenderable, IDebugDrawable, ICollision
 
     public void OnCollision(CollisionEventArgs collisionInfo) { }
 
-    public abstract void TakeDamage(DamageInfo info);
+    public virtual void TakeDamage(DamageInfo info)
+    {
+        if (!HealthComponent.IsAlive) return;
+        HealthComponent.Subtract(info.Amount);
+        if (!HealthComponent.IsAlive)
+            OnDestroyed();
+    }
 
     protected void OnDestroyed() => Destroyed?.Invoke(this);
 }
