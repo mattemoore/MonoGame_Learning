@@ -155,7 +155,7 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     }
 
     // --- Shared state controller callbacks ---
-    protected Action AttackingExit() => () => { UnsubscribeFromAnimationEvent(); CurrentMove = null; HitboxService?.Clear(this); };
+    protected Action AttackingExit() => () => { UnsubscribeFromAnimationEvent(); CurrentMove = null; HitboxService?.Clear(this); HitboxService?.ClearAttackResolveState(this); };
     protected Action HurtEntry() => () => { Sprite.SetAnimation(HurtAnimation); SubscribeToAnimationEvent(); };
     protected Action HurtExit() => UnsubscribeFromAnimationEvent;
     protected Action KnockdownEntry() => () => { Sprite.SetAnimation(FallAnimation); KnockdownPhase = 0; SubscribeToAnimationEvent(); };
