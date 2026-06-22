@@ -51,6 +51,7 @@ public class HitboxService
 
     private readonly List<ActiveHitbox> _activeHitboxes = [];
     private readonly Dictionary<Entity, HashSet<(HitboxData, Entity)>> _resolvedThisFrame = [];
+    private readonly HashSet<(Entity Owner, Entity Target)> _attackResolvedTargets = [];
     private readonly List<HitResult> _resultBuffer = [];
     private readonly List<RectangleF> _boundsBuffer = [];
 
@@ -91,6 +92,8 @@ public class HitboxService
                 if (!active.Bounds.Intersects(target.Frame)) continue;
                 if (!ownerResolved.Add((active.Definition, target))) continue;
 
+                if (!_attackResolvedTargets.Add((active.Owner, target))) continue;
+
                 if (active.Owner is ICombatant src && target is ICombatant tgt && src.Faction == tgt.Faction) continue;
 
                 _resultBuffer.Add(new()
@@ -114,10 +117,17 @@ public class HitboxService
         _resolvedThisFrame.Remove(owner);
     }
 
+    public void ClearAttackResolveState(Entity owner)
+    {
+        Debug.Assert(owner is not null, "ClearAttackResolveState called with null owner");
+        _attackResolvedTargets.RemoveWhere(kv => kv.Owner == owner);
+    }
+
     public void ClearAll()
     {
         _activeHitboxes.Clear();
         _resolvedThisFrame.Clear();
+        _attackResolvedTargets.Clear();
     }
 
     public IReadOnlyList<RectangleF> GetActiveHitboxBounds(Entity owner)

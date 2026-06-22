@@ -265,6 +265,89 @@ public class HitboxTests
         Assert.That(hits[0].Target, Is.EqualTo(prop));
     }
 
+    [Test]
+    public void PerAttackDedup_MultipleFrames_OneHit()
+    {
+        var service = new HitboxService();
+        var player = MakeActor(0, 0, faction: Faction.Player);
+        var enemy = MakeActor(35, 0, faction: Faction.Enemy);
+        var move = MakeTestMove(damage: 5);
+
+        // Frame 1 of the attack
+        service.Clear(player);
+        service.RegisterFrameHitboxes(player, move, 0, FacingDirection.Right);
+        var hits = service.ResolveHits([player, enemy]);
+
+        Assert.That(hits, Has.Count.EqualTo(1));
+        Assert.That(hits[0].Damage, Is.EqualTo(5));
+
+        // Frame 2 of the same attack — same (owner, target) pair should be blocked
+        service.Clear(player);
+        service.RegisterFrameHitboxes(player, move, 0, FacingDirection.Right);
+        hits = service.ResolveHits([player, enemy]);
+
+        Assert.That(hits, Has.Count.EqualTo(0));
+    }
+
+    [Test]
+    public void PerAttackDedup_DifferentTargets_BothHit()
+    {
+        var service = new HitboxService();
+        var player = MakeActor(0, 0, faction: Faction.Player);
+        var enemy1 = MakeActor(35, 0, faction: Faction.Enemy);
+        var enemy2 = MakeActor(35, 40, faction: Faction.Enemy);
+        var move = MakeTestMove();
+
+        service.RegisterFrameHitboxes(player, move, 0, FacingDirection.Right);
+        var hits = service.ResolveHits([player, enemy1, enemy2]);
+
+        Assert.That(hits, Has.Count.EqualTo(2));
+    }
+
+    [Test]
+    public void PerAttackDedup_DifferentOwners_BothHit()
+    {
+        var service = new HitboxService();
+        var player1 = MakeActor(0, 0, faction: Faction.Player);
+        var player2 = MakeActor(0, 40, faction: Faction.Player);
+        var enemy = MakeActor(35, 0, faction: Faction.Enemy);
+        var move = MakeTestMove();
+
+        // Player1 hits enemy
+        service.RegisterFrameHitboxes(player1, move, 0, FacingDirection.Right);
+        var hits = service.ResolveHits([player1, enemy]);
+        Assert.That(hits, Has.Count.EqualTo(1));
+
+        // Player2 also hits enemy (different owner, same target)
+        service.RegisterFrameHitboxes(player2, move, 0, FacingDirection.Right);
+        hits = service.ResolveHits([player2, enemy]);
+        Assert.That(hits, Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public void PerAttackDedup_ClearedAfterClearAttackResolveState()
+    {
+        var service = new HitboxService();
+        var player = MakeActor(0, 0, faction: Faction.Player);
+        var enemy = MakeActor(35, 0, faction: Faction.Enemy);
+        var move = MakeTestMove(damage: 5);
+
+        // Frame 1 — hits
+        service.Clear(player);
+        service.RegisterFrameHitboxes(player, move, 0, FacingDirection.Right);
+        var hits = service.ResolveHits([player, enemy]);
+        Assert.That(hits, Has.Count.EqualTo(1));
+
+        // Clear attack resolve state (simulating attack end / new attack)
+        service.ClearAttackResolveState(player);
+
+        // Frame 2 — should hit again because it's a "new" attack
+        service.Clear(player);
+        service.RegisterFrameHitboxes(player, move, 0, FacingDirection.Right);
+        hits = service.ResolveHits([player, enemy]);
+        Assert.That(hits, Has.Count.EqualTo(1));
+    }
+
     private class TestPropForHit : Entity, IDamageable, IHasHealth, ICollisionActor
     {
         public IShapeF Bounds => Frame;
