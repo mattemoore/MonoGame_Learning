@@ -28,7 +28,7 @@ public readonly record struct HitboxData
     }
 }
 
-public record struct HitResult
+public readonly record struct HitResult
 {
     public Entity Target { get; init; }
     public int Damage { get; init; }

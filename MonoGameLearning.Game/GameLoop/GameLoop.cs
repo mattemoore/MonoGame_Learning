@@ -17,6 +17,8 @@ using MonoGameLearning.Game.Entities.Player;
 using MonoGameLearning.Game.Entities.Props;
 using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.Sprites;
+using MonoGameLearning.Game.Camera;
+using MonoGameLearning.Game.Menus;
 
 namespace MonoGameLearning.Game.GameLoop;
 

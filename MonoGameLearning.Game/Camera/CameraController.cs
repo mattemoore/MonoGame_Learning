@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGameLearning.Game.Entities.Player;
 
-namespace MonoGameLearning.Game.GameLoop;
+namespace MonoGameLearning.Game.Camera;
 
 public class CameraController
 {

@@ -61,15 +61,10 @@ public class OilDrumEntity : PropBase, IUpdatable
     {
         if (!HealthComponent.IsAlive || _stateController.State == OilDrumState.HitStun) return;
 
-        // Only Strength governs prop damage — Amount is not used here.
-        // This ensures heavy attacks always feel disproportionately effective
-        // against objects regardless of the attacker's raw damage stat.
         int effective = info.Strength switch { AttackStrength.Heavy => 6, AttackStrength.Medium => 3, _ => 2 };
-        HealthComponent.Subtract(effective);
+        base.TakeDamage(new DamageInfo { Amount = effective });
 
-        if (!HealthComponent.IsAlive)
-            OnDestroyed();
-        else
+        if (HealthComponent.IsAlive)
             _stateController.Fire(OilDrumTrigger.Hit);
     }
 }

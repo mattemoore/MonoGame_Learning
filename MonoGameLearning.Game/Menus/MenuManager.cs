@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using MonoGameGum;
 using MonoGameGum.GueDeriving;
+using MonoGameLearning.Game.GameLoop;
 using RenderingLibrary.Graphics;
 
-namespace MonoGameLearning.Game.GameLoop;
+namespace MonoGameLearning.Game.Menus;
 
 public class MenuManager
 {
