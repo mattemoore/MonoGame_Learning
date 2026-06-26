@@ -5,9 +5,9 @@ using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Core.Entities;
 
-public class EntityManager
+public class EntityManager(CollisionComponent collision)
 {
-    private CollisionComponent _collision;
+    private CollisionComponent _collision = collision;
 
     public void SetCollisionComponent(CollisionComponent collision) => _collision = collision;
 
@@ -45,11 +45,6 @@ public class EntityManager
     public IReadOnlyList<IDebugDrawable> DebugDrawables => _debugDrawables;
     public IReadOnlyList<ICombatant> Combatants => _combatants;
     public IReadOnlyList<IHitboxProvider> HitboxProviders => _hitboxProviders;
-
-    public EntityManager(CollisionComponent collision)
-    {
-        _collision = collision;
-    }
 
     public void Register(Entity entity)
     {

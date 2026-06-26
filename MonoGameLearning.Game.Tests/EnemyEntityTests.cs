@@ -12,7 +12,7 @@ public class TestEnemyEntity : Entity, ICombatant, ICollisionActor
 {
     public IShapeF Bounds => Frame;
     public EnemyStateController StateController { get; }
-    public Entity Target { get; set; }
+    public Entity? Target { get; set; }
     public float AttackRange { get; set; } = 70f;
     public float MinChaseDistance { get; set; } = 60f;
     public float AttackCooldown { get; set; }

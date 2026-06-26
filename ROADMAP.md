@@ -29,7 +29,7 @@ Implement the core collision-based combat mechanics.
   - [X] Add support for defining attack `Hitboxes`
   - [X] Add support for `Hurtboxes` (collision areas on actors that can receive damage).
   - [X] Implement overlap check: when a `Hitbox` overlaps an active enemy's `Hurtbox`, trigger a hit.
-- [ ] **Health System**:
+- [X] **Health System**:
   - [X] Add `Health` (Current / Max) to `ActorEntity`.
   - [X] Add basic damage processing and damage invincibility frames (i-frames) after being hit.
 - [X] **Hit States**:
@@ -39,35 +39,36 @@ Implement the core collision-based combat mechanics.
 
 ---
 
-## [ ] Milestone 3: Enemy AI & Spawning
+## [x] Milestone 3: Enemy AI & Spawning
 
 Introduce automated opponents with basic tracking behavior.
 
-- [ ] **Enemy Entity Class**:
-  - [ ] Create a generic `EnemyEntity` inheriting from `ActorEntity`.
-  - [ ] Equip it with a simplified state machine (Idle, Walk/Chase, Attack, Hit, KnockedDown, Dead).
-- [ ] **Chase AI**:
-  - [ ] Implement basic pathfinding/steering where the enemy moves toward the player's coordinates on the screen.
-  - [ ] Constrain movement speed and distance to prevent overlapping exactly with the player.
-- [ ] **Combat AI**:
-  - [ ] Implement proximity detection: when the enemy is in range, trigger an attack state.
-- [ ] **Enemy Wave/Spawner Trigger**:
-  - [ ] Create a wave manager or level trigger that spawns a set number of enemies when the player reaches specific points in the level.
+- [x] **Enemy Entity Class**:
+  - [x] Create an `EnemyEntity` inheriting from `CombatActorBase`.
+  - [x] Equip it with a state machine (Idle, Chasing, Attacking, Hurt, KnockedDown, Dying, Dead).
+- [x] **Chase AI**:
+  - [x] Implement basic movement where the enemy moves toward the player's coordinates on the screen.
+  - [x] Stop movement at a minimum chase distance to prevent overlapping with the player.
+- [x] **Combat AI**:
+  - [x] Implement proximity detection: when the enemy is in range, trigger an attack after a brief delay.
+  - [x] Enforce an attack cooldown between attacks.
+- [x] **Enemy Wave/Spawner Trigger**:
+  - [x] Create a wave manager or level trigger that spawns a set number of enemies when the player reaches specific points in the level.
 
 ---
 
-## [ ] Milestone 4: Scroll Locking & Level Progression
+## [x] Milestone 4: Scroll Locking & Level Progression
 
 Control player movement and camera tracking during fights.
 
-- [ ] **Fight Areas (Scroll Locks)**:
-  - [ ] Add invisible boundaries that trigger when a wave spawns, preventing the player and camera from scrolling further right.
-- [ ] **Wave Clearance & "GO" Prompt**:
-  - [ ] Detect when all enemies in the current scroll-lock wave are defeated.
-  - [ ] Lift the scroll lock.
-  - [ ] Draw a flashing "GO ->" placeholder prompt on the HUD to signal the player to advance.
-- [ ] **Level End Trigger**:
-  - [ ] Add a final trigger volume at the end of the scrollable bounds that transitions the game to `LevelComplete` when reached.
+- [x] **Fight Areas (Scroll Locks)**:
+  - [x] Add invisible boundaries that trigger when a wave spawns, preventing the player and camera from scrolling further right.
+- [x] **Wave Clearance & "GO" Prompt**:
+  - [x] Detect when all enemies in the current scroll-lock wave are defeated.
+  - [x] Lift the scroll lock.
+  - [x] Draw a flashing "GO ->" placeholder prompt on the HUD to signal the player to advance.
+- [x] **Level End Trigger**:
+  - [x] Add a final trigger volume at the end of the scrollable bounds that transitions the game to `LevelComplete` when reached.
 
 ---
 

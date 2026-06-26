@@ -7,12 +7,9 @@ using MonoGameLearning.Core.Entities;
 
 namespace MonoGameLearning.Game.Levels;
 
-public class Level1 : Level
+public class Level1(ContentManager content, int gameWidth, int gameHeight) : Level(CreateBackgrounds(content, gameWidth, gameHeight), CreateWaveDefs(), gameWidth)
 {
-    public Level1(ContentManager content, int gameWidth, int gameHeight)
-        : base(CreateBackgrounds(content, gameWidth, gameHeight))
-    {
-    }
+    public override float EndTriggerX => 1500f;
 
     private static List<BackgroundEntity> CreateBackgrounds(ContentManager content, int gameWidth, int gameHeight)
     {
@@ -25,5 +22,22 @@ public class Level1 : Level
         var bg2 = new BackgroundEntity("bg2", background1, new Vector2(bgCenterX + gameWidth, bgCenterY), gameWidth, gameHeight);
 
         return [bg1, bg2];
+    }
+
+    private static List<WaveDef> CreateWaveDefs()
+    {
+        return
+        [
+            new WaveDef(TriggerX: 600f, FightAreaWidth: 600f, Enemies:
+            [
+                new EnemySpawnDef("Grunt", new Vector2(750, 550)),
+                new EnemySpawnDef("Grunt", new Vector2(800, 550))
+            ]),
+            new WaveDef(TriggerX: 1200f, FightAreaWidth: 600f, Enemies:
+            [
+                new EnemySpawnDef("Grunt", new Vector2(1350, 550)),
+                new EnemySpawnDef("Grunt", new Vector2(1400, 550))
+            ])
+        ];
     }
 }

@@ -9,25 +9,18 @@ using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Core.Entities;
 
-public abstract class PropBase : Entity, IRenderable, IDebugDrawable, ICollisionActor, IDamageable, IHasHealth
+public abstract class PropBase(string name, Vector2 position, AnimatedSprite sprite, float scale, int maxHealth) : Entity(name, position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale)), IRenderable, IDebugDrawable, ICollisionActor, IDamageable, IHasHealth
 {
     public IShapeF Bounds => Frame;
     public event Action<Entity> Destroyed;
 
-    protected readonly SpriteRenderer SpriteRenderer;
-    protected readonly Health HealthComponent;
+    protected readonly SpriteRenderer SpriteRenderer = new(sprite, scale);
+    protected readonly Health HealthComponent = new(maxHealth);
 
     public AnimatedSprite Sprite => SpriteRenderer.Sprite;
 
     int IHasHealth.Health => HealthComponent.Value;
     int IHasHealth.MaxHealth => HealthComponent.MaxHealth;
-
-    protected PropBase(string name, Vector2 position, AnimatedSprite sprite, float scale, int maxHealth)
-        : base(name, position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale))
-    {
-        SpriteRenderer = new(sprite, scale);
-        HealthComponent = new(maxHealth);
-    }
 
     public void Render(RenderContext context)
     {
