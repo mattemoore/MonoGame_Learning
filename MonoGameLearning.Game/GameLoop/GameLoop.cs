@@ -32,7 +32,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private EntityManager _entityManager;
     private InputManager _input;
     private TextRuntime _debugWindow1, _debugWindow2;
-    private CollisionComponent _collision;
+    private CollisionComponent _collision = null!;
     private static GumService GumService => GumService.Default;
     private int _numBackgroundsDrawn, _numEntitiesDrawn;
 
@@ -41,12 +41,12 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private MenuManager _menuManager;
     private HitboxService _hitboxService;
     private SpriteFont _debugFont;
+    private LevelDirector _levelDirector;
 
     protected override void Initialize()
     {
         _input = new InputManager();
         _input.ActionTriggered += OnActionTriggered;
-        _collision = CreateCollisionComponent();
         _hitboxService = new();
 
         _gameState = new GameStateController();
@@ -95,19 +95,18 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         EnemySprite.Load(Content);
         OilDrumSprite.Load(Content);
 
+        _collision = CreateCollisionComponent(_currentLevel.MovementBounds);
         _entityManager = new EntityManager(_collision);
         _entityManager.Register(_player);
 
         _player.Died += OnPlayerDied;
 
-        RegisterEnemy("enemy1", new Vector2(500, 550));
-        RegisterEnemy("enemy2", new Vector2(700, 550));
         RegisterOilDrum("can1", new Vector2(700, 450));
         RegisterOilDrum("can2", new Vector2(900, 450));
         RegisterOilDrum("can3", new Vector2(800, 450));
 
         AssignHitboxService();
-        _cameraController = new CameraController(_player, GAME_WIDTH, GAME_HEIGHT, GAME_WIDTH * 2);
+        InitLevelSystems();
     }
 
     protected override void Update(GameTime gameTime)
@@ -119,11 +118,40 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
         if (_gameState.State == GameState.Playing)
         {
-            _cameraController.Update(Camera);
+            _levelDirector.Update(gameTime);
             _player.MovementDirection = _input.MovementDirection;
 
+            var fa = _levelDirector.CurrentFightArea;
+
+            if (fa.HasValue)
+            {
+                _cameraController.LeftBound = _levelDirector.PersistentCameraCenter;
+                _cameraController.RightBound = _levelDirector.PersistentCameraCenter;
+            }
+            else
+            {
+                _cameraController.LeftBound = _levelDirector.PersistentCameraCenter;
+                _cameraController.RightBound = null;
+            }
+
+            _cameraController.Update(Camera);
+
             foreach (var movable in _entityManager.Movables)
-                movable.MovementBounds = _currentLevel.MovementBounds;
+            {
+                var bounds = _currentLevel.MovementBounds;
+                if (fa.HasValue)
+                {
+                    bounds.X = fa.Value.X;
+                    bounds.Width = Math.Max(fa.Value.Width, _player.Position.X - fa.Value.X);
+                }
+                else if (_levelDirector.PersistentCameraCenter.HasValue)
+                {
+                    float leftEdge = _levelDirector.PersistentCameraCenter.Value - GAME_WIDTH / 2f;
+                    bounds.X = leftEdge;
+                    bounds.Width = _currentLevel.MovementBounds.Right - leftEdge;
+                }
+                movable.MovementBounds = bounds;
+            }
 
             foreach (var updatable in _entityManager.Updatables)
                 updatable.Update(gameTime);
@@ -176,8 +204,24 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                     drawable.DrawDebug(debugCtx);
                 _currentLevel.DrawDebug(debugCtx);
 
+                foreach (var wave in _currentLevel.WaveDefs)
+                    SpriteBatch.DrawLine(wave.TriggerX, 0, wave.TriggerX, GAME_HEIGHT, Color.Cyan * 0.4f, 2f);
+
+                SpriteBatch.DrawLine(_currentLevel.EndTriggerX, 0, _currentLevel.EndTriggerX, GAME_HEIGHT, Color.Orange * 0.4f, 2f);
+
+                if (_levelDirector.CurrentFightArea.HasValue)
+                {
+                    var fightRight = _levelDirector.CurrentFightArea.Value.X + _levelDirector.CurrentFightArea.Value.Width;
+                    var rect = new RectangleF(_currentLevel.MovementBounds.Left, 0, fightRight - _currentLevel.MovementBounds.Left, GAME_HEIGHT);
+                    SpriteBatch.DrawRectangle(rect, Color.Yellow * 0.3f, 2f);
+                }
+
+                var waveStatus = _levelDirector.CurrentWaveIndex < _currentLevel.WaveDefs.Count
+                    ? $"Wave: {_levelDirector.CurrentWaveIndex + 1}/{_currentLevel.WaveDefs.Count}"
+                    : "All waves done";
                 _debugWindow1.Text = $"FPS: {FPSCounter.FramesPerSecond}\n" +
                                      $"State: {_gameState.State}\n" +
+                                     $"{waveStatus} | Active: {_levelDirector.ActiveEnemyCount} | Locked: {_levelDirector.IsScrollLocked}\n" +
                                      $"Viewport: Virtual-{ViewportAdapter.VirtualWidth}x{ViewportAdapter.VirtualHeight} Actual-{ViewportAdapter.ViewportWidth}x{ViewportAdapter.ViewportHeight}\n" +
                                      $"Screen Buffer: {Graphics.PreferredBackBufferWidth}x{Graphics.PreferredBackBufferHeight}\n" +
                                      $"Window: {Window.ClientBounds.Width}x{Window.ClientBounds.Height}";
@@ -185,6 +229,18 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                                      $"Ents draw: {_numEntitiesDrawn}";
             }
             SpriteBatch.End();
+
+            if (_levelDirector.ShowGoPrompt)
+            {
+                SpriteBatch.Begin();
+                var goText = "GO ->";
+                float scale = 3f;
+                var textSize = _debugFont.MeasureString(goText) * scale;
+                SpriteBatch.DrawString(_debugFont, goText,
+                    new Vector2(GAME_WIDTH - textSize.X - 20, GAME_HEIGHT / 2f - textSize.Y / 2f),
+                    Color.LimeGreen, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+                SpriteBatch.End();
+            }
         }
 
         GumService.Draw();
@@ -208,21 +264,6 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         if (drum is OilDrumEntity oilDrum)
             oilDrum.Destroyed -= OnOilDrumDestroyed;
         _entityManager.Destroy(drum);
-    }
-
-    private void RegisterEnemy(string name, Vector2 position)
-    {
-        var enemy = new EnemyEntity(name, position, 2.0f, EnemySprite.Create());
-        enemy.Target = _player;
-        enemy.Died += OnEnemyDied;
-        _entityManager.Register(enemy);
-    }
-
-    private void OnEnemyDied(object sender, EventArgs e)
-    {
-        if (sender is not EnemyEntity enemy) return;
-        enemy.Died -= OnEnemyDied;
-        _entityManager.Destroy(enemy);
     }
 
     private void OnActionTriggered(InputAction action)
@@ -276,18 +317,26 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
         _entityManager.Clear();
 
-        _collision = CreateCollisionComponent();
+        _currentLevel = new Level1(Content, GAME_WIDTH, GAME_HEIGHT);
+        _collision = CreateCollisionComponent(_currentLevel.MovementBounds);
         _entityManager.SetCollisionComponent(_collision);
 
         _entityManager.Register(_player);
         RegisterOilDrum("can1", new Vector2(700, 450));
         RegisterOilDrum("can2", new Vector2(900, 450));
         RegisterOilDrum("can3", new Vector2(800, 450));
-        RegisterEnemy("enemy1", new Vector2(500, 550));
-        RegisterEnemy("enemy2", new Vector2(700, 550));
 
         AssignHitboxService();
-        _currentLevel = new Level1(Content, GAME_WIDTH, GAME_HEIGHT);
+        InitLevelSystems();
+        Camera.Position = Vector2.Zero;
+    }
+
+    private void InitLevelSystems()
+    {
+        _cameraController = new CameraController(_player, GAME_WIDTH, GAME_HEIGHT, _currentLevel.MovementBounds);
+
+        _levelDirector = new LevelDirector(_entityManager, _currentLevel, _player);
+        _levelDirector.LevelCompleted += () => _gameState.Fire(GameTrigger.CompleteLevel);
     }
 
     private void AssignHitboxService()
@@ -296,10 +345,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             provider.HitboxService = _hitboxService;
     }
 
-    private static CollisionComponent CreateCollisionComponent()
+    private static CollisionComponent CreateCollisionComponent(RectangleF bounds)
     {
-        var cc = new CollisionComponent(new RectangleF(0, 0, GAME_WIDTH * 2, GAME_HEIGHT));
-        cc.Add("actors", new MonoGame.Extended.Collisions.Layers.Layer(new MonoGame.Extended.Collisions.QuadTree.QuadTreeSpace(new RectangleF(0, 0, GAME_WIDTH * 2, GAME_HEIGHT))));
+        var cc = new CollisionComponent(bounds);
+        cc.Add("actors", new MonoGame.Extended.Collisions.Layers.Layer(new MonoGame.Extended.Collisions.QuadTree.QuadTreeSpace(bounds)));
         return cc;
     }
 }

@@ -8,12 +8,16 @@ namespace MonoGameLearning.Game.Levels;
 public abstract class Level
 {
     public List<BackgroundEntity> Backgrounds { get; }
+    public List<WaveDef> WaveDefs { get; }
     public RectangleF MovementBounds { get; }
+    public abstract float EndTriggerX { get; }
 
-    protected Level(List<BackgroundEntity> backgrounds)
+    protected Level(List<BackgroundEntity> backgrounds, List<WaveDef> waveDefs, float viewportWidth)
     {
         Backgrounds = backgrounds;
+        WaveDefs = waveDefs;
         ValidateConnectivity(Backgrounds);
+        WaveDef.ValidateWaveDefs(WaveDefs, viewportWidth);
 
         if (Backgrounds.Count > 0)
             MovementBounds = Backgrounds.Select(b => b.MovementBounds).Aggregate(RectangleF.Union);

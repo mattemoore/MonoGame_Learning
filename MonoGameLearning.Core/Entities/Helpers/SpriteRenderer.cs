@@ -5,16 +5,10 @@ using MonoGame.Extended.Graphics;
 
 namespace MonoGameLearning.Core.Entities.Helpers;
 
-public class SpriteRenderer
+public class SpriteRenderer(AnimatedSprite sprite, float scale)
 {
-    public AnimatedSprite Sprite { get; set; }
-    public float Scale { get; set; }
-
-    public SpriteRenderer(AnimatedSprite sprite, float scale)
-    {
-        Sprite = sprite;
-        Scale = scale;
-    }
+    public AnimatedSprite Sprite { get; set; } = sprite;
+    public float Scale { get; set; } = scale;
 
     public void Render(SpriteBatch spriteBatch, Vector2 position, float rotation)
     {

@@ -89,6 +89,8 @@ dotnet test
       Debug.WriteLine($"[{name}] Descriptive warning — root cause hint");
   ```
 
+* **Debug-Mode Drawing**: When planning or implementing any new system, always consider what should be drawn in debug mode (`IsDebug`). This includes: spatial markers (trigger zones, bounds, spawn points), state indicators (active wave index, enemy count), and any runtime data that aids diagnosis during development. Add debug drawing alongside the feature — not as an afterthought.
+
 ## MonoGame.Extended Pitfalls
 
 ### `AnimatedSprite.Controller` is replaced by `SetAnimation()`

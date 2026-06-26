@@ -128,22 +128,15 @@ public class OilDrumStateControllerTests
     }
 }
 
-public class TestDamageableEntity : Entity, IDamageable, IHasHealth, ICollisionActor
+public class TestDamageableEntity(string name, Vector2 position, int width, int height) : Entity(name, position, width, height), IDamageable, IHasHealth, ICollisionActor
 {
-    private readonly Health _health;
-    private readonly OilDrumStateController _stateController;
+    private readonly Health _health = new(6);
+    private readonly OilDrumStateController _stateController = new();
     public IShapeF Bounds => Frame;
     public int Health => _health.Value;
     public int MaxHealth => _health.MaxHealth;
     public bool IsAlive => _health.IsAlive;
-    public event Action<Entity> Destroyed;
-
-    public TestDamageableEntity(string name, Vector2 position, int width, int height)
-        : base(name, position, width, height)
-    {
-        _health = new(6);
-        _stateController = new();
-    }
+    public event Action<Entity> Destroyed = delegate { };
 
     public void TakeDamage(DamageInfo info)
     {
