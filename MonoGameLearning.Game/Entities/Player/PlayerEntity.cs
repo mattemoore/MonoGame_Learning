@@ -8,24 +8,47 @@ using MonoGameLearning.Game.Sprites;
 
 namespace MonoGameLearning.Game.Entities.Player;
 
-public enum AttackType { Attack1, Attack2, Attack3 }
-
 public class PlayerEntity : CombatActorBase
 {
     private PlayerStateController _stateController;
     private float _invincibilityTimer;
-    private AttackType _pendingAttackType;
+    private MoveData _pendingMove;
 
-    // --- Animation keys ---
-    protected override string IdleAnimation => PlayerSprite.AnimationIdle;
-    protected override string RunAnimation => PlayerSprite.AnimationRun;
-    protected override string HurtAnimation => PlayerSprite.AnimationHurt;
-    protected override string FallAnimation => PlayerSprite.AnimationFall;
-    protected override string DieAnimation => PlayerSprite.AnimationDie;
-    protected override string GetUpAnimation => PlayerSprite.AnimationGetUp;
+    public readonly MoveData Attack1Move = new()
+    {
+        AnimationKey = PlayerSprite.AnimationAttack1,
+        Damage = 5,
+        Strength = AttackStrength.Light,
+        FrameHitboxes = new()
+        {
+            [1] = [new() { Offset = new Vector2(35, 0), Size = new Point(45, 40) }],
+            [2] = [new() { Offset = new Vector2(35, 0), Size = new Point(45, 40) }],
+        }
+    };
+    public readonly MoveData Attack2Move = new()
+    {
+        AnimationKey = PlayerSprite.AnimationAttack2,
+        Damage = 8,
+        Strength = AttackStrength.Medium,
+        FrameHitboxes = new()
+        {
+            [1] = [new() { Offset = new Vector2(45, -10), Size = new Point(50, 50) }],
+            [2] = [new() { Offset = new Vector2(45, -10), Size = new Point(50, 50) }],
+        }
+    };
+    public readonly MoveData Attack3Move = new()
+    {
+        AnimationKey = PlayerSprite.AnimationAttack3,
+        Damage = 12,
+        Knockdown = true,
+        Strength = AttackStrength.Heavy,
+        FrameHitboxes = new()
+        {
+            [2] = [new() { Offset = new Vector2(50, 0), Size = new Point(55, 40) }],
+        }
+    };
+
     protected override bool IsIncapacitated => _stateController.State is PlayerState.Dead or PlayerState.Dying or PlayerState.Hurt or PlayerState.KnockedDown;
-
-    // --- Animation completion ---
     protected override bool IsInKnockedDownState => _stateController.State == PlayerState.KnockedDown;
     protected override bool IsInHurtState => _stateController.State == PlayerState.Hurt;
     protected override bool IsInDyingState => _stateController.State == PlayerState.Dying;
@@ -35,7 +58,7 @@ public class PlayerEntity : CombatActorBase
     protected override void FireAttackCompleted() => _stateController.Fire(PlayerTrigger.AttackCompleted);
 
     public PlayerEntity(string name, Vector2 position, float scale, AnimatedSprite sprite)
-        : base(name, position, 48, 60, sprite, scale, 100)
+        : base(name, position, 48, 60, sprite, scale, 100, new(PlayerSprite.AnimationIdle, PlayerSprite.AnimationRun, PlayerSprite.AnimationHurt, PlayerSprite.AnimationFall, PlayerSprite.AnimationDie, PlayerSprite.AnimationGetUp))
     {
         Speed = 200f;
         Faction = Faction.Player;
@@ -61,20 +84,13 @@ public class PlayerEntity : CombatActorBase
 
     private PlayerStateController CreateStateController() => new(new()
     {
-        OnIdleEntry = () => Sprite.SetAnimation(IdleAnimation),
-        OnMovingEntry = () => Sprite.SetAnimation(RunAnimation),
+        OnIdleEntry = () => Sprite.SetAnimation(Animations.Idle),
+        OnMovingEntry = () => Sprite.SetAnimation(Animations.Run),
         OnAttackingEntry = () =>
         {
-            var animKey = _pendingAttackType switch
-            {
-                AttackType.Attack2 => PlayerSprite.AnimationAttack2,
-                AttackType.Attack3 => PlayerSprite.AnimationAttack3,
-                _ => PlayerSprite.AnimationAttack1
-            };
-            Sprite.SetAnimation(animKey);
-            CurrentMove = PlayerMoves.All[animKey];
+            CurrentMove = _pendingMove;
             FrameTracker.Reset();
-            SubscribeToAnimationEvent();
+            PlayAnimation(_pendingMove.AnimationKey);
         },
         OnAttackingExit = AttackingExit(),
         OnHurtEntry = HurtEntry(),
@@ -111,9 +127,7 @@ public class PlayerEntity : CombatActorBase
         AdvanceFrameAndRegisterHitboxes(gameTime);
     }
 
-    public void Attack1() { _pendingAttackType = AttackType.Attack1; _stateController.Fire(PlayerTrigger.AttackStart); }
-    public void Attack2() { _pendingAttackType = AttackType.Attack2; _stateController.Fire(PlayerTrigger.AttackStart); }
-    public void Attack3() { _pendingAttackType = AttackType.Attack3; _stateController.Fire(PlayerTrigger.AttackStart); }
+    public void Attack(MoveData move) { _pendingMove = move; _stateController.Fire(PlayerTrigger.AttackStart); }
 
     public void Move(Vector2 direction, float deltaTime) =>
         Position += direction * deltaTime * Speed;

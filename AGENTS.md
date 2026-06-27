@@ -67,7 +67,7 @@ dotnet test
 * **Resolution**: The game uses a virtual resolution (`GAME_WIDTH`, `GAME_HEIGHT`) scaled to the window size using `BoxingViewportAdapter`.
 * **Conciseness**: Responses and suggestions should include code that is as concise and terse as possible.
 * **Modern C#**: Always use the latest C# features (e.g., primary constructors, collection expressions, raw string literals) to ensure the codebase remains modern and idiomatic.
-* **Solution Simplification**: Before proposing a solution, ALWAYS include a consideration step to see if the proposed architecture or implementation can be further simplified, refactored, or streamlined.
+* **Solution Simplification**: Before proposing a solution, ALWAYS include a consideration step to see if the proposed architecture or implementation can be further simplified, refactored, or streamlined. When creating plans, prioritize simplicity — actively seek out and suggest simplifying constraints that reduce code surface area, remove unnecessary abstractions, or collapse parallel structures. Every plan should explicitly consider what can be removed or constrained, not just what needs to be built.
 * **Build Verification**: Always run `dotnet build` to ensure the project compiles successfully after any code modifications.
 * **Testing**: Always run `dotnet test` to execute unit tests after making any changes to verify no regressions were introduced.
 * **Mandatory Pre-Completion Checklist**: Before marking any implementation task as complete, the following steps MUST be performed in order:
@@ -90,6 +90,14 @@ dotnet test
   ```
 
 * **Debug-Mode Drawing**: When planning or implementing any new system, always consider what should be drawn in debug mode (`IsDebug`). This includes: spatial markers (trigger zones, bounds, spawn points), state indicators (active wave index, enemy count), and any runtime data that aids diagnosis during development. Add debug drawing alongside the feature — not as an afterthought.
+* **GC Optimization (Zero-Allocation Gameplay)**: All gameplay-critical paths (`Update`, `Draw`, collision detection, input handling) must be allocation-free to avoid GC-induced frame stutters. Follow these rules:
+  * **Pool/reuse allocations** — Use object pools (`ArrayPool<T>`, `Queue<T>`, or custom pools) for transient entities, particles, projectiles, and temporary lists.
+  * **Avoid LINQ in hot paths** — LINQ allocates enumerators and closures. Prefer `for`/`foreach` loops with pre-allocated buffers.
+  * **Avoid `params` in hot paths** — `params` arrays allocate on every call. Use explicit overloads or `ReadOnlySpan<T>`.
+  * **Use `struct` where appropriate** — Prefer `readonly struct` for small, frequently-created data types (e.g., vectors, hitbox results, damage info) to eliminate heap pressure and reduce GC scans.
+  * **Pre-allocate buffers** — Use `ArrayPool<byte>` or pre-sized `List<T>` with `Capacity` for serialization, network I/O, and temporary geometry.
+  * **Cache delegates and lambdas** — Store static/instance method references in fields; never allocate new lambdas per frame (e.g., don't write `list.ForEach(x => ...)` in Update).
+  * **Profile allocations** — Run with `DOTNET_gcServer=1` and monitor GC pause times during development. Flag any unexpected per-frame allocations in code review.
 
 ## MonoGame.Extended Pitfalls
 

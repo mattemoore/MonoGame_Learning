@@ -8,7 +8,7 @@ using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Game.Tests;
 
-public class TestSpatialEntity(string name, Vector2 position, int width, int height, Faction faction = default) : Entity(name, position, width, height), ICombatant, ICollisionActor
+public class TestSpatialEntity(string name, Vector2 position, int width, int height, Faction faction = default) : Entity(name, position, width, height), IDamageable, ICollisionActor
 {
     private readonly Health _health = new(100);
     public IShapeF Bounds => Frame;
@@ -22,11 +22,11 @@ public class TestSpatialEntity(string name, Vector2 position, int width, int hei
 
     public void TakeDamage(DamageInfo info) => CombatService.ApplyDamage(this, info);
 
-    bool ICombatant.CanTakeDamage() => _health.IsAlive;
-    void ICombatant.ReduceHealth(int amount) => _health.Subtract(amount);
-    void ICombatant.OnDeath() { }
-    void ICombatant.OnKnockdown(DamageInfo info) { }
-    void ICombatant.OnHit(DamageInfo info) { }
+    bool IDamageable.CanTakeDamage() => _health.IsAlive;
+    void IDamageable.ReduceHealth(int amount) => _health.Subtract(amount);
+    void IDamageable.OnDeath() { }
+    void IDamageable.OnKnockdown(DamageInfo info) { }
+    void IDamageable.OnHit(DamageInfo info) { }
 
     public void OnCollision(CollisionEventArgs collisionInfo) { }
 }
@@ -212,7 +212,7 @@ public class HitboxTests
         Assert.That(hits, Has.Count.EqualTo(1));
         Assert.That(hits[0].Damage, Is.EqualTo(7));
 
-        if (hits[0].Target is ICombatant combatant)
+        if (hits[0].Target is IDamageable combatant)
             combatant.TakeDamage(new DamageInfo { Amount = hits[0].Damage });
         Assert.That(target.Health, Is.EqualTo(93));
     }
@@ -320,7 +320,7 @@ public class HitboxTests
     }
 
     [Test]
-    public void PerAttackDedup_ClearedAfterClearAttackResolveState()
+    public void PerAttackDedup_ClearedAfterClearAttackDedup()
     {
         var service = new HitboxService();
         var player = MakeActor(0, 0, faction: Faction.Player);
@@ -334,7 +334,7 @@ public class HitboxTests
         Assert.That(hits, Has.Count.EqualTo(1));
 
         // Clear attack resolve state (simulating attack end / new attack)
-        service.ClearAttackResolveState(player);
+        service.ClearAttackDedup(player);
 
         // Frame 2 — should hit again because it's a "new" attack
         service.Clear(player);
@@ -343,13 +343,21 @@ public class HitboxTests
         Assert.That(hits, Has.Count.EqualTo(1));
     }
 
-    private class TestPropForHit(string name, Vector2 position, int width, int height) : Entity(name, position, width, height), IDamageable, IHasHealth, ICollisionActor
+    private class TestPropForHit(string name, Vector2 position, int width, int height) : Entity(name, position, width, height), IDamageable, ICollisionActor
     {
         public IShapeF Bounds => Frame;
+        public Faction Faction => Faction.Neutral;
         public int Health => 100;
         public int MaxHealth => 100;
+        public bool IsAlive => true;
+        public event EventHandler Died = delegate { };
 
         public void TakeDamage(DamageInfo info) { }
+        public bool CanTakeDamage() => true;
+        public void ReduceHealth(int amount) { }
+        public void OnDeath() { }
+        public void OnKnockdown(DamageInfo info) { }
+        public void OnHit(DamageInfo info) { }
         public void OnCollision(CollisionEventArgs collisionInfo) { }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Gum.Forms;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -44,6 +45,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private SpriteFont _debugFont;
     private LevelDirector _levelDirector;
     private BackgroundRenderer _backgroundRenderer;
+    private Dictionary<InputAction, Action> _actionHandlers;
 
     protected override void Initialize()
     {
@@ -97,6 +99,20 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
         _player.Died += OnPlayerDied;
 
+        _actionHandlers = new()
+        {
+            [InputAction.Action1] = () => { if (_gameState.State == GameState.Playing) _player.Attack(_player.Attack1Move); },
+            [InputAction.Action2] = () => { if (_gameState.State == GameState.Playing) _player.Attack(_player.Attack2Move); },
+            [InputAction.Action3] = () => { if (_gameState.State == GameState.Playing) _player.Attack(_player.Attack3Move); },
+            [InputAction.Back] = () => _menuManager.HandleBack(),
+            [InputAction.Debug] = ToggleDebug,
+            [InputAction.Confirm] = () => _menuManager.HandleConfirm(),
+            [InputAction.DebugKill] = () => { if (IsDebug && _gameState.State == GameState.Playing) _player?.TakeDamage(new DamageInfo { Amount = 9999 }); },
+            [InputAction.DebugComplete] = () => { if (IsDebug && _gameState.State == GameState.Playing) _gameState.Fire(GameTrigger.CompleteLevel); },
+            [InputAction.MenuUp] = () => _menuManager.HandleMenuNavigation(-1),
+            [InputAction.MenuDown] = () => _menuManager.HandleMenuNavigation(1),
+        };
+
         ReinitLevel();
     }
 
@@ -114,8 +130,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             _cameraController.Update(Camera);
             _player.MovementDirection = _input.MovementDirection;
 
-            foreach (var updatable in _entityManager.Updatables)
-                updatable.Update(gameTime);
+            // indexed for loop to avoid heap-allocated IEnumerator<T> from IReadOnlyList<T>
+            var updatables = _entityManager.Updatables;
+            for (int i = 0; i < updatables.Count; i++)
+                updatables[i].Update(gameTime);
 
             var hitResults = _hitboxService.ResolveHits(_entityManager.All);
             foreach (var hit in hitResults)
@@ -129,8 +147,11 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             var movementBounds = _levelDirector.IsScrollLocked
                 ? _levelDirector.FightAreaBounds
                 : _currentLevel.MovementBounds;
-            foreach (var movable in _entityManager.Movables)
+            // indexed for loop to avoid heap-allocated IEnumerator<T> from IReadOnlyList<T>
+            var movables = _entityManager.Movables;
+            for (int i = 0; i < movables.Count; i++)
             {
+                var movable = movables[i];
                 movable.MovementBounds = movementBounds;
                 Core.Entities.Helpers.Mover.ClampToBounds((Entity)movable, movable.MovementBounds);
             }
@@ -158,8 +179,11 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             _backgroundRenderer.Render(renderCtx);
             _numBackgroundsDrawn = _backgroundRenderer.LastFrameDrawCount;
 
-            foreach (var renderable in _entityManager.Renderables)
+            // indexed for loop to avoid heap-allocated IEnumerator<T> from IReadOnlyList<T>
+            var renderables = _entityManager.Renderables;
+            for (int i = 0; i < renderables.Count; i++)
             {
+                var renderable = renderables[i];
                 if (cameraBounds.Intersects(((Entity)renderable).Frame))
                 {
                     renderable.Render(renderCtx);
@@ -174,9 +198,9 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                     drawable.DrawDebug(debugCtx);
 
                 foreach (var wave in _currentLevel.WaveDefs)
-                    SpriteBatch.DrawLine(wave.TriggerX, 0, wave.TriggerX, GAME_HEIGHT, Color.Cyan * 0.4f, 2f);
+                    SpriteBatch.DrawLine(wave.TriggerX, 0, wave.TriggerX, ViewportAdapter.VirtualHeight, Color.Cyan * 0.4f, 2f);
 
-                SpriteBatch.DrawLine(_currentLevel.EndTriggerX, 0, _currentLevel.EndTriggerX, GAME_HEIGHT, Color.Orange * 0.4f, 2f);
+                SpriteBatch.DrawLine(_currentLevel.EndTriggerX, 0, _currentLevel.EndTriggerX, ViewportAdapter.VirtualHeight, Color.Orange * 0.4f, 2f);
 
                 if (_levelDirector.IsScrollLocked)
                     SpriteBatch.DrawRectangle(_levelDirector.FightAreaBounds, Color.Yellow * 0.3f, 2f);
@@ -204,7 +228,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                 float scale = 3f;
                 var textSize = _debugFont.MeasureString(goText) * scale;
                 SpriteBatch.DrawString(_debugFont, goText,
-                    new Vector2(GAME_WIDTH - textSize.X - 20, GAME_HEIGHT / 2f - textSize.Y / 2f),
+                    new Vector2(ViewportAdapter.VirtualWidth - textSize.X - 20, ViewportAdapter.VirtualHeight / 2f - textSize.Y / 2f),
                     Color.LimeGreen, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
                 SpriteBatch.End();
             }
@@ -235,39 +259,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
     private void OnActionTriggered(InputAction action)
     {
-        switch (action)
-        {
-            case InputAction.Action1:
-                if (_gameState.State == GameState.Playing) _player.Attack1();
-                break;
-            case InputAction.Action2:
-                if (_gameState.State == GameState.Playing) _player.Attack2();
-                break;
-            case InputAction.Action3:
-                if (_gameState.State == GameState.Playing) _player.Attack3();
-                break;
-            case InputAction.Back:
-                _menuManager.HandleBack();
-                break;
-            case InputAction.Debug:
-                ToggleDebug();
-                break;
-            case InputAction.Confirm:
-                _menuManager.HandleConfirm();
-                break;
-            case InputAction.DebugKill:
-                if (IsDebug && _gameState.State == GameState.Playing) _player?.TakeDamage(new DamageInfo { Amount = 9999 });
-                break;
-            case InputAction.DebugComplete:
-                if (IsDebug && _gameState.State == GameState.Playing) _gameState.Fire(GameTrigger.CompleteLevel);
-                break;
-            case InputAction.MenuUp:
-                _menuManager.HandleMenuNavigation(-1);
-                break;
-            case InputAction.MenuDown:
-                _menuManager.HandleMenuNavigation(1);
-                break;
-        }
+        if (_actionHandlers.TryGetValue(action, out var handler))
+            handler();
     }
 
     private void ToggleDebug()

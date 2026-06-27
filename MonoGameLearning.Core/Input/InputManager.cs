@@ -32,44 +32,32 @@ public class InputManager
     public Vector2 MovementDirection { get; private set; }
     public InputMode Mode { get; set; } = InputMode.Gameplay;
 
-    private readonly Dictionary<Keys, InputAction> _keyActions;
-    private readonly Dictionary<Keys, Vector2> _movementKeys;
-    private readonly Dictionary<Keys, InputAction> _menuKeys;
+    private readonly List<(HashSet<Keys> keys, InputAction action, InputMode? mode)> _bindings;
+    private readonly List<(HashSet<Keys> keys, Vector2 direction)> _movementBindings;
 
     public InputManager()
     {
-        _keyActions = new()
-        {
-            { Keys.U, InputAction.Action1 },
-            { Keys.I, InputAction.Action2 },
-            { Keys.O, InputAction.Action3 },
-            { Keys.Escape, InputAction.Back },
-            { Keys.OemTilde, InputAction.Debug },
-            { Keys.Enter, InputAction.Confirm },
-            { Keys.Space, InputAction.Confirm },
-            { Keys.K, InputAction.DebugKill },
-            { Keys.C, InputAction.DebugComplete }
-        };
+        _bindings =
+        [
+            (new() { Keys.U }, InputAction.Action1, InputMode.Gameplay),
+            (new() { Keys.I }, InputAction.Action2, InputMode.Gameplay),
+            (new() { Keys.O }, InputAction.Action3, InputMode.Gameplay),
+            (new() { Keys.Escape }, InputAction.Back, null),
+            (new() { Keys.OemTilde }, InputAction.Debug, null),
+            (new() { Keys.Enter, Keys.Space }, InputAction.Confirm, null),
+            (new() { Keys.K }, InputAction.DebugKill, InputMode.Gameplay),
+            (new() { Keys.C }, InputAction.DebugComplete, InputMode.Gameplay),
+            (new() { Keys.Up, Keys.W }, InputAction.MenuUp, InputMode.Menu),
+            (new() { Keys.Down, Keys.S }, InputAction.MenuDown, InputMode.Menu),
+        ];
 
-        _movementKeys = new()
-        {
-            { Keys.W, new Vector2(0, -1) },
-            { Keys.S, new Vector2(0, 1) },
-            { Keys.A, new Vector2(-1, 0) },
-            { Keys.D, new Vector2(1, 0) },
-            { Keys.Up, new Vector2(0, -1) },
-            { Keys.Down, new Vector2(0, 1) },
-            { Keys.Left, new Vector2(-1, 0) },
-            { Keys.Right, new Vector2(1, 0) }
-        };
-
-        _menuKeys = new()
-        {
-            { Keys.Up, InputAction.MenuUp },
-            { Keys.Down, InputAction.MenuDown },
-            { Keys.W, InputAction.MenuUp },
-            { Keys.S, InputAction.MenuDown }
-        };
+        _movementBindings =
+        [
+            (new() { Keys.W, Keys.Up }, new Vector2(0, -1)),
+            (new() { Keys.S, Keys.Down }, new Vector2(0, 1)),
+            (new() { Keys.A, Keys.Left }, new Vector2(-1, 0)),
+            (new() { Keys.D, Keys.Right }, new Vector2(1, 0)),
+        ];
     }
 
     public void Update(GameTime gameTime)
@@ -77,44 +65,33 @@ public class InputManager
         KeyboardExtended.Update();
         var keyboardState = KeyboardExtended.GetState();
 
-        if (Mode == InputMode.Gameplay)
+        Vector2 newMovementDirection = Vector2.Zero;
+        foreach (var (keys, direction) in _movementBindings)
         {
-            Vector2 newMovementDirection = Vector2.Zero;
-            foreach (var (key, direction) in _movementKeys)
+            foreach (var key in keys)
             {
                 if (keyboardState.IsKeyDown(key))
                 {
                     newMovementDirection += direction;
+                    break;
                 }
             }
-
-            if (newMovementDirection != Vector2.Zero)
-            {
-                newMovementDirection.Normalize();
-            }
-            MovementDirection = newMovementDirection;
-        }
-        else
-        {
-            MovementDirection = Vector2.Zero;
         }
 
-        if (Mode == InputMode.Menu)
+        if (newMovementDirection != Vector2.Zero)
+            newMovementDirection.Normalize();
+        MovementDirection = Mode == InputMode.Gameplay ? newMovementDirection : Vector2.Zero;
+
+        foreach (var (keys, action, mode) in _bindings)
         {
-            foreach (var (key, action) in _menuKeys)
+            if (mode is not null && mode != Mode) continue;
+            foreach (var key in keys)
             {
                 if (keyboardState.WasKeyPressed(key))
                 {
                     ActionTriggered?.Invoke(action);
+                    break;
                 }
-            }
-        }
-
-        foreach (var (key, action) in _keyActions)
-        {
-            if (keyboardState.WasKeyPressed(key))
-            {
-                ActionTriggered?.Invoke(action);
             }
         }
     }

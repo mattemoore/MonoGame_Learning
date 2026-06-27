@@ -10,15 +10,23 @@ using MonoGameLearning.Core.Entities.Interfaces;
 namespace MonoGameLearning.Game.Tests;
 
 public class TestProp(string name, Vector2 position, int width, int height)
-    : Entity(name, position, width, height), ICollisionActor, IDamageable, IHasHealth
+    : Entity(name, position, width, height), ICollisionActor, IDamageable
 {
     public IShapeF Bounds => Frame;
+    public Faction Faction => Faction.Neutral;
     public int Health { get; protected set; }
     public int MaxHealth { get; protected set; }
+    public bool IsAlive => true;
+    public event EventHandler Died = delegate { };
 
     public void OnCollision(CollisionEventArgs collisionInfo) { }
 
     public void TakeDamage(DamageInfo info) { }
+    public bool CanTakeDamage() => true;
+    public void ReduceHealth(int amount) => Health -= amount;
+    public void OnDeath() { }
+    public void OnKnockdown(DamageInfo info) { }
+    public void OnHit(DamageInfo info) { }
 }
 
 public class PassThroughActor(string name, Vector2 position, int width, int height)
