@@ -72,7 +72,15 @@ Control player movement and camera tracking during fights.
 
 ---
 
-## [ ] Milestone 5: HUD & UI Integration (Placeholder Layouts)
+## [x] Milestone 6: MonoGame.Extended 6.0 Upgrade
+
+- [x] **Package Version Bumps**: Bump `MonoGame.Extended` and `MonoGame.Extended.Content.Pipeline` from `5.3.1` to `6.0.0`.
+- [x] **Collision API Migration**: Replace legacy `CollisionComponent`/`IShapeF`/`CollisionEventArgs` with `CollisionWorld2D`/`CollisionShape2D`/`CollisionResult2D` from v6.
+- [x] **Entity Rewrite**: `CombatActorBase`, `PropBase`, `TriggerEntity` now implement v6 `ICollisionActor` (with `Id` + `Shape` instead of `Bounds` + `OnCollision`).
+- [x] **EntityManager Rewrite**: Uses `CollisionWorld2D` for actor insertion/removal with named layers ("actors", "props").
+- [x] **GameLoop Rewrite**: Collision world creation with layer filtering (actor-prop only, no actor-actor/prop-prop). `ResolveCollisions()` drives pushback via `QueryCollisionPairs`.
+- [x] **Test Migration**: All 6 test files updated for v6 API. 6 new tests for layer filtering, shape resolution, and cross-layer behavior.
+- [x] **Build & Test Green**: 0 warnings, 0 errors, 216 tests passing.
 
 Provide visual feedback of game parameters using basic text/shapes.
 

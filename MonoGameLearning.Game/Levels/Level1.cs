@@ -25,15 +25,15 @@ public class Level1(int gameWidth, int gameHeight) : Level(CreateWaveDefs(), gam
 
     private static List<WaveDef> CreateWaveDefs() =>
     [
-        new WaveDef(TriggerX: 800f, Enemies:
+        new WaveDef(TriggerX: 800f, EndX: 1200f, Enemies:
         [
-            new EnemySpawnDef("Grunt", new Vector2(850, 550)),
-            new EnemySpawnDef("Grunt", new Vector2(900, 550))
+            new EnemySpawnDef("Grunt", new Vector2(850, 400)),
+            new EnemySpawnDef("Grunt", new Vector2(900, 400))
         ]),
-        new WaveDef(TriggerX: 1600f, Enemies:
+        new WaveDef(TriggerX: 1600f, EndX: 2000f, Enemies:
         [
-            new EnemySpawnDef("Grunt", new Vector2(1650, 550)),
-            new EnemySpawnDef("Grunt", new Vector2(1700, 550))
+            new EnemySpawnDef("Grunt", new Vector2(1650, 200)),
+            new EnemySpawnDef("Grunt", new Vector2(1700, 200))
         ])
     ];
 }

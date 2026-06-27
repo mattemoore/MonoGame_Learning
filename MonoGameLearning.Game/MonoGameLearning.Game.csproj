@@ -26,8 +26,8 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Gum.MonoGame" Version="2026.1.5.1" />
-    <PackageReference Include="MonoGame.Extended" Version="5.3.1" />
-    <PackageReference Include="MonoGame.Extended.Content.Pipeline" Version="5.3.1" />
+    <PackageReference Include="MonoGame.Extended" Version="6.0.0" />
+    <PackageReference Include="MonoGame.Extended.Content.Pipeline" Version="6.0.0" />
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.*" />
     <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*" />
     <PackageReference Include="Stateless" Version="5.20.0" />
