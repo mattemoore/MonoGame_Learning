@@ -5,3 +5,4 @@
 1. help enemies avoid getting stuck on props
 1. enemies spawn in offscreen
 1. Load entities at level start so no stuttering on first load of enemy (type)
+1. Enemies need to be able to spawn in differen Y locations

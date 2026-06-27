@@ -8,10 +8,19 @@ namespace MonoGameLearning.Game.Tests;
 public class CameraTargetXTests
 {
     private const int GameWidth = 800;
+    private const float HalfWidth = 400f;
+    private const float MinCenter = 400f; // LevelBounds.Left + HalfWidth
+    private const float FullMaxCenter = 1200f; // LevelBounds.Right - HalfWidth
     private static readonly RectangleF LevelBounds = new(0, 0, 1600, 900);
 
-    private static float TargetX(float playerX, float currentCameraCenterX, float? waveEndX = null)
-        => CameraController.ComputeTargetX(playerX, currentCameraCenterX, LevelBounds, GameWidth, waveEndX);
+    private static float TargetX(float playerX, float currentCameraCenterX, float? maxCenter = null)
+        => CameraController.ComputeTargetX(playerX, currentCameraCenterX, MinCenter, maxCenter ?? FullMaxCenter, GameWidth);
+
+    private static float CappedMaxCenter(float? waveEndX)
+    {
+        if (!waveEndX.HasValue) return FullMaxCenter;
+        return Math.Min(FullMaxCenter, waveEndX.Value - HalfWidth);
+    }
 
     [Test]
     public void PlayerAtLeftEdge_ClampsToHalfGameWidth()
@@ -60,9 +69,8 @@ public class CameraTargetXTests
     [Test]
     public void LevelWidthEqualsGameWidth_ClampsToCenter()
     {
-        var narrowBounds = new RectangleF(0, 0, 800, 900);
-        float minResult = CameraController.ComputeTargetX(0, 0, narrowBounds, GameWidth);
-        float maxResult = CameraController.ComputeTargetX(800, 800, narrowBounds, GameWidth);
+        float minResult = CameraController.ComputeTargetX(0, 0, 400, 400, GameWidth);
+        float maxResult = CameraController.ComputeTargetX(800, 800, 400, 400, GameWidth);
         Assert.That(minResult, Is.EqualTo(400));
         Assert.That(maxResult, Is.EqualTo(400));
     }
@@ -146,16 +154,19 @@ public class CameraTargetXTests
     }
 
     [Test]
-    public void WaveEndCap_CameraRightEdgeCappedAtEnd()
+    public void WaveEndCap_CameraCenterCappedAtWaveEndX()
     {
-        float result = TargetX(1500, 800, waveEndX: 1200f);
+        // maxCenter is capped at waveEndX - halfWidth: min(1200, 1200-400) = 800
+        float result = TargetX(1500, 800, maxCenter: CappedMaxCenter(1200f));
         Assert.That(result, Is.EqualTo(800f));
     }
 
     [Test]
-    public void WaveEndCap_PlayerPastEnd_ClampsToEnd()
+    public void WaveEndCap_PlayerPastEnd_ClampsCamera()
     {
-        float result = TargetX(1300, 1000, waveEndX: 1200f);
+        // maxCenter = min(1200, 1200-400) = 800
+        float maxCenter = CappedMaxCenter(1200f);
+        float result = TargetX(1300, 1000, maxCenter);
         Assert.That(result, Is.EqualTo(800f));
     }
 
@@ -169,7 +180,8 @@ public class CameraTargetXTests
     [Test]
     public void WaveEndCap_TighterThanLevelBounds_Wins()
     {
-        float result = TargetX(1500, 800, waveEndX: 1000f);
+        // maxCenter = min(1200, 1000-400) = 600
+        float result = TargetX(1500, 800, maxCenter: CappedMaxCenter(1000f));
         Assert.That(result, Is.EqualTo(600f));
     }
 
