@@ -98,6 +98,7 @@ dotnet test
   * **Pre-allocate buffers** — Use `ArrayPool<byte>` or pre-sized `List<T>` with `Capacity` for serialization, network I/O, and temporary geometry.
   * **Cache delegates and lambdas** — Store static/instance method references in fields; never allocate new lambdas per frame (e.g., don't write `list.ForEach(x => ...)` in Update).
   * **Profile allocations** — Run with `DOTNET_gcServer=1` and monitor GC pause times during development. Flag any unexpected per-frame allocations in code review.
+* **Ask Questions When Coding**: Before implementing any design or architecture change, pause to ask the user clarifying questions. Do not silently implement ambiguous or multi-interpretation requests. If a requirement, edge case, or design decision is underspecified, present concrete options and ask for direction. This applies to test strategy, abstraction boundaries, naming, file placement, and any choice that would be costly to reverse.
 
 ## MonoGame.Extended Pitfalls
 
