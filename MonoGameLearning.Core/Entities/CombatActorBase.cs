@@ -18,8 +18,9 @@ public enum KnockdownPhase { Falling, GettingUp }
 
 public abstract class CombatActorBase(string name, Vector2 position, int width, int height, AnimatedSprite sprite, float scale, int maxHealth, AnimationSet animations) : Entity(name, position, width, height), IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, IDamageable, IHitboxProvider, IMoveableEntity, IAnimated
 {
-    public string LayerName => "actors";
-    public IShapeF Bounds => Frame;
+    public static string LayerName => "actors";
+    public int Id => GetHashCode();
+    public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
 
     protected readonly SpriteRenderer SpriteRenderer = new(sprite, scale);
     protected readonly Health HealthComponent = new(maxHealth);
@@ -91,12 +92,6 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
     protected virtual void OnHit(DamageInfo info) { }
 
     protected void RaiseDied() => Died?.Invoke(this, EventArgs.Empty);
-
-    public void OnCollision(CollisionEventArgs collisionInfo)
-    {
-        if (collisionInfo.Other is IMoveableEntity) return;
-        Position -= collisionInfo.PenetrationVector;
-    }
 
     void IAnimated.ResetAnimationFrameIndex() => FrameTracker.Reset();
 

@@ -5,6 +5,8 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
+using MonoGame.Extended.Collisions.Layers;
+using MonoGame.Extended.Collisions.QuadTree;
 using MonoGame.Extended.Graphics;
 using MonoGameGum;
 using MonoGameGum.GueDeriving;
@@ -34,7 +36,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private EntityManager _entityManager;
     private InputManager _input;
     private TextRuntime _debugWindow1, _debugWindow2;
-    private CollisionComponent _collision = null!;
+    private CollisionWorld2D _collisionWorld;
     private static GumService GumService => GumService.Default;
     private int _numBackgroundsDrawn, _numEntitiesDrawn;
 
@@ -142,7 +144,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                     damageable.TakeDamage(new DamageInfo { Amount = hit.Damage, Knockdown = hit.Knockdown, Strength = hit.Strength });
             }
 
-            _collision.Update(gameTime);
+            ResolveCollisions();
 
             var movementBounds = _levelDirector.IsScrollLocked
                 ? _levelDirector.FightAreaBounds
@@ -238,6 +240,20 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         base.Draw(gameTime);
     }
 
+    private void ResolveCollisions()
+    {
+        _collisionWorld.RebuildDynamicLayers();
+
+        foreach (var pair in _collisionWorld.QueryCollisionPairs("actors", "props"))
+        {
+            var actor = pair.First;
+            var result = pair.FirstResult;
+            if (!result.Intersects) continue;
+            if (actor is Entity entity)
+                entity.Position += result.MinimumTranslationVector;
+        }
+    }
+
     private void OnPlayerDied(object sender, EventArgs e)
     {
         _gameState.Fire(GameTrigger.PlayerDied);
@@ -283,12 +299,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     {
         _currentLevel = new Level1(GAME_WIDTH, GAME_HEIGHT);
         _backgroundRenderer = _currentLevel.CreateBackgroundRenderer(Content);
-        _collision = CreateCollisionComponent(_currentLevel.MovementBounds);
-
-        if (_entityManager is null)
-            _entityManager = new EntityManager(_collision);
-        else
-            _entityManager.SetCollisionComponent(_collision);
+        _collisionWorld = CreateCollisionWorld(_currentLevel.MovementBounds);
+        _entityManager = new EntityManager(_collisionWorld);
 
         _entityManager.Register(_player);
 
@@ -313,10 +325,17 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             provider.HitboxService = _hitboxService;
     }
 
-    private static CollisionComponent CreateCollisionComponent(RectangleF bounds)
+    private static CollisionWorld2D CreateCollisionWorld(RectangleF bounds)
     {
-        var cc = new CollisionComponent(bounds);
-        cc.Add("actors", new MonoGame.Extended.Collisions.Layers.Layer(new MonoGame.Extended.Collisions.QuadTree.QuadTreeSpace(bounds)));
-        return cc;
+        var world = new CollisionWorld2D();
+        var bb = new BoundingBox2D(new Vector2(bounds.X, bounds.Y), new Vector2(bounds.Right, bounds.Bottom));
+        var actorSpace = new QuadTreeSpace(bb);
+        world.AddLayer("actors", new Layer(actorSpace));
+        world.DisableCollisionBetweenLayers("actors", "actors");
+        var propSpace = new QuadTreeSpace(bb);
+        world.AddLayer("props", new Layer(propSpace));
+        world.DisableCollisionBetweenLayers("props", "props");
+        world.EnableCollisionBetweenLayers("actors", "props");
+        return world;
     }
 }

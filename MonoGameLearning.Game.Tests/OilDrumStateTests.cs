@@ -12,7 +12,8 @@ public class TestDamageableEntity(string name, Vector2 position, int width, int 
 {
     private readonly Health _health = new(6);
     private bool _isHitStunned;
-    public IShapeF Bounds => Frame;
+    public int Id => this.GetHashCode();
+    public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
     public Faction Faction => Faction.Neutral;
     public int Health => _health.Value;
     public int MaxHealth => _health.MaxHealth;
@@ -36,7 +37,6 @@ public class TestDamageableEntity(string name, Vector2 position, int width, int 
     public void ClearHitStun() => _isHitStunned = false;
 
     public bool CanTakeDamage => _health.IsAlive && !_isHitStunned;
-    public void OnCollision(CollisionEventArgs collisionInfo) { }
 
     bool IDamageable.CanTakeDamage() => _health.IsAlive && !_isHitStunned;
     void IDamageable.ReduceHealth(int amount) => _health.Subtract(amount);

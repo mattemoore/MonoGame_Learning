@@ -11,7 +11,8 @@ namespace MonoGameLearning.Game.Tests;
 
 public class TestEnemyEntity : Entity, IDamageable, ICollisionActor
 {
-    public IShapeF Bounds => Frame;
+    public int Id => GetHashCode();
+    public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
     public EnemyStateController StateController { get; }
     public Entity? Target { get; set; }
     public float AttackRange { get; set; } = 70f;
@@ -62,8 +63,6 @@ public class TestEnemyEntity : Entity, IDamageable, ICollisionActor
     void IDamageable.OnHit(DamageInfo info) => StateController.Fire(EnemyTrigger.TakeDamage);
 
     private void RaiseDied() => Died?.Invoke(this, EventArgs.Empty);
-
-    public void OnCollision(CollisionEventArgs collisionInfo) { }
 
     public void UpdateAI(float deltaSeconds)
     {

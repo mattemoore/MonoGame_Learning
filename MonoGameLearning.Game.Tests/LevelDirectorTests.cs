@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using Microsoft.Xna.Framework;
@@ -65,12 +66,23 @@ public class LevelDirectorTests
     private Entity _player;
     private TestLevelDirector _director;
 
+    private static CollisionWorld2D CreateTestWorld()
+    {
+        var world = new CollisionWorld2D();
+        var bb = new BoundingBox2D(new Vector2(Bounds.X, Bounds.Y), new Vector2(Bounds.Right, Bounds.Bottom));
+        var actorSpace = new QuadTreeSpace(bb);
+        world.AddLayer("actors", new Layer(actorSpace));
+        var propSpace = new QuadTreeSpace(bb);
+        world.AddLayer("props", new Layer(propSpace));
+        world.EnableCollisionBetweenLayers("actors", "props");
+        return world;
+    }
+
     [SetUp]
     public void Setup()
     {
-        var cc = new CollisionComponent(Bounds);
-        cc.Add("actors", new Layer(new QuadTreeSpace(Bounds)));
-        _entityManager = new EntityManager(cc);
+        var world = CreateTestWorld();
+        _entityManager = new EntityManager(world);
         _cameraController = new CameraController(null!, 800, 600, new RectangleF(0, 0, 2000, 600));
         _player = new TestPlayerEntity("player", Vector2.Zero);
         _level = new TestLevel(
