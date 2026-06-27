@@ -10,29 +10,21 @@ namespace MonoGameLearning.Game.Tests;
 public class TestActorEntity(string name, Vector2 position, int width, int height)
     : Entity(name, position, width, height), ICollisionActor, IMoveableEntity
 {
-    public IShapeF Bounds => Frame;
+    public int Id => GetHashCode();
+    public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
     public Vector2 MovementDirection { get; set; }
     public float Speed { get; set; }
     public RectangleF MovementBounds { get; set; }
-
-    public void OnCollision(CollisionEventArgs collisionInfo)
-    {
-        Position -= collisionInfo.PenetrationVector;
-    }
 }
 
 public class CollisionPushEntity(string name, Vector2 position, int width, int height)
     : Entity(name, position, width, height), ICollisionActor, IMoveableEntity
 {
-    public IShapeF Bounds => Frame;
+    public int Id => GetHashCode();
+    public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
     public Vector2 MovementDirection { get; set; }
     public float Speed { get; set; }
     public RectangleF MovementBounds { get; set; }
-
-    public void OnCollision(CollisionEventArgs collisionInfo)
-    {
-        Position -= collisionInfo.PenetrationVector;
-    }
 }
 
 [TestFixture]
@@ -46,23 +38,6 @@ public class ActorCollisionTests
 
     private static CollisionPushEntity MakePushEntity(float x, float y) =>
         new("pusher", new Vector2(x, y), EntitySize, EntitySize);
-
-    private static CollisionEventArgs CollisionWith(Vector2 penetration) =>
-        new() { Other = null!, PenetrationVector = penetration };
-
-    [Test]
-    public void OnCollision_TwoOverlappingEntities_ArePushedApart()
-    {
-        var left = MakePushEntity(90, 100);
-        var right = MakePushEntity(110, 100);
-
-        left.OnCollision(new CollisionEventArgs { Other = right, PenetrationVector = new Vector2(15, 0) });
-        right.OnCollision(new CollisionEventArgs { Other = left, PenetrationVector = new Vector2(-15, 0) });
-
-        Assert.That(left.Position.X, Is.EqualTo(75));
-        Assert.That(right.Position.X, Is.EqualTo(125));
-        Assert.That(left.Frame.Right, Is.LessThanOrEqualTo(right.Frame.Left));
-    }
 
     [Test]
     public void ClampToBounds_EntityInside_DoesNotMove()
@@ -168,7 +143,7 @@ public class ActorCollisionTests
     {
         var entity = MakeEntity(40, 300);
         entity.MovementBounds = TwoScreenBounds;
-        entity.OnCollision(CollisionWith(new Vector2(25, 0)));
+        entity.Position -= new Vector2(25, 0);
         Mover.ClampToBounds(entity, entity.MovementBounds);
         Assert.That(entity.Position.X, Is.EqualTo(25));
     }
@@ -178,7 +153,7 @@ public class ActorCollisionTests
     {
         var entity = MakeEntity(1560, 300);
         entity.MovementBounds = TwoScreenBounds;
-        entity.OnCollision(CollisionWith(new Vector2(-30, 0)));
+        entity.Position += new Vector2(30, 0);
         Mover.ClampToBounds(entity, entity.MovementBounds);
         Assert.That(entity.Position.X, Is.EqualTo(1575));
     }
@@ -188,9 +163,9 @@ public class ActorCollisionTests
     {
         var entity = MakeEntity(50, 300);
         entity.MovementBounds = TwoScreenBounds;
-        entity.OnCollision(CollisionWith(new Vector2(10, 0)));
-        entity.OnCollision(CollisionWith(new Vector2(10, 0)));
-        entity.OnCollision(CollisionWith(new Vector2(10, 0)));
+        entity.Position -= new Vector2(10, 0);
+        entity.Position -= new Vector2(10, 0);
+        entity.Position -= new Vector2(10, 0);
         Mover.ClampToBounds(entity, entity.MovementBounds);
         Assert.That(entity.Position.X, Is.EqualTo(25));
     }
@@ -201,7 +176,7 @@ public class ActorCollisionTests
         var entity = MakeEntity(25, 300);
         entity.MovementBounds = TwoScreenBounds;
         Mover.ClampToBounds(entity, entity.MovementBounds);
-        entity.OnCollision(CollisionWith(new Vector2(-10, 0)));
+        entity.Position -= new Vector2(-10, 0);
         Assert.That(entity.Position.X, Is.EqualTo(35));
     }
 
@@ -214,7 +189,7 @@ public class ActorCollisionTests
         left.MovementBounds = bounds;
         right.MovementBounds = bounds;
 
-        left.OnCollision(new CollisionEventArgs { Other = right, PenetrationVector = new Vector2(20, 0) });
+        left.Position -= new Vector2(20, 0);
         Mover.ClampToBounds(left, left.MovementBounds);
         Assert.That(left.Position.X, Is.EqualTo(25));
         Assert.That(right.Position.X, Is.EqualTo(70));
@@ -229,7 +204,7 @@ public class ActorCollisionTests
         left.MovementBounds = bounds;
         right.MovementBounds = bounds;
 
-        right.OnCollision(new CollisionEventArgs { Other = left, PenetrationVector = new Vector2(-25, 0) });
+        right.Position -= new Vector2(-25, 0);
         Mover.ClampToBounds(right, right.MovementBounds);
         Assert.That(right.Position.X, Is.EqualTo(1575));
     }
@@ -245,8 +220,8 @@ public class ActorCollisionTests
         e2.MovementBounds = bounds;
         e3.MovementBounds = bounds;
 
-        e2.OnCollision(new CollisionEventArgs { Other = e3, PenetrationVector = new Vector2(15, 0) });
-        e1.OnCollision(new CollisionEventArgs { Other = e2, PenetrationVector = new Vector2(15, 0) });
+        e2.Position -= new Vector2(15, 0);
+        e1.Position -= new Vector2(15, 0);
 
         Mover.ClampToBounds(e1, e1.MovementBounds);
         Mover.ClampToBounds(e2, e2.MovementBounds);
@@ -263,7 +238,7 @@ public class ActorCollisionTests
         var entity = MakeEntity(30, 300);
         entity.MovementBounds = TwoScreenBounds;
 
-        entity.OnCollision(CollisionWith(new Vector2(10, 0)));
+        entity.Position -= new Vector2(10, 0);
         Mover.ClampToBounds(entity, entity.MovementBounds);
         Assert.That(entity.Position.X, Is.EqualTo(25));
 
@@ -277,7 +252,7 @@ public class ActorCollisionTests
         var entity = MakeEntity(30, 300);
         entity.MovementBounds = TwoScreenBounds;
 
-        entity.OnCollision(CollisionWith(new Vector2(10, 0)));
+        entity.Position -= new Vector2(10, 0);
         Mover.ClampToBounds(entity, entity.MovementBounds);
 
         float halfSize = EntitySize / 2f;

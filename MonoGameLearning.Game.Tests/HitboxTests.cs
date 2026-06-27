@@ -11,7 +11,8 @@ namespace MonoGameLearning.Game.Tests;
 public class TestSpatialEntity(string name, Vector2 position, int width, int height, Faction faction = default) : Entity(name, position, width, height), IDamageable, ICollisionActor
 {
     private readonly Health _health = new(100);
-    public IShapeF Bounds => Frame;
+    public int Id => GetHashCode();
+    public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
     public Faction Faction { get; protected set; } = faction;
     public int Health => _health.Value;
     public int MaxHealth => _health.MaxHealth;
@@ -27,8 +28,6 @@ public class TestSpatialEntity(string name, Vector2 position, int width, int hei
     void IDamageable.OnDeath() { }
     void IDamageable.OnKnockdown(DamageInfo info) { }
     void IDamageable.OnHit(DamageInfo info) { }
-
-    public void OnCollision(CollisionEventArgs collisionInfo) { }
 }
 
 [TestFixture]
@@ -345,7 +344,8 @@ public class HitboxTests
 
     private class TestPropForHit(string name, Vector2 position, int width, int height) : Entity(name, position, width, height), IDamageable, ICollisionActor
     {
-        public IShapeF Bounds => Frame;
+        public int Id => GetHashCode();
+        public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
         public Faction Faction => Faction.Neutral;
         public int Health => 100;
         public int MaxHealth => 100;
@@ -358,6 +358,5 @@ public class HitboxTests
         public void OnDeath() { }
         public void OnKnockdown(DamageInfo info) { }
         public void OnHit(DamageInfo info) { }
-        public void OnCollision(CollisionEventArgs collisionInfo) { }
     }
 }

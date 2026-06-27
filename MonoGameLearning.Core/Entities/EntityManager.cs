@@ -5,14 +5,12 @@ using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Core.Entities;
 
-public class EntityManager(CollisionComponent collision)
+public class EntityManager(CollisionWorld2D world)
 {
-    private CollisionComponent _collision = collision;
-
-    public void SetCollisionComponent(CollisionComponent collision) => _collision = collision;
-
     public void Clear()
     {
+        foreach (var c in _collidables)
+            world.Remove(c);
         _all.Clear();
         _updatables.Clear();
         _renderables.Clear();
@@ -48,6 +46,7 @@ public class EntityManager(CollisionComponent collision)
 
     public void Register(Entity entity)
     {
+        if (_all.Contains(entity)) return;
         _all.Add(entity);
         AddToTypedLists(entity);
     }
@@ -88,7 +87,19 @@ public class EntityManager(CollisionComponent collision)
     {
         TryAdd<IUpdatable>(entity, _updatables);
         TryAdd<IRenderable>(entity, _renderables);
-        TryAdd<ICollisionActor>(entity, _collidables, c => _collision.Insert(c));
+        TryAdd<ICollisionActor>(entity, _collidables, c =>
+        {
+            var layer = entity switch
+            {
+                CombatActorBase => "actors",
+                PropBase => "props",
+                _ => null
+            };
+            if (layer is not null)
+                world.Insert(c, layer);
+            else
+                world.Insert(c);
+        });
         TryAdd<IDamageable>(entity, _damageables);
         TryAdd<IHitboxProvider>(entity, _hitboxProviders);
         TryAdd<IMoveableEntity>(entity, _movables);
@@ -98,7 +109,7 @@ public class EntityManager(CollisionComponent collision)
 
     private void RemoveFromTypedLists(Entity entity)
     {
-        TryRemove<ICollisionActor>(entity, _collidables, c => _collision.Remove(c));
+        TryRemove<ICollisionActor>(entity, _collidables, c => world.Remove(c));
         TryRemove<IUpdatable>(entity, _updatables);
         TryRemove<IRenderable>(entity, _renderables);
         TryRemove<IDamageable>(entity, _damageables);

@@ -11,7 +11,8 @@ namespace MonoGameLearning.Core.Entities;
 
 public abstract class PropBase(string name, Vector2 position, AnimatedSprite sprite, float scale, int maxHealth) : Entity(name, position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale)), IRenderable, IDebugDrawable, ICollisionActor, IDamageable
 {
-    public IShapeF Bounds => Frame;
+    public int Id => GetHashCode();
+    public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
     public event Action<Entity> Destroyed;
 
     protected readonly SpriteRenderer SpriteRenderer = new(sprite, scale);
@@ -44,8 +45,6 @@ public abstract class PropBase(string name, Vector2 position, AnimatedSprite spr
         context.SpriteBatch.DrawRectangle(Frame, Color.Blue);
         HealthDisplay.Draw(context.SpriteBatch, context.Font, Frame, HealthComponent.Value, HealthComponent.MaxHealth);
     }
-
-    public void OnCollision(CollisionEventArgs collisionInfo) { }
 
     public abstract void TakeDamage(DamageInfo info);
 
