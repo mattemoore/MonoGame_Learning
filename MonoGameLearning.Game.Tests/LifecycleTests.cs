@@ -1,95 +1,55 @@
 using Microsoft.Xna.Framework;
-using MonoGameLearning.Core.Combat;
-using MonoGameLearning.Core.Entities;
+using MonoGame.Extended;
+using MonoGameLearning.Game.GameLoop;
 
 namespace MonoGameLearning.Game.Tests;
 
 [TestFixture]
-public class OilDrumLifecycleTests
+public class CameraTargetXTests
 {
-    [Test]
-    public void DestroyedEvent_Fires_WhenHealthDepleted()
-    {
-        var entity = new TestDamageableEntity("drum", Vector2.Zero, 50, 50);
-        bool destroyed = false;
-        entity.Destroyed += _ => destroyed = true;
-        entity.TakeDamage(new DamageInfo { Amount = 50, Strength = AttackStrength.Heavy });
-        Assert.That(destroyed, Is.True);
-    }
+    private const int GameWidth = 800;
+    private static readonly RectangleF LevelBounds = new(0, 0, 1600, 900);
 
     [Test]
-    public void DestroyedEvent_Unsubscribe_RemovesHandler()
+    public void PlayerAtLeftEdge_ClampsToHalfGameWidth()
     {
-        var entity = new TestDamageableEntity("drum", Vector2.Zero, 50, 50);
-        int callCount = 0;
-        Action<Entity> handler = _ => callCount++;
-        entity.Destroyed += handler;
-        entity.TakeDamage(new DamageInfo { Amount = 50, Strength = AttackStrength.Heavy });
-        entity.Destroyed -= handler;
-        Assert.That(callCount, Is.EqualTo(1));
-    }
-
-    [Test]
-    public void DestroyedEvent_DoesNotFire_WhenHealthRemains()
-    {
-        var entity = new TestDamageableEntity("drum", Vector2.Zero, 50, 50);
-        bool destroyed = false;
-        entity.Destroyed += _ => destroyed = true;
-        entity.TakeDamage(new DamageInfo { Amount = 2, Strength = AttackStrength.Light });
-        Assert.That(destroyed, Is.False);
-    }
-}
-
-[TestFixture]
-public class CameraClampTests
-{
-    private static float ComputeClampedX(float playerX, int gameWidth, int totalLevelWidth)
-    {
-        float minX = gameWidth / 2f;
-        float maxX = totalLevelWidth - (gameWidth / 2f);
-        return Math.Clamp(playerX, minX, maxX);
-    }
-
-    [Test]
-    public void PlayerAtLeftEdge_CameraClampsToHalfGameWidth()
-    {
-        float result = ComputeClampedX(0, 800, 1600);
+        float result = CameraController.ComputeTargetX(0, null, LevelBounds, GameWidth);
         Assert.That(result, Is.EqualTo(400));
     }
 
     [Test]
-    public void PlayerAtRightEdge_CameraClampsToTotalWidthMinusHalfGameWidth()
+    public void PlayerAtRightEdge_ClampsToTotalWidthMinusHalfGameWidth()
     {
-        float result = ComputeClampedX(1600, 800, 1600);
+        float result = CameraController.ComputeTargetX(1600, null, LevelBounds, GameWidth);
         Assert.That(result, Is.EqualTo(1200));
     }
 
     [Test]
     public void PlayerInMiddle_CameraFollowsExactly()
     {
-        float result = ComputeClampedX(600, 800, 1600);
+        float result = CameraController.ComputeTargetX(600, null, LevelBounds, GameWidth);
         Assert.That(result, Is.EqualTo(600));
     }
 
     [Test]
     public void PlayerPastLeftEdge_ClampsToMin()
     {
-        float result = ComputeClampedX(-100, 800, 1600);
+        float result = CameraController.ComputeTargetX(-100, null, LevelBounds, GameWidth);
         Assert.That(result, Is.EqualTo(400));
     }
 
     [Test]
     public void PlayerPastRightEdge_ClampsToMax()
     {
-        float result = ComputeClampedX(2000, 800, 1600);
+        float result = CameraController.ComputeTargetX(2000, null, LevelBounds, GameWidth);
         Assert.That(result, Is.EqualTo(1200));
     }
 
     [Test]
     public void PlayerAtExactBoundary_StaysAtBoundary()
     {
-        float minResult = ComputeClampedX(400, 800, 1600);
-        float maxResult = ComputeClampedX(1200, 800, 1600);
+        float minResult = CameraController.ComputeTargetX(400, null, LevelBounds, GameWidth);
+        float maxResult = CameraController.ComputeTargetX(1200, null, LevelBounds, GameWidth);
         Assert.That(minResult, Is.EqualTo(400));
         Assert.That(maxResult, Is.EqualTo(1200));
     }
@@ -97,9 +57,24 @@ public class CameraClampTests
     [Test]
     public void LevelWidthEqualsGameWidth_ClampsToCenter()
     {
-        float minResult = ComputeClampedX(0, 800, 800);
-        float maxResult = ComputeClampedX(800, 800, 800);
+        var narrowBounds = new RectangleF(0, 0, 800, 900);
+        float minResult = CameraController.ComputeTargetX(0, null, narrowBounds, GameWidth);
+        float maxResult = CameraController.ComputeTargetX(800, null, narrowBounds, GameWidth);
         Assert.That(minResult, Is.EqualTo(400));
         Assert.That(maxResult, Is.EqualTo(400));
+    }
+
+    [Test]
+    public void LockedCenter_ReturnsLockedValue()
+    {
+        float result = CameraController.ComputeTargetX(999, 500f, LevelBounds, GameWidth);
+        Assert.That(result, Is.EqualTo(500));
+    }
+
+    [Test]
+    public void LockedCenter_PlayerMoved_StillReturnsLocked()
+    {
+        float result = CameraController.ComputeTargetX(100, 400f, LevelBounds, GameWidth);
+        Assert.That(result, Is.EqualTo(400));
     }
 }

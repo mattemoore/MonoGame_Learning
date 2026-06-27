@@ -1,134 +1,130 @@
-using Microsoft.Xna.Framework;
-using MonoGame.Extended;
-using MonoGame.Extended.Collisions;
 using MonoGameLearning.Core.Combat;
-using MonoGameLearning.Core.Entities;
-using MonoGameLearning.Core.Entities.Helpers;
-using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Game.Tests;
 
-public class TestDamageableEntity(string name, Vector2 position, int width, int height) : Entity(name, position, width, height), IDamageable, ICollisionActor
+[TestFixture]
+public class OilDrumBehaviorTests
 {
-    private readonly Health _health = new(6);
-    private bool _isHitStunned;
-    public int Id => this.GetHashCode();
-    public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
-    public Faction Faction => Faction.Neutral;
-    public int Health => _health.Value;
-    public int MaxHealth => _health.MaxHealth;
-    public bool IsAlive => _health.IsAlive;
-    public event EventHandler Died = delegate { };
-    public event Action<Entity> Destroyed = delegate { };
-
-    public void TakeDamage(DamageInfo info)
+    [Test]
+    public void CanTakeDamage_WhenAliveAndNotStunned_ReturnsTrue()
     {
-        if (!_health.IsAlive || _isHitStunned) return;
-
-        int effective = info.Strength switch { AttackStrength.Heavy => 6, AttackStrength.Medium => 3, _ => 2 };
-        _health.Subtract(effective);
-
-        if (!_health.IsAlive)
-            Destroyed?.Invoke(this);
-        else
-            _isHitStunned = true;
+        var behavior = new OilDrumBehavior();
+        Assert.That(behavior.CanTakeDamage(true), Is.True);
     }
 
-    public void ClearHitStun() => _isHitStunned = false;
+    [Test]
+    public void CanTakeDamage_WhenDead_ReturnsFalse()
+    {
+        var behavior = new OilDrumBehavior();
+        Assert.That(behavior.CanTakeDamage(false), Is.False);
+    }
 
-    public bool CanTakeDamage => _health.IsAlive && !_isHitStunned;
+    [Test]
+    public void CanTakeDamage_WhenStunned_ReturnsFalse()
+    {
+        var behavior = new OilDrumBehavior();
+        behavior.ApplyStun();
+        Assert.That(behavior.CanTakeDamage(true), Is.False);
+    }
 
-    bool IDamageable.CanTakeDamage() => _health.IsAlive && !_isHitStunned;
-    void IDamageable.ReduceHealth(int amount) => _health.Subtract(amount);
-    void IDamageable.OnDeath() => Destroyed?.Invoke(this);
-    void IDamageable.OnKnockdown(DamageInfo info) { }
-    void IDamageable.OnHit(DamageInfo info) { }
+    [Test]
+    public void ApplyStun_SetsIsHitStunned()
+    {
+        var behavior = new OilDrumBehavior();
+        behavior.ApplyStun();
+        Assert.That(behavior.IsHitStunned, Is.True);
+    }
+
+    [Test]
+    public void Update_DuringStun_DoesNotEndBeforeDuration()
+    {
+        var behavior = new OilDrumBehavior();
+        behavior.ApplyStun();
+
+        bool ended = behavior.Update(0.1f);
+        Assert.That(behavior.IsHitStunned, Is.True);
+        Assert.That(ended, Is.False);
+    }
+
+    [Test]
+    public void Update_AfterDuration_EndsStun()
+    {
+        var behavior = new OilDrumBehavior();
+        behavior.ApplyStun();
+
+        bool ended = behavior.Update(0.3f);
+        Assert.That(behavior.IsHitStunned, Is.False);
+        Assert.That(ended, Is.True);
+    }
+
+    [Test]
+    public void Update_NotStunned_ReturnsFalse()
+    {
+        var behavior = new OilDrumBehavior();
+        Assert.That(behavior.Update(1.0f), Is.False);
+    }
+
+    [Test]
+    public void Reset_ClearsHitStun()
+    {
+        var behavior = new OilDrumBehavior();
+        behavior.ApplyStun();
+        behavior.Reset();
+        Assert.That(behavior.IsHitStunned, Is.False);
+        Assert.That(behavior.CanTakeDamage(true), Is.True);
+    }
+
+    [Test]
+    public void Update_ExactBoundary_EndsStun()
+    {
+        var behavior = new OilDrumBehavior();
+        behavior.ApplyStun();
+
+        bool ended = behavior.Update(0.3f);
+        Assert.That(ended, Is.True);
+        Assert.That(behavior.IsHitStunned, Is.False);
+    }
+
+    [Test]
+    public void Update_PartialDurationThenRemaining_EndsStun()
+    {
+        var behavior = new OilDrumBehavior();
+        behavior.ApplyStun();
+        behavior.Update(0.2f);
+        bool ended = behavior.Update(0.2f);
+        Assert.That(ended, Is.True);
+        Assert.That(behavior.IsHitStunned, Is.False);
+    }
+
+    [Test]
+    public void Update_ZeroDelta_DoesNotEndStun()
+    {
+        var behavior = new OilDrumBehavior();
+        behavior.ApplyStun();
+        bool ended = behavior.Update(0f);
+        Assert.That(ended, Is.False);
+        Assert.That(behavior.IsHitStunned, Is.True);
+    }
 }
 
 [TestFixture]
-public class OilDrumEntityBehaviorTests
+public class OilDrumDamageTests
 {
-    private TestDamageableEntity _entity;
-
-    [SetUp]
-    public void Setup() => _entity = new("drum", Vector2.Zero, 50, 50);
-
     [Test]
-    public void InitialState_CanBeDamaged()
+    public void GetEffectiveDamage_Light_ReturnsTwo()
     {
-        Assert.That(_entity.CanTakeDamage, Is.True);
+        Assert.That(OilDrumDamage.GetEffectiveDamage(AttackStrength.Light), Is.EqualTo(2));
     }
 
     [Test]
-    public void TakeDamage_SetsHitStun()
+    public void GetEffectiveDamage_Medium_ReturnsThree()
     {
-        _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Light });
-        Assert.That(_entity.CanTakeDamage, Is.False);
+        Assert.That(OilDrumDamage.GetEffectiveDamage(AttackStrength.Medium), Is.EqualTo(3));
     }
 
     [Test]
-    public void TakeDamage_DuringHitStun_IsRejected()
+    public void GetEffectiveDamage_Heavy_ReturnsSix()
     {
-        _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Light });
-        _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Light });
-        Assert.That(_entity.Health, Is.EqualTo(4));
-    }
-
-    [Test]
-    public void ClearHitStun_AllowsFurtherDamage()
-    {
-        _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Light });
-        _entity.ClearHitStun();
-        _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Light });
-        Assert.That(_entity.Health, Is.EqualTo(2));
-    }
-
-    [Test]
-    public void DestroyedEvent_Fires_WhenHealthDepleted()
-    {
-        bool destroyed = false;
-        _entity.Destroyed += _ => destroyed = true;
-        _entity.TakeDamage(new DamageInfo { Amount = 50, Strength = AttackStrength.Heavy });
-        Assert.That(destroyed, Is.True);
-    }
-
-    [Test]
-    public void DestroyedEvent_DoesNotFire_WhenHealthRemains()
-    {
-        bool destroyed = false;
-        _entity.Destroyed += _ => destroyed = true;
-        _entity.TakeDamage(new DamageInfo { Amount = 2, Strength = AttackStrength.Light });
-        Assert.That(destroyed, Is.False);
-    }
-
-    [Test]
-    public void DeadEntity_RejectsFurtherDamage()
-    {
-        _entity.TakeDamage(new DamageInfo { Amount = 50, Strength = AttackStrength.Heavy });
-        int healthBefore = _entity.Health;
-        _entity.TakeDamage(new DamageInfo { Amount = 50, Strength = AttackStrength.Heavy });
-        Assert.That(_entity.Health, Is.EqualTo(healthBefore));
-    }
-
-    [Test]
-    public void LightDamage_ReducesByTwo()
-    {
-        _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Light });
-        Assert.That(_entity.Health, Is.EqualTo(4));
-    }
-
-    [Test]
-    public void MediumDamage_ReducesByThree()
-    {
-        _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Medium });
-        Assert.That(_entity.Health, Is.EqualTo(3));
-    }
-
-    [Test]
-    public void HeavyDamage_Destroys()
-    {
-        _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Heavy });
-        Assert.That(_entity.Health, Is.EqualTo(0));
-        Assert.That(_entity.IsAlive, Is.False);
+        Assert.That(OilDrumDamage.GetEffectiveDamage(AttackStrength.Heavy), Is.EqualTo(6));
     }
 }

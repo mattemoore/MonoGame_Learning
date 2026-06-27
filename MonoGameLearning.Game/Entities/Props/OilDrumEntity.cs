@@ -9,9 +9,7 @@ namespace MonoGameLearning.Game.Entities.Props;
 
 public class OilDrumEntity : PropBase, IUpdatable
 {
-    private bool _isHitStunned;
-    private float _hitStunTimer;
-    private const float HitStunDuration = 0.3f;
+    private readonly OilDrumBehavior _behavior = new();
 
     private string SelectAnimation() => HealthComponent.Value switch
     {
@@ -33,30 +31,24 @@ public class OilDrumEntity : PropBase, IUpdatable
 
         Sprite?.Update(gameTime);
 
-        if (_isHitStunned)
-        {
-            _hitStunTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
-            if (_hitStunTimer <= 0)
-            {
-                _isHitStunned = false;
-                Sprite.SetAnimation(SelectAnimation());
-            }
-        }
+        if (_behavior.Update((float)gameTime.ElapsedGameTime.TotalSeconds))
+            Sprite.SetAnimation(SelectAnimation());
     }
 
     public override void TakeDamage(DamageInfo info)
     {
-        if (!HealthComponent.IsAlive || _isHitStunned) return;
+        if (!_behavior.CanTakeDamage(HealthComponent.IsAlive)) return;
 
-        int effective = info.Strength switch { AttackStrength.Heavy => 6, AttackStrength.Medium => 3, _ => 2 };
+        int effective = OilDrumDamage.GetEffectiveDamage(info.Strength);
         HealthComponent.Subtract(effective);
 
         if (!HealthComponent.IsAlive)
+        {
             OnDestroyed();
+        }
         else
         {
-            _isHitStunned = true;
-            _hitStunTimer = HitStunDuration;
+            _behavior.ApplyStun();
             Sprite.SetAnimation(SelectAnimation());
         }
     }
