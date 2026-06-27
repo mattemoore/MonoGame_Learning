@@ -13,27 +13,55 @@ public class CameraController(PlayerEntity player, int gameWidth, int gameHeight
     private readonly int _gameHeight = gameHeight;
     private readonly RectangleF _levelBounds = levelBounds;
 
-    private const float SMOOTH_FACTOR = 0.01f;
+    public const float DEAD_ZONE_FRACTION = 0.25f;
 
-    public Vector2? LockedCenter { get; set; }
+    public float? WaveEndX { get; set; }
 
-    public static float ComputeTargetX(float playerX, float? lockedCenterX, RectangleF levelBounds, int gameWidth)
+    public static float ComputeTargetX(
+        float playerX,
+        float currentCameraCenterX,
+        RectangleF levelBounds,
+        int gameWidth,
+        float? waveEndX = null,
+        float deadZoneFraction = DEAD_ZONE_FRACTION)
     {
-        if (lockedCenterX.HasValue) return lockedCenterX.Value;
-        float minX = levelBounds.Left + (gameWidth / 2f);
-        float maxX = levelBounds.Right - (gameWidth / 2f);
-        Debug.Assert(minX <= maxX, $"Level width ({levelBounds.Width}) is smaller than viewport width ({gameWidth}).");
-        return Math.Clamp(playerX, minX, maxX);
+        float halfWidth = gameWidth / 2f;
+
+        float minCenter = levelBounds.Left + halfWidth;
+        float maxCenter = levelBounds.Right - halfWidth;
+        if (waveEndX.HasValue)
+            maxCenter = Math.Min(maxCenter, waveEndX.Value - halfWidth);
+        Debug.Assert(minCenter <= maxCenter, $"Camera clamp range is empty (min={minCenter}, max={maxCenter}).");
+
+        Debug.Assert(deadZoneFraction is >= 0f and <= 0.5f,
+            $"deadZoneFraction must be in [0, 0.5]; got {deadZoneFraction}.");
+        float deadZoneEdge = halfWidth * (1f - 2f * deadZoneFraction);
+        float targetCenter = currentCameraCenterX;
+
+        if (playerX < currentCameraCenterX - deadZoneEdge)
+            targetCenter = playerX + deadZoneEdge;
+        else if (playerX > currentCameraCenterX + deadZoneEdge)
+            targetCenter = playerX - deadZoneEdge;
+
+        targetCenter = Math.Max(targetCenter, currentCameraCenterX);
+        return Math.Clamp(targetCenter, minCenter, maxCenter);
     }
 
     public void Update(OrthographicCamera camera)
     {
-        float targetX = ComputeTargetX(_player.Position.X, LockedCenter?.X, _levelBounds, _gameWidth);
-        float targetY = _gameHeight / 2f;
+        float currentCenterX = camera.Position.X + _gameWidth / 2f;
+        float targetCenterX = ComputeTargetX(_player.Position.X, currentCenterX, _levelBounds, _gameWidth, WaveEndX);
+        camera.LookAt(new Vector2(targetCenterX, _gameHeight / 2f));
+    }
 
-        float halfWidth = _gameWidth / 2f;
-        float desiredPos = targetX - halfWidth;
-        float newPos = MathHelper.Lerp(camera.Position.X, desiredPos, SMOOTH_FACTOR);
-        camera.LookAt(new Vector2(newPos + halfWidth, targetY));
+    public static RectangleF ComputeMovementBounds(float cameraLeftEdge, RectangleF baseBounds, float? rightCap)
+    {
+        float effectiveLeft = Math.Max(cameraLeftEdge, baseBounds.X);
+        float effectiveRight = rightCap.HasValue ? Math.Min(rightCap.Value, baseBounds.Right) : baseBounds.Right;
+        return new RectangleF(
+            effectiveLeft,
+            baseBounds.Y,
+            effectiveRight - effectiveLeft,
+            baseBounds.Height);
     }
 }

@@ -128,7 +128,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         if (_gameState.State == GameState.Playing)
         {
             _levelDirector.Update(gameTime);
-            _cameraController.LockedCenter = _levelDirector.LockedCameraCenter;
+            _cameraController.WaveEndX = _levelDirector.WaveEndX;
             _cameraController.Update(Camera);
             _player.MovementDirection = _input.MovementDirection;
 
@@ -146,9 +146,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
             ResolveCollisions();
 
-            var movementBounds = _levelDirector.IsScrollLocked
-                ? _levelDirector.FightAreaBounds
-                : _currentLevel.MovementBounds;
+            var movementBounds = CameraController.ComputeMovementBounds(
+                Camera.Position.X,
+                _currentLevel.MovementBounds,
+                _levelDirector.WaveEndX);
             // indexed for loop to avoid heap-allocated IEnumerator<T> from IReadOnlyList<T>
             var movables = _entityManager.Movables;
             for (int i = 0; i < movables.Count; i++)
@@ -205,7 +206,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                 SpriteBatch.DrawLine(_currentLevel.EndTriggerX, 0, _currentLevel.EndTriggerX, ViewportAdapter.VirtualHeight, Color.Orange * 0.4f, 2f);
 
                 if (_levelDirector.IsScrollLocked)
-                    SpriteBatch.DrawRectangle(_levelDirector.FightAreaBounds, Color.Yellow * 0.3f, 2f);
+                {
+                    SpriteBatch.DrawLine(_levelDirector.WaveTriggerX!.Value, 0, _levelDirector.WaveTriggerX.Value, ViewportAdapter.VirtualHeight, Color.Cyan * 0.7f, 2f);
+                    SpriteBatch.DrawLine(_levelDirector.WaveEndX!.Value, 0, _levelDirector.WaveEndX.Value, ViewportAdapter.VirtualHeight, Color.Yellow * 0.7f, 2f);
+                }
 
                 SpriteBatch.DrawLine(0, _currentLevel.WalkableTopY, _currentLevel.MovementBounds.Right, _currentLevel.WalkableTopY, Color.Lime * 0.5f, 2f);
 

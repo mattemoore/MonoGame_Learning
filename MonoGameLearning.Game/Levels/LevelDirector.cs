@@ -28,8 +28,8 @@ public class LevelDirector(EntityManager entityManager, Level level, Entity play
     public int CurrentWaveIndex => _currentWaveIndex;
     public int ActiveEnemyCount => _activeEnemies.Count;
     public bool IsScrollLocked => _isScrollLocked;
-    public Vector2? LockedCameraCenter { get; private set; }
-    public RectangleF FightAreaBounds { get; private set; }
+    public float? WaveEndX { get; private set; }
+    public float? WaveTriggerX { get; private set; }
 
     public void Update(GameTime gameTime)
     {
@@ -54,28 +54,27 @@ public class LevelDirector(EntityManager entityManager, Level level, Entity play
             _waveCleared = true;
             _isScrollLocked = false;
             _waveTriggered = false;
-            LockedCameraCenter = null;
-            FightAreaBounds = default;
+            WaveEndX = null;
+            WaveTriggerX = null;
             _currentWaveIndex++;
         }
 
-        Debug.Assert(!(_isScrollLocked && LockedCameraCenter is null),
-            "Scroll locked but LockedCameraCenter is null — state inconsistency.");
+        Debug.Assert(!(_isScrollLocked && (WaveEndX is null || WaveTriggerX is null)),
+            "Scroll locked but WaveEndX or WaveTriggerX is null — state inconsistency.");
     }
 
     protected virtual void SpawnWave()
     {
         var wave = _level.WaveDefs[_currentWaveIndex];
         Debug.Assert(wave.TriggerX > 0, $"Wave TriggerX must be at a screen boundary; got {wave.TriggerX}.");
+        Debug.Assert(wave.EndX > wave.TriggerX, $"Wave EndX ({wave.EndX}) must be > TriggerX ({wave.TriggerX}).");
 
         _waveTriggered = true;
         _isScrollLocked = true;
         _waveCleared = false;
 
-        float fightLeft = wave.TriggerX - _gameWidth / 2f;
-        float walkTop = _level.WalkableTopY;
-        FightAreaBounds = new RectangleF(fightLeft, walkTop, _gameWidth, _gameHeight - walkTop);
-        LockedCameraCenter = new Vector2(wave.TriggerX, _gameHeight / 2f);
+        WaveTriggerX = wave.TriggerX;
+        WaveEndX = wave.EndX;
 
         foreach (var def in wave.Enemies)
         {
