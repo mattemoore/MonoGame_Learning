@@ -16,6 +16,7 @@ using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.Entities.Player;
 using MonoGameLearning.Game.Entities.Props;
 using MonoGameLearning.Game.Levels;
+using MonoGameLearning.Game.Rendering;
 using MonoGameLearning.Game.Sprites;
 
 namespace MonoGameLearning.Game.GameLoop;
@@ -42,6 +43,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private HitboxService _hitboxService;
     private SpriteFont _debugFont;
     private LevelDirector _levelDirector;
+    private BackgroundRenderer _backgroundRenderer;
 
     protected override void Initialize()
     {
@@ -86,8 +88,6 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
         _debugFont = Content.Load<SpriteFont>("fonts/DebugFont");
 
-        _currentLevel = new Level1(Content, GAME_WIDTH, GAME_HEIGHT);
-
         PlayerSprite.Load(Content);
         AnimatedSprite playerSprite = PlayerSprite.Create();
         _player = new PlayerEntity("player", new Vector2(100, 450), 2.0f, playerSprite);
@@ -95,18 +95,9 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         EnemySprite.Load(Content);
         OilDrumSprite.Load(Content);
 
-        _collision = CreateCollisionComponent(_currentLevel.MovementBounds);
-        _entityManager = new EntityManager(_collision);
-        _entityManager.Register(_player);
-
         _player.Died += OnPlayerDied;
 
-        RegisterOilDrum("can1", new Vector2(700, 450));
-        RegisterOilDrum("can2", new Vector2(900, 450));
-        RegisterOilDrum("can3", new Vector2(800, 450));
-
-        AssignHitboxService();
-        InitLevelSystems();
+        ReinitLevel();
     }
 
     protected override void Update(GameTime gameTime)
@@ -119,39 +110,9 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         if (_gameState.State == GameState.Playing)
         {
             _levelDirector.Update(gameTime);
-            _player.MovementDirection = _input.MovementDirection;
-
-            var fa = _levelDirector.CurrentFightArea;
-
-            if (fa.HasValue)
-            {
-                _cameraController.LeftBound = _levelDirector.PersistentCameraCenter;
-                _cameraController.RightBound = _levelDirector.PersistentCameraCenter;
-            }
-            else
-            {
-                _cameraController.LeftBound = _levelDirector.PersistentCameraCenter;
-                _cameraController.RightBound = null;
-            }
-
+            _cameraController.LockedCenter = _levelDirector.LockedCameraCenter;
             _cameraController.Update(Camera);
-
-            foreach (var movable in _entityManager.Movables)
-            {
-                var bounds = _currentLevel.MovementBounds;
-                if (fa.HasValue)
-                {
-                    bounds.X = fa.Value.X;
-                    bounds.Width = Math.Max(fa.Value.Width, _player.Position.X - fa.Value.X);
-                }
-                else if (_levelDirector.PersistentCameraCenter.HasValue)
-                {
-                    float leftEdge = _levelDirector.PersistentCameraCenter.Value - GAME_WIDTH / 2f;
-                    bounds.X = leftEdge;
-                    bounds.Width = _currentLevel.MovementBounds.Right - leftEdge;
-                }
-                movable.MovementBounds = bounds;
-            }
+            _player.MovementDirection = _input.MovementDirection;
 
             foreach (var updatable in _entityManager.Updatables)
                 updatable.Update(gameTime);
@@ -164,8 +125,15 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             }
 
             _collision.Update(gameTime);
+
+            var movementBounds = _levelDirector.IsScrollLocked
+                ? _levelDirector.FightAreaBounds
+                : _currentLevel.MovementBounds;
             foreach (var movable in _entityManager.Movables)
+            {
+                movable.MovementBounds = movementBounds;
                 Core.Entities.Helpers.Mover.ClampToBounds((Entity)movable, movable.MovementBounds);
+            }
         }
 
         GumService.Update(gameTime);
@@ -186,7 +154,9 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             var renderCtx = new RenderContext(SpriteBatch, Camera);
             var cameraBounds = Camera.BoundingRectangle;
 
-            _numBackgroundsDrawn = _currentLevel.Draw(renderCtx);
+            _backgroundRenderer.Render(renderCtx);
+            _backgroundRenderer.Render(renderCtx);
+            _numBackgroundsDrawn = _backgroundRenderer.LastFrameDrawCount;
 
             foreach (var renderable in _entityManager.Renderables)
             {
@@ -202,19 +172,16 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                 var debugCtx = new DebugDrawContext(SpriteBatch, _debugFont);
                 foreach (var drawable in _entityManager.DebugDrawables)
                     drawable.DrawDebug(debugCtx);
-                _currentLevel.DrawDebug(debugCtx);
 
                 foreach (var wave in _currentLevel.WaveDefs)
                     SpriteBatch.DrawLine(wave.TriggerX, 0, wave.TriggerX, GAME_HEIGHT, Color.Cyan * 0.4f, 2f);
 
                 SpriteBatch.DrawLine(_currentLevel.EndTriggerX, 0, _currentLevel.EndTriggerX, GAME_HEIGHT, Color.Orange * 0.4f, 2f);
 
-                if (_levelDirector.CurrentFightArea.HasValue)
-                {
-                    var fightRight = _levelDirector.CurrentFightArea.Value.X + _levelDirector.CurrentFightArea.Value.Width;
-                    var rect = new RectangleF(_currentLevel.MovementBounds.Left, 0, fightRight - _currentLevel.MovementBounds.Left, GAME_HEIGHT);
-                    SpriteBatch.DrawRectangle(rect, Color.Yellow * 0.3f, 2f);
-                }
+                if (_levelDirector.IsScrollLocked)
+                    SpriteBatch.DrawRectangle(_levelDirector.FightAreaBounds, Color.Yellow * 0.3f, 2f);
+
+                SpriteBatch.DrawLine(0, _currentLevel.WalkableTopY, _currentLevel.MovementBounds.Right, _currentLevel.WalkableTopY, Color.Lime * 0.5f, 2f);
 
                 var waveStatus = _levelDirector.CurrentWaveIndex < _currentLevel.WaveDefs.Count
                     ? $"Wave: {_levelDirector.CurrentWaveIndex + 1}/{_currentLevel.WaveDefs.Count}"
@@ -252,9 +219,9 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _gameState.Fire(GameTrigger.PlayerDied);
     }
 
-    private void RegisterOilDrum(string name, Vector2 position)
+    private void RegisterOilDrum(PropSpawnDef prop)
     {
-        var drum = new OilDrumEntity(name, position, 1.0f, OilDrumSprite.Create());
+        var drum = new OilDrumEntity(prop.Type, prop.Position, 1.0f, OilDrumSprite.Create());
         drum.Destroyed += OnOilDrumDestroyed;
         _entityManager.Register(drum);
     }
@@ -314,28 +281,36 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     {
         _hitboxService.ClearAll();
         _player.Reset(new Vector2(100, 450));
-
         _entityManager.Clear();
+        ReinitLevel();
+        Camera.Position = Vector2.Zero;
+    }
 
-        _currentLevel = new Level1(Content, GAME_WIDTH, GAME_HEIGHT);
+    private void ReinitLevel()
+    {
+        _currentLevel = new Level1(GAME_WIDTH, GAME_HEIGHT);
+        _backgroundRenderer = _currentLevel.CreateBackgroundRenderer(Content);
         _collision = CreateCollisionComponent(_currentLevel.MovementBounds);
-        _entityManager.SetCollisionComponent(_collision);
+
+        if (_entityManager is null)
+            _entityManager = new EntityManager(_collision);
+        else
+            _entityManager.SetCollisionComponent(_collision);
 
         _entityManager.Register(_player);
-        RegisterOilDrum("can1", new Vector2(700, 450));
-        RegisterOilDrum("can2", new Vector2(900, 450));
-        RegisterOilDrum("can3", new Vector2(800, 450));
+
+        foreach (var prop in _currentLevel.Props)
+            RegisterOilDrum(prop);
 
         AssignHitboxService();
         InitLevelSystems();
-        Camera.Position = Vector2.Zero;
     }
 
     private void InitLevelSystems()
     {
         _cameraController = new CameraController(_player, GAME_WIDTH, GAME_HEIGHT, _currentLevel.MovementBounds);
 
-        _levelDirector = new LevelDirector(_entityManager, _currentLevel, _player);
+        _levelDirector = new LevelDirector(_entityManager, _currentLevel, _player, GAME_WIDTH, GAME_HEIGHT);
         _levelDirector.LevelCompleted += () => _gameState.Fire(GameTrigger.CompleteLevel);
     }
 
