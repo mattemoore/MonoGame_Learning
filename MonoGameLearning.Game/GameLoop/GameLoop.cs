@@ -128,6 +128,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         if (_gameState.State == GameState.Playing)
         {
             _levelDirector.Update(gameTime);
+            if (_cameraController.WaveEndX is not null && _levelDirector.WaveEndX is null)
+                _cameraController.OnWaveCleared();
             _cameraController.WaveEndX = _levelDirector.WaveEndX;
             _cameraController.Update(Camera);
             _player.MovementDirection = _input.MovementDirection;
@@ -201,7 +203,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                     drawable.DrawDebug(debugCtx);
 
                 foreach (var wave in _currentLevel.WaveDefs)
+                {
                     SpriteBatch.DrawLine(wave.TriggerX, 0, wave.TriggerX, ViewportAdapter.VirtualHeight, Color.Cyan * 0.4f, 2f);
+                    SpriteBatch.DrawLine(wave.EndX, 0, wave.EndX, ViewportAdapter.VirtualHeight, Color.Yellow * 0.4f, 2f);
+                }
 
                 SpriteBatch.DrawLine(_currentLevel.EndTriggerX, 0, _currentLevel.EndTriggerX, ViewportAdapter.VirtualHeight, Color.Orange * 0.4f, 2f);
 
