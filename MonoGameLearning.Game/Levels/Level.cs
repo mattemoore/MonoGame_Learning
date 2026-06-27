@@ -1,59 +1,30 @@
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
+using Microsoft.Xna.Framework.Content;
 using MonoGame.Extended;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Game.Rendering;
 
 namespace MonoGameLearning.Game.Levels;
 
 public abstract class Level
 {
-    public List<BackgroundEntity> Backgrounds { get; }
     public List<WaveDef> WaveDefs { get; }
-    public RectangleF MovementBounds { get; }
+    public abstract int BackgroundCount { get; }
     public abstract float EndTriggerX { get; }
+    public abstract List<PropSpawnDef> Props { get; }
+    public abstract float WalkableTopY { get; }
 
-    protected Level(List<BackgroundEntity> backgrounds, List<WaveDef> waveDefs, float viewportWidth)
+    public RectangleF MovementBounds { get; }
+
+    protected Level(List<WaveDef> waveDefs, int gameWidth, int gameHeight)
     {
-        Backgrounds = backgrounds;
         WaveDefs = waveDefs;
-        ValidateConnectivity(Backgrounds);
-        WaveDef.ValidateWaveDefs(WaveDefs, viewportWidth);
-
-        if (Backgrounds.Count > 0)
-            MovementBounds = Backgrounds.Select(b => b.MovementBounds).Aggregate(RectangleF.Union);
+        MovementBounds = new RectangleF(0, WalkableTopY, BackgroundCount * gameWidth, gameHeight - WalkableTopY);
+        Debug.Assert(BackgroundCount >= 1, "Level must have at least one background.");
     }
 
-    public static void ValidateConnectivity(List<BackgroundEntity> backgrounds)
-    {
-        for (int i = 0; i < backgrounds.Count - 1; i++)
-        {
-            var b1 = backgrounds[i];
-            var b2 = backgrounds[i + 1];
-            var checkBounds = b1.MovementBounds;
-            checkBounds.Inflate(0.1f, 0.1f);
-            if (!checkBounds.Intersects(b2.MovementBounds))
-                throw new System.InvalidOperationException($"Backgrounds at index {i} ('{b1.Name}') and {i + 1} ('{b2.Name}') are not connected.");
-        }
-    }
+    public abstract BackgroundRenderer CreateBackgroundRenderer(ContentManager content);
 
-    public int Draw(RenderContext context)
-    {
-        int drawnCount = 0;
-        var cameraBounds = context.Camera.BoundingRectangle;
-        foreach (var bg in Backgrounds)
-        {
-            if (cameraBounds.Intersects(bg.Frame))
-            {
-                bg.Render(context);
-                drawnCount++;
-            }
-        }
-        return drawnCount;
-    }
-
-    public virtual void DrawDebug(DebugDrawContext context)
-    {
-        foreach (var bg in Backgrounds)
-            bg.DrawDebug(context);
-    }
+    public virtual void DrawDebug(DebugDrawContext context) { }
 }

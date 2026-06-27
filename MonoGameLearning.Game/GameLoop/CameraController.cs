@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGameLearning.Game.Entities.Player;
@@ -14,36 +15,28 @@ public class CameraController(PlayerEntity player, int gameWidth, int gameHeight
 
     private const float SMOOTH_FACTOR = 0.04f;
 
-    public float? LeftBound { get; set; }
-    public float? RightBound { get; set; }
+    public Vector2? LockedCenter { get; set; }
 
     public void Update(OrthographicCamera camera)
     {
-        float minX = _levelBounds.Left + (_gameWidth / 2f);
-        float maxX = _levelBounds.Right - (_gameWidth / 2f);
-        if (LeftBound.HasValue) minX = Math.Max(minX, LeftBound.Value);
-        if (RightBound.HasValue) maxX = Math.Min(maxX, RightBound.Value);
+        float targetX;
+        float targetY = _gameHeight / 2f;
 
-        if (LeftBound.HasValue && RightBound.HasValue && LeftBound.Value == RightBound.Value)
+        if (LockedCenter.HasValue)
         {
-            float center = LeftBound.Value;
-            float minAllowed = _levelBounds.Left + (_gameWidth / 2f);
-            float maxAllowed = _levelBounds.Right - (_gameWidth / 2f);
-            minX = Math.Clamp(center, minAllowed, maxAllowed);
-            maxX = minX;
+            targetX = LockedCenter.Value.X;
         }
-        else if (minX > maxX)
+        else
         {
-            float mid = (minX + maxX) / 2f;
-            minX = mid;
-            maxX = mid;
+            float minX = _levelBounds.Left + (_gameWidth / 2f);
+            float maxX = _levelBounds.Right - (_gameWidth / 2f);
+            Debug.Assert(minX <= maxX, $"Level width ({_levelBounds.Width}) is smaller than viewport width ({_gameWidth}).");
+            targetX = Math.Clamp(_player.Position.X, minX, maxX);
         }
-
-        float desiredX = Math.Clamp(_player.Position.X, minX, maxX);
 
         float halfWidth = _gameWidth / 2f;
-        float targetPos = desiredX - halfWidth;
-        float newPos = MathHelper.Lerp(camera.Position.X, targetPos, SMOOTH_FACTOR);
-        camera.LookAt(new Vector2(newPos + halfWidth, _gameHeight / 2f));
+        float desiredPos = targetX - halfWidth;
+        float newPos = MathHelper.Lerp(camera.Position.X, desiredPos, SMOOTH_FACTOR);
+        camera.LookAt(new Vector2(newPos + halfWidth, targetY));
     }
 }

@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Runtime.Serialization;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Content;
 using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
@@ -9,6 +10,7 @@ using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.GameLoop;
 using MonoGameLearning.Game.Levels;
+using MonoGameLearning.Game.Rendering;
 
 namespace MonoGameLearning.Game.Tests;
 
@@ -16,19 +18,24 @@ public class TestPlayerEntity(string name, Vector2 position) : Entity(name, posi
 {
 }
 
-public class TestLevel(List<WaveDef> waveDefs, float endTriggerX) : Level([], waveDefs, 800f)
+public class TestLevel(List<WaveDef> waveDefs, float endTriggerX, int gameWidth = 800, int gameHeight = 600)
+    : Level(waveDefs, gameWidth, gameHeight)
 {
+    public override int BackgroundCount => 3;
     public override float EndTriggerX { get; } = endTriggerX;
+    public override float WalkableTopY => 0f;
+    public override List<PropSpawnDef> Props => [];
+    public override BackgroundRenderer CreateBackgroundRenderer(ContentManager content) => null!;
 }
 
-public class TestLevelDirector(EntityManager entityManager, Level level, Entity player)
-    : LevelDirector(entityManager, level, player)
+public class TestLevelDirector(EntityManager entityManager, Level level, Entity player, int gameWidth, int gameHeight)
+    : LevelDirector(entityManager, level, player, gameWidth, gameHeight)
 {
     public List<Entity> SpawnedEnemies { get; } = [];
 
     protected override EnemyEntity CreateEnemy(EnemySpawnDef def)
     {
-        #pragma warning disable SYSLIB0050 // FormatterServices is obsolete but needed for uninitialized object creation in tests
+        #pragma warning disable SYSLIB0050
         var enemy = (EnemyEntity)FormatterServices.GetUninitializedObject(typeof(EnemyEntity));
 #pragma warning restore SYSLIB0050
         enemy.Position = def.Position;
@@ -68,18 +75,18 @@ public class LevelDirectorTests
         _player = new TestPlayerEntity("player", Vector2.Zero);
         _level = new TestLevel(
         [
-            new WaveDef(TriggerX: 300f, FightAreaWidth: 500f, Enemies:
+            new WaveDef(TriggerX: 300f, Enemies:
             [
                 new EnemySpawnDef("Grunt", new Vector2(350, 500)),
                 new EnemySpawnDef("Grunt", new Vector2(400, 500))
             ]),
-            new WaveDef(TriggerX: 900f, FightAreaWidth: 400f, Enemies:
+            new WaveDef(TriggerX: 900f, Enemies:
             [
                 new EnemySpawnDef("Grunt", new Vector2(950, 500))
             ])
         ], endTriggerX: 1500f);
 
-        _director = new TestLevelDirector(_entityManager, _level, _player);
+        _director = new TestLevelDirector(_entityManager, _level, _player, 800, 600);
     }
 
     [Test]
@@ -87,11 +94,10 @@ public class LevelDirectorTests
     {
         Assert.That(_director.CurrentWaveIndex, Is.EqualTo(0));
         Assert.That(_director.IsScrollLocked, Is.False);
-        Assert.That(_director.IsWaveCleared, Is.False);
+        Assert.That(_director.ShowGoPrompt, Is.False);
         Assert.That(_director.ActiveEnemyCount, Is.EqualTo(0));
-        Assert.That(_director.CurrentFightArea, Is.Null);
-        Assert.That(_cameraController.LeftBound, Is.Null);
-        Assert.That(_cameraController.RightBound, Is.Null);
+        Assert.That(_director.LockedCameraCenter, Is.Null);
+        Assert.That(_director.FightAreaBounds, Is.EqualTo(default(RectangleF)));
     }
 
     [Test]
@@ -102,9 +108,7 @@ public class LevelDirectorTests
 
         Assert.That(_director.CurrentWaveIndex, Is.EqualTo(0));
         Assert.That(_director.IsScrollLocked, Is.False);
-        Assert.That(_director.CurrentFightArea, Is.Null);
-        Assert.That(_cameraController.LeftBound, Is.Null);
-        Assert.That(_cameraController.RightBound, Is.Null);
+        Assert.That(_director.LockedCameraCenter, Is.Null);
     }
 
     [Test]
@@ -115,11 +119,12 @@ public class LevelDirectorTests
 
         Assert.That(_director.CurrentWaveIndex, Is.EqualTo(0));
         Assert.That(_director.IsScrollLocked, Is.True);
-        Assert.That(_director.IsWaveCleared, Is.False);
+        Assert.That(_director.ShowGoPrompt, Is.False);
         Assert.That(_director.ActiveEnemyCount, Is.EqualTo(2));
-        Assert.That(_director.CurrentFightArea, Is.Not.Null);
-        Assert.That(_director.CurrentFightArea.Value.X, Is.EqualTo(50f));
-        Assert.That(_director.CurrentFightArea.Value.Width, Is.EqualTo(500f));
+        Assert.That(_director.LockedCameraCenter, Is.Not.Null);
+        Assert.That(_director.LockedCameraCenter.Value.X, Is.EqualTo(300f));
+        Assert.That(_director.FightAreaBounds.X, Is.EqualTo(-100f));
+        Assert.That(_director.FightAreaBounds.Width, Is.EqualTo(800f));
     }
 
     [Test]
@@ -165,9 +170,10 @@ public class LevelDirectorTests
 
         Assert.That(_director.CurrentWaveIndex, Is.EqualTo(1));
         Assert.That(_director.IsScrollLocked, Is.False);
-        Assert.That(_director.IsWaveCleared, Is.True);
+        Assert.That(_director.ShowGoPrompt, Is.True);
         Assert.That(_director.ActiveEnemyCount, Is.EqualTo(0));
-        Assert.That(_director.CurrentFightArea, Is.Null);
+        Assert.That(_director.LockedCameraCenter, Is.Null);
+        Assert.That(_director.FightAreaBounds, Is.EqualTo(default(RectangleF)));
     }
 
     [Test]
@@ -189,9 +195,8 @@ public class LevelDirectorTests
         Assert.That(_director.CurrentWaveIndex, Is.EqualTo(1));
         Assert.That(_director.IsScrollLocked, Is.True);
         Assert.That(_director.ActiveEnemyCount, Is.EqualTo(1));
-        Assert.That(_director.CurrentFightArea, Is.Not.Null);
-        Assert.That(_director.CurrentFightArea.Value.X, Is.EqualTo(700f));
-        Assert.That(_director.CurrentFightArea.Value.Width, Is.EqualTo(400f));
+        Assert.That(_director.LockedCameraCenter, Is.Not.Null);
+        Assert.That(_director.LockedCameraCenter.Value.X, Is.EqualTo(900f));
     }
 
     [Test]
@@ -282,24 +287,29 @@ public class LevelDirectorTests
         _player.Position = new Vector2(300, 0);
         _director.Update(new GameTime());
 
-        var newDirector = new TestLevelDirector(_entityManager, _level, _player);
+        var newDirector = new TestLevelDirector(_entityManager, _level, _player, 800, 600);
         Assert.That(newDirector.CurrentWaveIndex, Is.EqualTo(0));
         Assert.That(newDirector.IsScrollLocked, Is.False);
-        Assert.That(newDirector.IsWaveCleared, Is.False);
+        Assert.That(newDirector.ShowGoPrompt, Is.False);
         Assert.That(newDirector.ActiveEnemyCount, Is.EqualTo(0));
     }
 
     [Test]
-    public void WaveCleared_IsFalse_WhenWaveActive()
+    public void ShowGoPrompt_FalseBeforeAnyWave()
     {
-        _player.Position = new Vector2(300, 0);
-        _director.Update(new GameTime());
-
-        Assert.That(_director.IsWaveCleared, Is.False);
+        Assert.That(_director.ShowGoPrompt, Is.False);
     }
 
     [Test]
-    public void WaveCleared_IsTrue_AfterEnemiesDead()
+    public void ShowGoPrompt_FalseDuringActiveWave()
+    {
+        _player.Position = new Vector2(300, 0);
+        _director.Update(new GameTime());
+        Assert.That(_director.ShowGoPrompt, Is.False);
+    }
+
+    [Test]
+    public void ShowGoPrompt_TrueAfterWaveCleared()
     {
         _player.Position = new Vector2(300, 0);
         _director.Update(new GameTime());
@@ -311,7 +321,72 @@ public class LevelDirectorTests
         }
         _director.Update(new GameTime());
 
-        Assert.That(_director.IsWaveCleared, Is.True);
+        Assert.That(_director.ShowGoPrompt, Is.True);
+    }
+
+    [Test]
+    public void LockedCameraCenter_NullBeforeTrigger()
+    {
+        Assert.That(_director.LockedCameraCenter, Is.Null);
+    }
+
+    [Test]
+    public void LockedCameraCenter_SetOnTrigger()
+    {
+        _player.Position = new Vector2(300, 0);
+        _director.Update(new GameTime());
+
+        Assert.That(_director.LockedCameraCenter, Is.Not.Null);
+        Assert.That(_director.LockedCameraCenter.Value.X, Is.EqualTo(300f));
+    }
+
+    [Test]
+    public void LockedCameraCenter_ClearedOnWaveClear()
+    {
+        _player.Position = new Vector2(300, 0);
+        _director.Update(new GameTime());
+        Assert.That(_director.LockedCameraCenter, Is.Not.Null);
+
+        foreach (var entity in _director.SpawnedEnemies)
+        {
+            var enemy = (EnemyEntity)entity;
+            _director.SimulateEnemyDied(enemy);
+        }
+        _director.Update(new GameTime());
+
+        Assert.That(_director.LockedCameraCenter, Is.Null);
+    }
+
+    [Test]
+    public void LockedCameraCenter_UpdatesToNewWaveCenter()
+    {
+        _player.Position = new Vector2(300, 0);
+        _director.Update(new GameTime());
+        Assert.That(_director.LockedCameraCenter, Is.Not.Null);
+        Assert.That(_director.LockedCameraCenter.Value.X, Is.EqualTo(300f));
+
+        foreach (var entity in _director.SpawnedEnemies)
+        {
+            var enemy = (EnemyEntity)entity;
+            _director.SimulateEnemyDied(enemy);
+        }
+        _director.Update(new GameTime());
+
+        _player.Position = new Vector2(1200, 0);
+        _director.Update(new GameTime());
+
+        Assert.That(_director.LockedCameraCenter.Value.X, Is.EqualTo(900f));
+    }
+
+    [Test]
+    public void LockedCameraCenter_ClearedOnReset()
+    {
+        _player.Position = new Vector2(300, 0);
+        _director.Update(new GameTime());
+        Assert.That(_director.LockedCameraCenter, Is.Not.Null);
+
+        var newDirector = new TestLevelDirector(_entityManager, _level, _player, 800, 600);
+        Assert.That(newDirector.LockedCameraCenter, Is.Null);
     }
 
     [Test]
@@ -344,313 +419,13 @@ public class LevelDirectorTests
     }
 
     [Test]
-    public void PersistentCameraCenter_NullBeforeTrigger()
-    {
-        Assert.That(_director.PersistentCameraCenter, Is.Null);
-    }
-
-    [Test]
-    public void PersistentCameraCenter_SetOnTrigger()
-    {
-        _player.Position = new Vector2(300, 0);
-        _director.Update(new GameTime());
-
-        Assert.That(_director.PersistentCameraCenter, Is.EqualTo(300f));
-    }
-
-    [Test]
-    public void PersistentCameraCenter_SurvivesWaveClear()
-    {
-        _player.Position = new Vector2(300, 0);
-        _director.Update(new GameTime());
-
-        foreach (var entity in _director.SpawnedEnemies)
-        {
-            var enemy = (EnemyEntity)entity;
-            _director.SimulateEnemyDied(enemy);
-        }
-        _director.Update(new GameTime());
-
-        Assert.That(_director.CurrentFightArea, Is.Null);
-        Assert.That(_director.PersistentCameraCenter, Is.EqualTo(300f));
-    }
-
-    [Test]
-    public void PersistentCameraCenter_UpdatesToRightmostWave()
-    {
-        _player.Position = new Vector2(300, 0);
-        _director.Update(new GameTime());
-        Assert.That(_director.PersistentCameraCenter, Is.EqualTo(300f));
-
-        foreach (var entity in _director.SpawnedEnemies)
-        {
-            var enemy = (EnemyEntity)entity;
-            _director.SimulateEnemyDied(enemy);
-        }
-        _director.Update(new GameTime());
-
-        _player.Position = new Vector2(1200, 0);
-        _director.Update(new GameTime());
-
-        Assert.That(_director.PersistentCameraCenter, Is.EqualTo(900f));
-    }
-
-    [Test]
-    public void PersistentCameraCenter_ClearedOnReset()
-    {
-        _player.Position = new Vector2(300, 0);
-        _director.Update(new GameTime());
-        Assert.That(_director.PersistentCameraCenter, Is.EqualTo(300f));
-
-        var newDirector = new TestLevelDirector(_entityManager, _level, _player);
-        Assert.That(newDirector.PersistentCameraCenter, Is.Null);
-    }
-
-    [Test]
-    public void CameraLeftBound_PersistsAfterWaveClear()
-    {
-        float? leftLock = null;
-
-        _player.Position = new Vector2(300, 0);
-        _director.Update(new GameTime());
-        var fa = _director.CurrentFightArea;
-        if (fa.HasValue)
-            leftLock = fa.Value.X + fa.Value.Width / 2f;
-        _cameraController.LeftBound = leftLock;
-        _cameraController.RightBound = fa.HasValue ? leftLock : null;
-
-        Assert.That(_cameraController.LeftBound, Is.EqualTo(300f));
-        Assert.That(_cameraController.RightBound, Is.EqualTo(300f));
-
-        foreach (var entity in _director.SpawnedEnemies)
-        {
-            var enemy = (EnemyEntity)entity;
-            _director.SimulateEnemyDied(enemy);
-        }
-        _director.Update(new GameTime());
-        fa = _director.CurrentFightArea;
-        _cameraController.LeftBound = fa.HasValue ? fa.Value.X + fa.Value.Width / 2f : leftLock;
-        _cameraController.RightBound = fa.HasValue ? fa.Value.X + fa.Value.Width / 2f : null;
-
-        Assert.That(_cameraController.LeftBound, Is.EqualTo(300f));
-        Assert.That(_cameraController.RightBound, Is.Null);
-    }
-
-    [Test]
-    public void CameraLeftBound_PersistsAcrossMultipleWaves()
-    {
-        float? leftLock = null;
-
-        _player.Position = new Vector2(300, 0);
-        _director.Update(new GameTime());
-        var fa = _director.CurrentFightArea;
-        if (fa.HasValue)
-            leftLock = fa.Value.X + fa.Value.Width / 2f;
-
-        foreach (var entity in _director.SpawnedEnemies)
-        {
-            var enemy = (EnemyEntity)entity;
-            _director.SimulateEnemyDied(enemy);
-        }
-        _director.Update(new GameTime());
-
-        _player.Position = new Vector2(1200, 0);
-        _director.Update(new GameTime());
-        fa = _director.CurrentFightArea;
-        if (fa.HasValue)
-            leftLock = fa.Value.X + fa.Value.Width / 2f;
-
-        foreach (var entity in _director.SpawnedEnemies)
-        {
-            var enemy = (EnemyEntity)entity;
-            _director.SimulateEnemyDied(enemy);
-        }
-        _director.Update(new GameTime());
-        fa = _director.CurrentFightArea;
-        _cameraController.LeftBound = fa.HasValue ? fa.Value.X + fa.Value.Width / 2f : leftLock;
-        _cameraController.RightBound = fa.HasValue ? fa.Value.X + fa.Value.Width / 2f : null;
-
-        Assert.That(_cameraController.LeftBound, Is.EqualTo(900f));
-        Assert.That(_cameraController.RightBound, Is.Null);
-    }
-
-    [Test]
-    public void ShowGoPrompt_FalseBeforeAnyWave()
-    {
-        Assert.That(_director.ShowGoPrompt, Is.False);
-    }
-
-    [Test]
-    public void ShowGoPrompt_FalseDuringActiveWave()
-    {
-        _player.Position = new Vector2(300, 0);
-        _director.Update(new GameTime());
-        Assert.That(_director.ShowGoPrompt, Is.False);
-    }
-
-    [Test]
-    public void ShowGoPrompt_TrueAfterWaveCleared()
-    {
-        _player.Position = new Vector2(300, 0);
-        _director.Update(new GameTime());
-
-        foreach (var entity in _director.SpawnedEnemies)
-        {
-            var enemy = (EnemyEntity)entity;
-            _director.SimulateEnemyDied(enemy);
-        }
-        _director.Update(new GameTime());
-
-        Assert.That(_director.IsWaveCleared, Is.True);
-        Assert.That(_director.ShowGoPrompt, Is.True);
-    }
-
-    [Test]
-    public void ShowGoPrompt_FalseAfterPassingFightAreaRightEdge()
-    {
-        _player.Position = new Vector2(300, 0);
-        _director.Update(new GameTime());
-
-        foreach (var entity in _director.SpawnedEnemies)
-        {
-            var enemy = (EnemyEntity)entity;
-            _director.SimulateEnemyDied(enemy);
-        }
-        _director.Update(new GameTime());
-
-        Assert.That(_director.ShowGoPrompt, Is.True);
-
-        _player.Position = new Vector2(550, 0);
-        _director.Update(new GameTime());
-
-        Assert.That(_director.ShowGoPrompt, Is.False);
-    }
-
-    [Test]
-    public void ShowGoPrompt_TrueAfterBacktrackingLeftOfFightAreaRightEdge()
-    {
-        _player.Position = new Vector2(300, 0);
-        _director.Update(new GameTime());
-
-        foreach (var entity in _director.SpawnedEnemies)
-        {
-            var enemy = (EnemyEntity)entity;
-            _director.SimulateEnemyDied(enemy);
-        }
-        _director.Update(new GameTime());
-
-        _player.Position = new Vector2(600, 0);
-        _director.Update(new GameTime());
-        Assert.That(_director.ShowGoPrompt, Is.False);
-
-        _player.Position = new Vector2(400, 0);
-        _director.Update(new GameTime());
-        Assert.That(_director.ShowGoPrompt, Is.True);
-    }
-
-    [Test]
-    public void ShowGoPrompt_FalseAfterLastWaveClearedAndPlayerPassesRightEdge()
-    {
-        _player.Position = new Vector2(300, 0);
-        _director.Update(new GameTime());
-
-        foreach (var entity in _director.SpawnedEnemies)
-        {
-            var enemy = (EnemyEntity)entity;
-            _director.SimulateEnemyDied(enemy);
-        }
-        _director.Update(new GameTime());
-
-        _player.Position = new Vector2(900, 0);
-        _director.Update(new GameTime());
-
-        foreach (var entity in _director.SpawnedEnemies)
-        {
-            var enemy = (EnemyEntity)entity;
-            _director.SimulateEnemyDied(enemy);
-        }
-        _director.Update(new GameTime());
-
-        Assert.That(_director.IsWaveCleared, Is.True);
-        Assert.That(_director.ShowGoPrompt, Is.True);
-
-        _player.Position = new Vector2(1600, 0);
-        _director.Update(new GameTime());
-
-        Assert.That(_director.ShowGoPrompt, Is.False);
-    }
-
-    [Test]
-    public void ShowGoPrompt_TrueAfterLastWaveCleared_BeforeEndTriggerX()
-    {
-        _player.Position = new Vector2(300, 0);
-        _director.Update(new GameTime());
-
-        foreach (var entity in _director.SpawnedEnemies)
-        {
-            var enemy = (EnemyEntity)entity;
-            _director.SimulateEnemyDied(enemy);
-        }
-        _director.Update(new GameTime());
-
-        _player.Position = new Vector2(900, 0);
-        _director.Update(new GameTime());
-
-        foreach (var entity in _director.SpawnedEnemies)
-        {
-            var enemy = (EnemyEntity)entity;
-            _director.SimulateEnemyDied(enemy);
-        }
-        _director.Update(new GameTime());
-
-        _player.Position = new Vector2(1400, 0);
-        _director.Update(new GameTime());
-
-        Assert.That(_director.ShowGoPrompt, Is.True);
-    }
-
-    [Test]
-    public void MovementBounds_ExtendForPlayer_WhenPastFightAreaRightEdge()
-    {
-        _player.Position = new Vector2(800, 0);
-        _director.Update(new GameTime());
-
-        var fa = _director.CurrentFightArea;
-        Assert.That(fa, Is.Not.Null);
-        Assert.That(fa.Value.X, Is.EqualTo(50f));
-        Assert.That(fa.Value.Width, Is.EqualTo(500f));
-
-        float extendedRightEdge = fa.Value.X + Math.Max(fa.Value.Width, _player.Position.X - fa.Value.X);
-        Assert.That(extendedRightEdge, Is.EqualTo(800f));
-
-        float originalRightEdge = fa.Value.X + fa.Value.Width;
-        Assert.That(extendedRightEdge, Is.GreaterThan(originalRightEdge));
-    }
-
-    [Test]
-    public void MovementBounds_NoExtension_WhenPlayerInsideFightArea()
-    {
-        _player.Position = new Vector2(300, 0);
-        _director.Update(new GameTime());
-
-        var fa = _director.CurrentFightArea;
-        Assert.That(fa, Is.Not.Null);
-        Assert.That(fa.Value.X, Is.EqualTo(50f));
-        Assert.That(fa.Value.Width, Is.EqualTo(500f));
-
-        float extendedRightEdge = fa.Value.X + Math.Max(fa.Value.Width, _player.Position.X - fa.Value.X);
-        Assert.That(extendedRightEdge, Is.EqualTo(550f));
-        Assert.That(extendedRightEdge, Is.EqualTo(fa.Value.Right));
-    }
-
-    [Test]
     public void FullFlow_TriggerWave_KillEnemies_AdvanceToNext()
     {
         _player.Position = new Vector2(300, 0);
         _director.Update(new GameTime());
 
         Assert.That(_director.IsScrollLocked, Is.True);
-        Assert.That(_director.CurrentFightArea, Is.Not.Null);
+        Assert.That(_director.LockedCameraCenter, Is.Not.Null);
 
         foreach (var entity in _director.SpawnedEnemies.ToList())
         {
@@ -660,7 +435,7 @@ public class LevelDirectorTests
         _director.Update(new GameTime());
 
         Assert.That(_director.IsScrollLocked, Is.False);
-        Assert.That(_director.CurrentFightArea, Is.Null);
+        Assert.That(_director.LockedCameraCenter, Is.Null);
 
         _player.Position = new Vector2(1200, 0);
         _director.Update(new GameTime());
