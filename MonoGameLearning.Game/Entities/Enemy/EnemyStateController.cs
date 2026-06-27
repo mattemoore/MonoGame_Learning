@@ -1,9 +1,10 @@
 using System;
+using System.Collections.Generic;
 using Stateless;
 
 namespace MonoGameLearning.Game.Entities.Enemy;
 
-public class EnemyStateControllerConfig
+public class EnemyStateEntryCallbacks
 {
     public Action OnIdleEntry { get; init; }
     public Action OnChasingEntry { get; init; }
@@ -50,104 +51,93 @@ public class EnemyStateController
     public StateMachine<EnemyState, EnemyTrigger> StateMachine { get; }
     public EnemyState State => StateMachine.State;
 
-    public EnemyStateController(EnemyStateControllerConfig config = null)
+    private static readonly Dictionary<(EnemyState, EnemyTrigger), EnemyState> Transitions = new()
+    {
+        [(EnemyState.Dummy, EnemyTrigger.Activate)] = EnemyState.Idle,
+        [(EnemyState.Idle, EnemyTrigger.StartChase)] = EnemyState.Chasing,
+        [(EnemyState.Idle, EnemyTrigger.AttackStart)] = EnemyState.Attacking,
+        [(EnemyState.Idle, EnemyTrigger.TakeDamage)] = EnemyState.Hurt,
+        [(EnemyState.Idle, EnemyTrigger.TakeKnockdown)] = EnemyState.KnockedDown,
+        [(EnemyState.Idle, EnemyTrigger.Die)] = EnemyState.Dying,
+        [(EnemyState.Chasing, EnemyTrigger.StopChase)] = EnemyState.Idle,
+        [(EnemyState.Chasing, EnemyTrigger.AttackStart)] = EnemyState.Attacking,
+        [(EnemyState.Chasing, EnemyTrigger.TakeDamage)] = EnemyState.Hurt,
+        [(EnemyState.Chasing, EnemyTrigger.TakeKnockdown)] = EnemyState.KnockedDown,
+        [(EnemyState.Chasing, EnemyTrigger.Die)] = EnemyState.Dying,
+        [(EnemyState.Attacking, EnemyTrigger.AttackCompleted)] = EnemyState.Idle,
+        [(EnemyState.Attacking, EnemyTrigger.TakeDamage)] = EnemyState.Hurt,
+        [(EnemyState.Attacking, EnemyTrigger.TakeKnockdown)] = EnemyState.KnockedDown,
+        [(EnemyState.Attacking, EnemyTrigger.Die)] = EnemyState.Dying,
+        [(EnemyState.Hurt, EnemyTrigger.HurtCompleted)] = EnemyState.Idle,
+        [(EnemyState.Hurt, EnemyTrigger.TakeKnockdown)] = EnemyState.KnockedDown,
+        [(EnemyState.Hurt, EnemyTrigger.Die)] = EnemyState.Dying,
+        [(EnemyState.KnockedDown, EnemyTrigger.KnockdownCompleted)] = EnemyState.Idle,
+        [(EnemyState.KnockedDown, EnemyTrigger.Die)] = EnemyState.Dying,
+        [(EnemyState.Dying, EnemyTrigger.DeathCompleted)] = EnemyState.Dead,
+    };
+
+    private static readonly Dictionary<EnemyState, HashSet<EnemyTrigger>> IgnoredTriggers = new()
+    {
+        [EnemyState.Dummy] = [EnemyTrigger.AttackCompleted],
+        [EnemyState.Idle] = [EnemyTrigger.Activate, EnemyTrigger.AttackCompleted, EnemyTrigger.StopChase],
+        [EnemyState.Chasing] = [EnemyTrigger.StartChase, EnemyTrigger.Activate, EnemyTrigger.AttackCompleted],
+        [EnemyState.Attacking] = [EnemyTrigger.StartChase, EnemyTrigger.StopChase, EnemyTrigger.AttackStart, EnemyTrigger.Activate],
+        [EnemyState.Hurt] = [EnemyTrigger.TakeDamage, EnemyTrigger.AttackStart, EnemyTrigger.StartChase, EnemyTrigger.StopChase, EnemyTrigger.Activate, EnemyTrigger.AttackCompleted],
+        [EnemyState.KnockedDown] = [EnemyTrigger.TakeDamage, EnemyTrigger.TakeKnockdown, EnemyTrigger.AttackStart, EnemyTrigger.AttackCompleted, EnemyTrigger.StartChase, EnemyTrigger.StopChase, EnemyTrigger.HurtCompleted, EnemyTrigger.Activate],
+        [EnemyState.Dying] = [EnemyTrigger.TakeDamage, EnemyTrigger.Die, EnemyTrigger.HurtCompleted, EnemyTrigger.AttackStart, EnemyTrigger.StartChase, EnemyTrigger.StopChase, EnemyTrigger.Activate, EnemyTrigger.AttackCompleted, EnemyTrigger.TakeKnockdown, EnemyTrigger.KnockdownCompleted],
+        [EnemyState.Dead] = [EnemyTrigger.TakeDamage, EnemyTrigger.Die, EnemyTrigger.HurtCompleted, EnemyTrigger.DeathCompleted, EnemyTrigger.AttackStart, EnemyTrigger.StartChase, EnemyTrigger.StopChase, EnemyTrigger.Activate, EnemyTrigger.AttackCompleted, EnemyTrigger.TakeKnockdown, EnemyTrigger.KnockdownCompleted],
+    };
+
+    public EnemyStateController(EnemyStateEntryCallbacks callbacks = null)
     {
         StateMachine = new(EnemyState.Dummy);
 
-        StateMachine.Configure(EnemyState.Dummy)
-            .OnActivate(() => StateMachine.Fire(EnemyTrigger.Activate))
-            .Permit(EnemyTrigger.Activate, EnemyState.Idle)
-            .Ignore(EnemyTrigger.AttackCompleted);
+        var allStates = (EnemyState[])Enum.GetValues(typeof(EnemyState));
+        foreach (var state in allStates)
+        {
+            var config = StateMachine.Configure(state);
 
-        StateMachine.Configure(EnemyState.Idle)
-            .OnEntry(_ => config?.OnIdleEntry?.Invoke())
-            .Permit(EnemyTrigger.StartChase, EnemyState.Chasing)
-            .Permit(EnemyTrigger.AttackStart, EnemyState.Attacking)
-            .Permit(EnemyTrigger.TakeDamage, EnemyState.Hurt)
-            .Permit(EnemyTrigger.TakeKnockdown, EnemyState.KnockedDown)
-            .Permit(EnemyTrigger.Die, EnemyState.Dying)
-            .Ignore(EnemyTrigger.Activate)
-            .Ignore(EnemyTrigger.AttackCompleted)
-            .Ignore(EnemyTrigger.StopChase);
+            if (callbacks is not null)
+            {
+                var entry = state switch
+                {
+                    EnemyState.Idle => callbacks.OnIdleEntry,
+                    EnemyState.Chasing => callbacks.OnChasingEntry,
+                    EnemyState.Attacking => callbacks.OnAttackingEntry,
+                    EnemyState.Hurt => callbacks.OnHurtEntry,
+                    EnemyState.KnockedDown => callbacks.OnKnockdownEntry,
+                    EnemyState.Dying => callbacks.OnDyingEntry,
+                    EnemyState.Dead => callbacks.OnDeadEntry,
+                    _ => null
+                };
+                if (entry is not null) config.OnEntry(_ => entry());
 
-        StateMachine.Configure(EnemyState.Chasing)
-            .OnEntry(_ => config?.OnChasingEntry?.Invoke())
-            .Permit(EnemyTrigger.StopChase, EnemyState.Idle)
-            .Permit(EnemyTrigger.AttackStart, EnemyState.Attacking)
-            .Permit(EnemyTrigger.TakeDamage, EnemyState.Hurt)
-            .Permit(EnemyTrigger.TakeKnockdown, EnemyState.KnockedDown)
-            .Permit(EnemyTrigger.Die, EnemyState.Dying)
-            .Ignore(EnemyTrigger.StartChase)
-            .Ignore(EnemyTrigger.Activate)
-            .Ignore(EnemyTrigger.AttackCompleted);
+                var exit = state switch
+                {
+                    EnemyState.Attacking => callbacks.OnAttackingExit,
+                    EnemyState.Hurt => callbacks.OnHurtExit,
+                    EnemyState.KnockedDown => callbacks.OnKnockdownExit,
+                    EnemyState.Dying => callbacks.OnDyingExit,
+                    _ => null
+                };
+                if (exit is not null) config.OnExit(_ => exit());
+            }
 
-        StateMachine.Configure(EnemyState.Attacking)
-            .OnEntry(_ => config?.OnAttackingEntry?.Invoke())
-            .OnExit(_ => config?.OnAttackingExit?.Invoke())
-            .Permit(EnemyTrigger.AttackCompleted, EnemyState.Idle)
-            .Permit(EnemyTrigger.TakeDamage, EnemyState.Hurt)
-            .Permit(EnemyTrigger.TakeKnockdown, EnemyState.KnockedDown)
-            .Permit(EnemyTrigger.Die, EnemyState.Dying)
-            .Ignore(EnemyTrigger.StartChase)
-            .Ignore(EnemyTrigger.StopChase)
-            .Ignore(EnemyTrigger.AttackStart)
-            .Ignore(EnemyTrigger.Activate);
+            if (state == EnemyState.Dummy)
+                config.OnActivate(() => StateMachine.Fire(EnemyTrigger.Activate));
 
-        StateMachine.Configure(EnemyState.Hurt)
-            .OnEntry(_ => config?.OnHurtEntry?.Invoke())
-            .OnExit(_ => config?.OnHurtExit?.Invoke())
-            .Permit(EnemyTrigger.HurtCompleted, EnemyState.Idle)
-            .Permit(EnemyTrigger.TakeKnockdown, EnemyState.KnockedDown)
-            .Permit(EnemyTrigger.Die, EnemyState.Dying)
-            .Ignore(EnemyTrigger.TakeDamage)
-            .Ignore(EnemyTrigger.AttackStart)
-            .Ignore(EnemyTrigger.StartChase)
-            .Ignore(EnemyTrigger.StopChase)
-            .Ignore(EnemyTrigger.Activate)
-            .Ignore(EnemyTrigger.AttackCompleted);
+            foreach (var ((fromState, trigger), toState) in Transitions)
+            {
+                if (fromState == state)
+                    config.Permit(trigger, toState);
+            }
 
-        StateMachine.Configure(EnemyState.KnockedDown)
-            .OnEntry(_ => config?.OnKnockdownEntry?.Invoke())
-            .OnExit(_ => config?.OnKnockdownExit?.Invoke())
-            .Permit(EnemyTrigger.KnockdownCompleted, EnemyState.Idle)
-            .Permit(EnemyTrigger.Die, EnemyState.Dying)
-            .Ignore(EnemyTrigger.TakeDamage)
-            .Ignore(EnemyTrigger.TakeKnockdown)
-            .Ignore(EnemyTrigger.AttackStart)
-            .Ignore(EnemyTrigger.AttackCompleted)
-            .Ignore(EnemyTrigger.StartChase)
-            .Ignore(EnemyTrigger.StopChase)
-            .Ignore(EnemyTrigger.HurtCompleted)
-            .Ignore(EnemyTrigger.Activate);
-
-        StateMachine.Configure(EnemyState.Dying)
-            .OnEntry(_ => config?.OnDyingEntry?.Invoke())
-            .OnExit(_ => config?.OnDyingExit?.Invoke())
-            .Permit(EnemyTrigger.DeathCompleted, EnemyState.Dead)
-            .Ignore(EnemyTrigger.TakeDamage)
-            .Ignore(EnemyTrigger.Die)
-            .Ignore(EnemyTrigger.HurtCompleted)
-            .Ignore(EnemyTrigger.AttackStart)
-            .Ignore(EnemyTrigger.StartChase)
-            .Ignore(EnemyTrigger.StopChase)
-            .Ignore(EnemyTrigger.Activate)
-            .Ignore(EnemyTrigger.AttackCompleted)
-            .Ignore(EnemyTrigger.TakeKnockdown)
-            .Ignore(EnemyTrigger.KnockdownCompleted);
-
-        StateMachine.Configure(EnemyState.Dead)
-            .OnEntry(_ => config?.OnDeadEntry?.Invoke())
-            .Ignore(EnemyTrigger.TakeDamage)
-            .Ignore(EnemyTrigger.Die)
-            .Ignore(EnemyTrigger.HurtCompleted)
-            .Ignore(EnemyTrigger.DeathCompleted)
-            .Ignore(EnemyTrigger.AttackStart)
-            .Ignore(EnemyTrigger.StartChase)
-            .Ignore(EnemyTrigger.StopChase)
-            .Ignore(EnemyTrigger.Activate)
-            .Ignore(EnemyTrigger.AttackCompleted)
-            .Ignore(EnemyTrigger.TakeKnockdown)
-            .Ignore(EnemyTrigger.KnockdownCompleted);
+            if (IgnoredTriggers.TryGetValue(state, out var ignored))
+            {
+                foreach (var trigger in ignored)
+                    config.Ignore(trigger);
+            }
+        }
 
         StateMachine.Activate();
     }

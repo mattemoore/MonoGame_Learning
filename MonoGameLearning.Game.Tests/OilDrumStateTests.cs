@@ -5,161 +5,44 @@ using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Helpers;
 using MonoGameLearning.Core.Entities.Interfaces;
-using MonoGameLearning.Game.Entities.Props;
 
 namespace MonoGameLearning.Game.Tests;
 
-[TestFixture]
-public class OilDrumStateControllerTests
-{
-    private OilDrumStateController _controller;
-
-    [SetUp]
-    public void Setup() => _controller = new OilDrumStateController();
-
-    [Test]
-    public void InitialState_ShouldBeNormal() =>
-        Assert.That(_controller.State, Is.EqualTo(OilDrumState.Normal));
-
-    [Test]
-    public void FromNormal_Hit_TransitionsToHitStun()
-    {
-        _controller.Fire(OilDrumTrigger.Hit);
-        Assert.That(_controller.State, Is.EqualTo(OilDrumState.HitStun));
-    }
-
-    [Test]
-    public void FromHitStun_HitStunCompleted_TransitionsToNormal()
-    {
-        _controller.Fire(OilDrumTrigger.Hit);
-        _controller.Fire(OilDrumTrigger.HitStunCompleted);
-        Assert.That(_controller.State, Is.EqualTo(OilDrumState.Normal));
-    }
-
-    [Test]
-    public void FromHitStun_Hit_IsIgnored()
-    {
-        _controller.Fire(OilDrumTrigger.Hit);
-        _controller.Fire(OilDrumTrigger.Hit);
-        Assert.That(_controller.State, Is.EqualTo(OilDrumState.HitStun));
-    }
-
-    [Test]
-    public void FromNormal_HitStunCompleted_IsIgnored()
-    {
-        _controller.Fire(OilDrumTrigger.HitStunCompleted);
-        Assert.That(_controller.State, Is.EqualTo(OilDrumState.Normal));
-    }
-
-    [Test]
-    public void CanFire_ReturnsTrue_ForValidTransition()
-    {
-        Assert.That(_controller.CanFire(OilDrumTrigger.Hit), Is.True);
-    }
-
-    [Test]
-    public void CanFire_ReturnsTrue_ForIgnoredTrigger_WhenInHitStun()
-    {
-        _controller.Fire(OilDrumTrigger.Hit);
-        Assert.That(_controller.CanFire(OilDrumTrigger.Hit), Is.True);
-    }
-
-    [Test]
-    public void CanFire_ReturnsTrue_ForIgnoredTrigger()
-    {
-        Assert.That(_controller.CanFire(OilDrumTrigger.HitStunCompleted), Is.True);
-    }
-
-    [Test]
-    public void IsInState_ReturnsTrue_WhenInState()
-    {
-        _controller.Fire(OilDrumTrigger.Hit);
-        Assert.That(_controller.IsInState(OilDrumState.HitStun), Is.True);
-    }
-
-    [Test]
-    public void IsInState_ReturnsFalse_WhenNotInState() =>
-        Assert.That(_controller.IsInState(OilDrumState.HitStun), Is.False);
-
-    [Test]
-    public void NormalEntryCallback_NotInvoked_OnInitialization()
-    {
-        bool entryInvoked = false;
-        _ = new OilDrumStateController(new() { OnNormalEntry = () => entryInvoked = true });
-        Assert.That(entryInvoked, Is.False);
-    }
-
-    [Test]
-    public void NormalEntryCallback_IsInvoked_OnReturnFromHitStun()
-    {
-        bool entryInvoked = false;
-        var controller = new OilDrumStateController(new() { OnNormalEntry = () => entryInvoked = true });
-        entryInvoked = false;
-        controller.Fire(OilDrumTrigger.Hit);
-        controller.Fire(OilDrumTrigger.HitStunCompleted);
-        Assert.That(entryInvoked, Is.True);
-    }
-
-    [Test]
-    public void HitStunEntryCallback_IsInvoked_OnHit()
-    {
-        bool entryInvoked = false;
-        var controller = new OilDrumStateController(new() { OnHitStunEntry = () => entryInvoked = true });
-        controller.Fire(OilDrumTrigger.Hit);
-        Assert.That(entryInvoked, Is.True);
-    }
-
-    [Test]
-    public void HitStunEntryCallback_NotInvoked_OnIgnoredHit()
-    {
-        int callCount = 0;
-        var controller = new OilDrumStateController(new() { OnHitStunEntry = () => callCount++ });
-        controller.Fire(OilDrumTrigger.Hit);
-        controller.Fire(OilDrumTrigger.Hit);
-        Assert.That(callCount, Is.EqualTo(1));
-    }
-
-    [Test]
-    public void Fire_DoesNothing_ForInvalidTransition()
-    {
-        _controller.Fire(OilDrumTrigger.Hit);
-        _controller.Fire(OilDrumTrigger.Hit);
-        Assert.That(_controller.State, Is.EqualTo(OilDrumState.HitStun));
-    }
-}
-
-public class TestDamageableEntity(string name, Vector2 position, int width, int height) : Entity(name, position, width, height), IDamageable, IHasHealth, ICollisionActor
+public class TestDamageableEntity(string name, Vector2 position, int width, int height) : Entity(name, position, width, height), IDamageable, ICollisionActor
 {
     private readonly Health _health = new(6);
-    private readonly OilDrumStateController _stateController = new();
+    private bool _isHitStunned;
     public IShapeF Bounds => Frame;
+    public Faction Faction => Faction.Neutral;
     public int Health => _health.Value;
     public int MaxHealth => _health.MaxHealth;
     public bool IsAlive => _health.IsAlive;
+    public event EventHandler Died = delegate { };
     public event Action<Entity> Destroyed = delegate { };
 
     public void TakeDamage(DamageInfo info)
     {
-        if (!_health.IsAlive || _stateController.State == OilDrumState.HitStun) return;
+        if (!_health.IsAlive || _isHitStunned) return;
 
         int effective = info.Strength switch { AttackStrength.Heavy => 6, AttackStrength.Medium => 3, _ => 2 };
-
         _health.Subtract(effective);
 
         if (!_health.IsAlive)
             Destroyed?.Invoke(this);
         else
-            _stateController.Fire(OilDrumTrigger.Hit);
+            _isHitStunned = true;
     }
 
-    public void UpdateHitStun(float deltaSeconds)
-    {
-        if (!_health.IsAlive || !_stateController.IsInState(OilDrumState.HitStun)) return;
-        _stateController.Fire(OilDrumTrigger.HitStunCompleted);
-    }
+    public void ClearHitStun() => _isHitStunned = false;
 
-    public bool CanTakeDamage => _health.IsAlive && _stateController.State != OilDrumState.HitStun;
+    public bool CanTakeDamage => _health.IsAlive && !_isHitStunned;
     public void OnCollision(CollisionEventArgs collisionInfo) { }
+
+    bool IDamageable.CanTakeDamage() => _health.IsAlive && !_isHitStunned;
+    void IDamageable.ReduceHealth(int amount) => _health.Subtract(amount);
+    void IDamageable.OnDeath() => Destroyed?.Invoke(this);
+    void IDamageable.OnKnockdown(DamageInfo info) { }
+    void IDamageable.OnHit(DamageInfo info) { }
 }
 
 [TestFixture]
@@ -171,74 +54,81 @@ public class OilDrumEntityBehaviorTests
     public void Setup() => _entity = new("drum", Vector2.Zero, 50, 50);
 
     [Test]
-    public void TakeDamage_FirstHit_ReducesHealth()
+    public void InitialState_CanBeDamaged()
     {
-        _entity.TakeDamage(new DamageInfo { Amount = 5, Strength = AttackStrength.Light });
+        Assert.That(_entity.CanTakeDamage, Is.True);
+    }
+
+    [Test]
+    public void TakeDamage_SetsHitStun()
+    {
+        _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Light });
+        Assert.That(_entity.CanTakeDamage, Is.False);
+    }
+
+    [Test]
+    public void TakeDamage_DuringHitStun_IsRejected()
+    {
+        _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Light });
+        _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Light });
         Assert.That(_entity.Health, Is.EqualTo(4));
     }
 
     [Test]
-    public void HitStunState_PreventsDoubleHit()
+    public void ClearHitStun_AllowsFurtherDamage()
     {
-        _entity.TakeDamage(new DamageInfo { Amount = 5, Strength = AttackStrength.Light });
-        int healthAfterFirst = _entity.Health;
-        _entity.TakeDamage(new DamageInfo { Amount = 5, Strength = AttackStrength.Light });
-        Assert.That(_entity.Health, Is.EqualTo(healthAfterFirst));
+        _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Light });
+        _entity.ClearHitStun();
+        _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Light });
+        Assert.That(_entity.Health, Is.EqualTo(2));
     }
 
     [Test]
-    public void HitStunCompleted_AllowsNextHit()
+    public void DestroyedEvent_Fires_WhenHealthDepleted()
     {
-        _entity.TakeDamage(new DamageInfo { Amount = 5, Strength = AttackStrength.Light });
-        _entity.UpdateHitStun(0);
-        int healthAfterFirst = _entity.Health;
-        _entity.TakeDamage(new DamageInfo { Amount = 5, Strength = AttackStrength.Light });
-        Assert.That(_entity.Health, Is.LessThan(healthAfterFirst));
+        bool destroyed = false;
+        _entity.Destroyed += _ => destroyed = true;
+        _entity.TakeDamage(new DamageInfo { Amount = 50, Strength = AttackStrength.Heavy });
+        Assert.That(destroyed, Is.True);
     }
 
     [Test]
-    public void Destroyed_WhenHealthDepleted()
+    public void DestroyedEvent_DoesNotFire_WhenHealthRemains()
+    {
+        bool destroyed = false;
+        _entity.Destroyed += _ => destroyed = true;
+        _entity.TakeDamage(new DamageInfo { Amount = 2, Strength = AttackStrength.Light });
+        Assert.That(destroyed, Is.False);
+    }
+
+    [Test]
+    public void DeadEntity_RejectsFurtherDamage()
     {
         _entity.TakeDamage(new DamageInfo { Amount = 50, Strength = AttackStrength.Heavy });
-        Assert.That(_entity.Health, Is.LessThanOrEqualTo(0));
-        Assert.That(_entity.IsAlive, Is.False);
-    }
-
-    [Test]
-    public void DeadEntity_IgnoresFurtherDamage()
-    {
+        int healthBefore = _entity.Health;
         _entity.TakeDamage(new DamageInfo { Amount = 50, Strength = AttackStrength.Heavy });
-        int healthAfterDeath = _entity.Health;
-        _entity.TakeDamage(new DamageInfo { Amount = 5, Strength = AttackStrength.Light });
-        Assert.That(_entity.Health, Is.EqualTo(healthAfterDeath));
+        Assert.That(_entity.Health, Is.EqualTo(healthBefore));
     }
 
     [Test]
-    public void DamageScaling_Light_ReducesBy2()
+    public void LightDamage_ReducesByTwo()
     {
         _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Light });
         Assert.That(_entity.Health, Is.EqualTo(4));
     }
 
     [Test]
-    public void DamageScaling_Heavy_ReducesBy6()
-    {
-        _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Heavy });
-        Assert.That(_entity.Health, Is.EqualTo(0));
-    }
-
-    [Test]
-    public void DamageScaling_Medium_ReducesBy3()
+    public void MediumDamage_ReducesByThree()
     {
         _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Medium });
         Assert.That(_entity.Health, Is.EqualTo(3));
     }
 
     [Test]
-    public void AlreadyDead_CanTakeDamage_ReturnsFalse()
+    public void HeavyDamage_Destroys()
     {
-        _entity.TakeDamage(new DamageInfo { Amount = 50, Strength = AttackStrength.Heavy });
+        _entity.TakeDamage(new DamageInfo { Amount = 0, Strength = AttackStrength.Heavy });
+        Assert.That(_entity.Health, Is.EqualTo(0));
         Assert.That(_entity.IsAlive, Is.False);
-        Assert.That(_entity.CanTakeDamage, Is.False);
     }
 }

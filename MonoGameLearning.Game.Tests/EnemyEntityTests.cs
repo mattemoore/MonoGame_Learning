@@ -4,11 +4,12 @@ using MonoGame.Extended.Collisions;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Helpers;
+using MonoGameLearning.Core.Entities.Interfaces;
 using MonoGameLearning.Game.Entities.Enemy;
 
 namespace MonoGameLearning.Game.Tests;
 
-public class TestEnemyEntity : Entity, ICombatant, ICollisionActor
+public class TestEnemyEntity : Entity, IDamageable, ICollisionActor
 {
     public IShapeF Bounds => Frame;
     public EnemyStateController StateController { get; }
@@ -53,12 +54,12 @@ public class TestEnemyEntity : Entity, ICombatant, ICollisionActor
     public void TakeDamage(DamageInfo info) => CombatService.ApplyDamage(this, info);
 
     public bool CanTakeDamage => _health.IsAlive && StateController.State != EnemyState.KnockedDown;
-    void ICombatant.ReduceHealth(int amount) => _health.Subtract(amount);
+    void IDamageable.ReduceHealth(int amount) => _health.Subtract(amount);
 
-    bool ICombatant.CanTakeDamage() => _health.IsAlive && StateController.State != EnemyState.KnockedDown;
-    void ICombatant.OnDeath() => StateController.Fire(EnemyTrigger.Die);
-    void ICombatant.OnKnockdown(DamageInfo info) => StateController.Fire(EnemyTrigger.TakeKnockdown);
-    void ICombatant.OnHit(DamageInfo info) => StateController.Fire(EnemyTrigger.TakeDamage);
+    bool IDamageable.CanTakeDamage() => _health.IsAlive && StateController.State != EnemyState.KnockedDown;
+    void IDamageable.OnDeath() => StateController.Fire(EnemyTrigger.Die);
+    void IDamageable.OnKnockdown(DamageInfo info) => StateController.Fire(EnemyTrigger.TakeKnockdown);
+    void IDamageable.OnHit(DamageInfo info) => StateController.Fire(EnemyTrigger.TakeDamage);
 
     private void RaiseDied() => Died?.Invoke(this, EventArgs.Empty);
 

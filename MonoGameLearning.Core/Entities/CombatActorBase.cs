@@ -12,7 +12,11 @@ using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Core.Entities;
 
-public abstract class CombatActorBase(string name, Vector2 position, int width, int height, AnimatedSprite sprite, float scale, int maxHealth) : Entity(name, position, width, height), IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, ICombatant, IHitboxProvider, IMoveableEntity, IAnimated
+public record struct AnimationSet(string Idle, string Run, string Hurt, string Fall, string Die, string GetUp);
+
+public enum KnockdownPhase { Falling, GettingUp }
+
+public abstract class CombatActorBase(string name, Vector2 position, int width, int height, AnimatedSprite sprite, float scale, int maxHealth, AnimationSet animations) : Entity(name, position, width, height), IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, IDamageable, IHitboxProvider, IMoveableEntity, IAnimated
 {
     public string LayerName => "actors";
     public IShapeF Bounds => Frame;
@@ -20,6 +24,7 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
     protected readonly SpriteRenderer SpriteRenderer = new(sprite, scale);
     protected readonly Health HealthComponent = new(maxHealth);
     protected readonly AnimationFrameTracker FrameTracker = new();
+    protected readonly AnimationSet Animations = animations;
 
     public AnimatedSprite Sprite => SpriteRenderer.Sprite;
     public RectangleF MovementBounds { get; set; }
@@ -31,14 +36,21 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
     public Faction Faction { get; protected set; }
     public event EventHandler Died;
 
-    int IHasHealth.Health => HealthComponent.Value;
-    int IHasHealth.MaxHealth => HealthComponent.MaxHealth;
-    bool ICombatant.IsAlive => HealthComponent.IsAlive;
+    int IDamageable.Health => HealthComponent.Value;
+    int IDamageable.MaxHealth => HealthComponent.MaxHealth;
+    bool IDamageable.IsAlive => HealthComponent.IsAlive;
 
-    protected void SubscribeToAnimationEvent() =>
+    protected void PlayAnimation(string key)
+    {
+        UnsubscribeFromAnimationEvent();
+        Sprite.SetAnimation(key);
+        SubscribeToAnimationEvent();
+    }
+
+    private void SubscribeToAnimationEvent() =>
         Sprite.Controller.OnAnimationEvent += OnAnimationCompleted;
 
-    protected void UnsubscribeFromAnimationEvent() =>
+    private void UnsubscribeFromAnimationEvent() =>
         Sprite.Controller.OnAnimationEvent -= OnAnimationCompleted;
 
     protected void OnAnimationCompleted(IAnimationController controller, AnimationEventTrigger trigger)
@@ -47,10 +59,10 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
 
         if (IsInKnockedDownState)
         {
-            if (KnockdownPhase == 0)
+            if (KnockdownPhase == KnockdownPhase.Falling)
             {
-                Sprite.SetAnimation(GetUpAnimation);
-                KnockdownPhase = 1;
+                Sprite.SetAnimation(Animations.GetUp);
+                KnockdownPhase = KnockdownPhase.GettingUp;
                 SubscribeToAnimationEvent();
             }
             else
@@ -67,11 +79,11 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
 
     public void TakeDamage(DamageInfo info) => CombatService.ApplyDamage(this, info);
 
-    bool ICombatant.CanTakeDamage() => CanTakeDamage();
-    void ICombatant.ReduceHealth(int amount) => HealthComponent.Subtract(amount);
-    void ICombatant.OnDeath() => OnDeath();
-    void ICombatant.OnKnockdown(DamageInfo info) => OnKnockdown(info);
-    void ICombatant.OnHit(DamageInfo info) => OnHit(info);
+    bool IDamageable.CanTakeDamage() => CanTakeDamage();
+    void IDamageable.ReduceHealth(int amount) => HealthComponent.Subtract(amount);
+    void IDamageable.OnDeath() => OnDeath();
+    void IDamageable.OnKnockdown(DamageInfo info) => OnKnockdown(info);
+    void IDamageable.OnHit(DamageInfo info) => OnHit(info);
 
     protected virtual bool CanTakeDamage() => HealthComponent.IsAlive;
     protected virtual void OnDeath() { }
@@ -91,7 +103,7 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
     public void Render(RenderContext context)
     {
         if (Sprite is null) return;
-        context.SpriteBatch.Draw(Sprite, Position, MathHelper.ToRadians(Rotation), new Vector2(SpriteRenderer.Scale));
+        context.SpriteBatch.Draw(Sprite, Position, 0f, new Vector2(SpriteRenderer.Scale));
     }
 
     public void DrawDebug(DebugDrawContext context)
@@ -119,14 +131,6 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
         }
     }
 
-    // --- Animation key abstractions ---
-    protected abstract string IdleAnimation { get; }
-    protected abstract string RunAnimation { get; }
-    protected abstract string HurtAnimation { get; }
-    protected abstract string FallAnimation { get; }
-    protected abstract string DieAnimation { get; }
-    protected abstract string GetUpAnimation { get; }
-
     // --- State abstractions ---
     protected abstract bool IsIncapacitated { get; }
     protected abstract bool IsInKnockedDownState { get; }
@@ -138,7 +142,7 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
     protected virtual void FireAttackCompleted() { }
 
     // --- Knockdown phase ---
-    protected int KnockdownPhase { get; set; }
+    protected KnockdownPhase KnockdownPhase { get; set; }
 
     // --- Sprite null guard ---
     protected bool EnsureSpriteAttached()
@@ -148,12 +152,12 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
     }
 
     // --- Shared state controller callbacks ---
-    protected Action AttackingExit() => () => { UnsubscribeFromAnimationEvent(); CurrentMove = null; HitboxService?.Clear(this); HitboxService?.ClearAttackResolveState(this); };
-    protected Action HurtEntry() => () => { Sprite.SetAnimation(HurtAnimation); SubscribeToAnimationEvent(); };
+    protected Action AttackingExit() => () => { UnsubscribeFromAnimationEvent(); CurrentMove = null; HitboxService?.Clear(this); HitboxService?.ClearAttackDedup(this); };
+    protected Action HurtEntry() => () => PlayAnimation(Animations.Hurt);
     protected Action HurtExit() => UnsubscribeFromAnimationEvent;
-    protected Action KnockdownEntry() => () => { Sprite.SetAnimation(FallAnimation); KnockdownPhase = 0; SubscribeToAnimationEvent(); };
-    protected Action KnockdownExit() => () => { UnsubscribeFromAnimationEvent(); KnockdownPhase = 0; };
-    protected Action DyingEntry() => () => { Sprite.SetAnimation(DieAnimation); SubscribeToAnimationEvent(); };
+    protected Action KnockdownEntry() => () => { KnockdownPhase = KnockdownPhase.Falling; PlayAnimation(Animations.Fall); };
+    protected Action KnockdownExit() => () => { UnsubscribeFromAnimationEvent(); KnockdownPhase = KnockdownPhase.Falling; };
+    protected Action DyingEntry() => () => PlayAnimation(Animations.Die);
     protected Action DyingExit() => UnsubscribeFromAnimationEvent;
     protected Action DeadEntry() => () => RaiseDied();
 
@@ -174,9 +178,9 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
         MovementDirection = Vector2.Zero;
         Direction = FacingDirection.Right;
         Sprite.Effect = SpriteEffects.None;
-        Sprite.SetAnimation(IdleAnimation);
+        Sprite.SetAnimation(Animations.Idle);
         CurrentMove = null;
         FrameTracker.Reset();
-        KnockdownPhase = 0;
+        KnockdownPhase = KnockdownPhase.Falling;
     }
 }

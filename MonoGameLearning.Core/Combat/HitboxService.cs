@@ -3,6 +3,7 @@ using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Core.Combat;
 
@@ -46,12 +47,10 @@ public class HitboxService
         public int Damage { get; init; }
         public bool Knockdown { get; init; }
         public AttackStrength Strength { get; init; }
-        public HitboxData Definition { get; init; }
     }
 
     private readonly List<ActiveHitbox> _activeHitboxes = [];
-    private readonly Dictionary<Entity, HashSet<(HitboxData, Entity)>> _resolvedThisFrame = [];
-    private readonly HashSet<(Entity Owner, Entity Target)> _attackResolvedTargets = [];
+    private readonly Dictionary<Entity, HashSet<Entity>> _attackDedup = [];
     private readonly List<HitResult> _resultBuffer = [];
     private readonly List<RectangleF> _boundsBuffer = [];
 
@@ -69,32 +68,31 @@ public class HitboxService
                 Damage = move.Damage,
                 Knockdown = move.Knockdown,
                 Strength = move.Strength,
-                Definition = hb
             });
         }
     }
 
-    public List<HitResult> ResolveHits(IEnumerable<Entity> targets)
+    public List<HitResult> ResolveHits(IReadOnlyList<Entity> targets)
     {
         _resultBuffer.Clear();
 
         foreach (var active in _activeHitboxes)
         {
-            if (!_resolvedThisFrame.TryGetValue(active.Owner, out var ownerResolved))
+            // indexed for loop to avoid heap-allocated IEnumerator<T> from IReadOnlyList<T>
+            for (int i = 0; i < targets.Count; i++)
             {
-                ownerResolved = [];
-                _resolvedThisFrame[active.Owner] = ownerResolved;
-            }
-
-            foreach (var target in targets)
-            {
+                var target = targets[i];
                 if (target == active.Owner) continue;
                 if (!active.Bounds.Intersects(target.Frame)) continue;
-                if (!ownerResolved.Add((active.Definition, target))) continue;
 
-                if (!_attackResolvedTargets.Add((active.Owner, target))) continue;
+                if (!_attackDedup.TryGetValue(active.Owner, out var ownerDedup))
+                {
+                    ownerDedup = [];
+                    _attackDedup[active.Owner] = ownerDedup;
+                }
+                if (!ownerDedup.Add(target)) continue;
 
-                if (active.Owner is ICombatant src && target is ICombatant tgt && src.Faction == tgt.Faction) continue;
+                if (active.Owner is IDamageable src && target is IDamageable tgt && src.Faction == tgt.Faction) continue;
 
                 _resultBuffer.Add(new()
                 {
@@ -114,20 +112,18 @@ public class HitboxService
     {
         Debug.Assert(owner is not null, "Clear called with null owner");
         _activeHitboxes.RemoveAll(hb => hb.Owner == owner);
-        _resolvedThisFrame.Remove(owner);
     }
 
-    public void ClearAttackResolveState(Entity owner)
+    public void ClearAttackDedup(Entity owner)
     {
-        Debug.Assert(owner is not null, "ClearAttackResolveState called with null owner");
-        _attackResolvedTargets.RemoveWhere(kv => kv.Owner == owner);
+        Debug.Assert(owner is not null, "ClearAttackDedup called with null owner");
+        _attackDedup.Remove(owner);
     }
 
     public void ClearAll()
     {
         _activeHitboxes.Clear();
-        _resolvedThisFrame.Clear();
-        _attackResolvedTargets.Clear();
+        _attackDedup.Clear();
     }
 
     public IReadOnlyList<RectangleF> GetActiveHitboxBounds(Entity owner)

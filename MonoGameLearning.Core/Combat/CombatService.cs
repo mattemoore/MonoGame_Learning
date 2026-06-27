@@ -1,8 +1,10 @@
+using MonoGameLearning.Core.Entities.Interfaces;
+
 namespace MonoGameLearning.Core.Combat;
 
 public static class CombatService
 {
-    public static bool ApplyDamage(ICombatant target, DamageInfo info)
+    public static bool ApplyDamage(IDamageable target, DamageInfo info)
     {
         if (!target.CanTakeDamage()) return false;
 

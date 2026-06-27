@@ -35,7 +35,7 @@ public class EntityManager(CollisionComponent collision)
     private readonly List<IHitboxProvider> _hitboxProviders = [];
     private readonly List<IMoveableEntity> _movables = [];
     private readonly List<IDebugDrawable> _debugDrawables = [];
-    private readonly List<ICombatant> _combatants = [];
+    private readonly List<IDamageable> _combatants = [];
 
     public IReadOnlyList<Entity> All => _all;
     public IReadOnlyList<IUpdatable> Updatables => _updatables;
@@ -43,7 +43,7 @@ public class EntityManager(CollisionComponent collision)
     public IReadOnlyList<ICollisionActor> Collidables => _collidables;
     public IReadOnlyList<IMoveableEntity> Movables => _movables;
     public IReadOnlyList<IDebugDrawable> DebugDrawables => _debugDrawables;
-    public IReadOnlyList<ICombatant> Combatants => _combatants;
+    public IReadOnlyList<IDamageable> Combatants => _combatants;
     public IReadOnlyList<IHitboxProvider> HitboxProviders => _hitboxProviders;
 
     public void Register(Entity entity)
@@ -66,27 +66,45 @@ public class EntityManager(CollisionComponent collision)
         _pendingDestroy.Clear();
     }
 
+    private static void TryAdd<T>(Entity entity, List<T> list, System.Action<T> extra = null) where T : class
+    {
+        if (entity is T t)
+        {
+            list.Add(t);
+            extra?.Invoke(t);
+        }
+    }
+
+    private static void TryRemove<T>(Entity entity, List<T> list, System.Action<T> extra = null) where T : class
+    {
+        if (entity is T t)
+        {
+            list.Remove(t);
+            extra?.Invoke(t);
+        }
+    }
+
     private void AddToTypedLists(Entity entity)
     {
-        if (entity is IUpdatable u) _updatables.Add(u);
-        if (entity is IRenderable r) _renderables.Add(r);
-        if (entity is ICollisionActor c) { _collidables.Add(c); _collision.Insert(c); }
-        if (entity is IDamageable d) _damageables.Add(d);
-        if (entity is IHitboxProvider h) _hitboxProviders.Add(h);
-        if (entity is IMoveableEntity m) _movables.Add(m);
-        if (entity is IDebugDrawable dd) _debugDrawables.Add(dd);
-        if (entity is ICombatant cb) _combatants.Add(cb);
+        TryAdd<IUpdatable>(entity, _updatables);
+        TryAdd<IRenderable>(entity, _renderables);
+        TryAdd<ICollisionActor>(entity, _collidables, c => _collision.Insert(c));
+        TryAdd<IDamageable>(entity, _damageables);
+        TryAdd<IHitboxProvider>(entity, _hitboxProviders);
+        TryAdd<IMoveableEntity>(entity, _movables);
+        TryAdd<IDebugDrawable>(entity, _debugDrawables);
+        TryAdd<IDamageable>(entity, _combatants);
     }
 
     private void RemoveFromTypedLists(Entity entity)
     {
-        if (entity is ICollisionActor c) { _collidables.Remove(c); _collision.Remove(c); }
-        if (entity is IUpdatable u) _updatables.Remove(u);
-        if (entity is IRenderable r) _renderables.Remove(r);
-        if (entity is IDamageable d) _damageables.Remove(d);
-        if (entity is IHitboxProvider h) _hitboxProviders.Remove(h);
-        if (entity is IMoveableEntity m) _movables.Remove(m);
-        if (entity is IDebugDrawable dd) _debugDrawables.Remove(dd);
-        if (entity is ICombatant cb) _combatants.Remove(cb);
+        TryRemove<ICollisionActor>(entity, _collidables, c => _collision.Remove(c));
+        TryRemove<IUpdatable>(entity, _updatables);
+        TryRemove<IRenderable>(entity, _renderables);
+        TryRemove<IDamageable>(entity, _damageables);
+        TryRemove<IHitboxProvider>(entity, _hitboxProviders);
+        TryRemove<IMoveableEntity>(entity, _movables);
+        TryRemove<IDebugDrawable>(entity, _debugDrawables);
+        TryRemove<IDamageable>(entity, _combatants);
     }
 }

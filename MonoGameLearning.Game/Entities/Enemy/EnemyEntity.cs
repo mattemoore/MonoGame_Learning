@@ -18,16 +18,7 @@ public class EnemyEntity : CombatActorBase
     private const float AttackDelayDuration = 1.0f;
     private const float DirectionUpdateInterval = 0.35f;
 
-    // --- Animation keys ---
-    protected override string IdleAnimation => EnemySprite.AnimationIdle;
-    protected override string RunAnimation => EnemySprite.AnimationRun;
-    protected override string HurtAnimation => EnemySprite.AnimationHurt;
-    protected override string FallAnimation => EnemySprite.AnimationFall;
-    protected override string DieAnimation => EnemySprite.AnimationDie;
-    protected override string GetUpAnimation => EnemySprite.AnimationGetUp;
     protected override bool IsIncapacitated => _stateController.State is EnemyState.Dead or EnemyState.Dying or EnemyState.Hurt or EnemyState.KnockedDown;
-
-    // --- Animation completion ---
     protected override bool IsInKnockedDownState => _stateController.State == EnemyState.KnockedDown;
     protected override bool IsInHurtState => _stateController.State == EnemyState.Hurt;
     protected override bool IsInDyingState => _stateController.State == EnemyState.Dying;
@@ -44,8 +35,20 @@ public class EnemyEntity : CombatActorBase
     public float AttackRange { get; set; } = 70f;
     public float MinChaseDistance { get; set; } = 60f;
 
+    public readonly MoveData AttackMove = new()
+    {
+        AnimationKey = EnemySprite.AnimationAttack1,
+        Damage = 5,
+        Strength = AttackStrength.Light,
+        FrameHitboxes = new()
+        {
+            [1] = [new() { Offset = new Vector2(35, 0), Size = new Point(45, 40) }],
+            [2] = [new() { Offset = new Vector2(35, 0), Size = new Point(45, 40) }],
+        }
+    };
+
     public EnemyEntity(string name, Vector2 position, float scale, AnimatedSprite sprite)
-        : base(name, position, 48, 60, sprite, scale, 30)
+        : base(name, position, 48, 60, sprite, scale, 30, new(EnemySprite.AnimationIdle, EnemySprite.AnimationRun, EnemySprite.AnimationHurt, EnemySprite.AnimationFall, EnemySprite.AnimationDie, EnemySprite.AnimationGetUp))
     {
         Speed = 120f;
         Sprite.Color = Color.Red;
@@ -66,14 +69,13 @@ public class EnemyEntity : CombatActorBase
 
     private EnemyStateController CreateStateController() => new(new()
     {
-        OnIdleEntry = () => Sprite.SetAnimation(IdleAnimation),
-        OnChasingEntry = () => Sprite.SetAnimation(RunAnimation),
+        OnIdleEntry = () => Sprite.SetAnimation(Animations.Idle),
+        OnChasingEntry = () => Sprite.SetAnimation(Animations.Run),
         OnAttackingEntry = () =>
         {
-            Sprite.SetAnimation(EnemySprite.AnimationAttack1);
-            CurrentMove = EnemyMoves.All[EnemySprite.AnimationAttack1];
+            CurrentMove = AttackMove;
             FrameTracker.Reset();
-            SubscribeToAnimationEvent();
+            PlayAnimation(AttackMove.AnimationKey);
         },
         OnAttackingExit = AttackingExit(),
         OnHurtEntry = HurtEntry(),
