@@ -1,29 +1,39 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
-using Microsoft.Xna.Framework.Graphics;
-using MonoGame.Extended.Graphics;
-using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Game.Rendering;
 
 namespace MonoGameLearning.Game.Levels;
 
-public class Level1 : Level
+#pragma warning disable CS9107 // Primary constructor params are used by EndTriggerX and CreateBackgroundRenderer
+public class Level1(int gameWidth, int gameHeight) : Level(CreateWaveDefs(), gameWidth, gameHeight)
+#pragma warning restore CS9107
 {
-    public Level1(ContentManager content, int gameWidth, int gameHeight)
-        : base(CreateBackgrounds(content, gameWidth, gameHeight))
-    {
-    }
+    public override int BackgroundCount => 3;
+    public override float WalkableTopY => 420f;
+    public override float EndTriggerX => BackgroundCount * gameWidth - 100f;
 
-    private static List<BackgroundEntity> CreateBackgrounds(ContentManager content, int gameWidth, int gameHeight)
-    {
-        Sprite background = new(content.Load<Texture2D>("backgrounds/background1"));
-        Sprite background1 = new(content.Load<Texture2D>("backgrounds/background1"));
+    public override List<PropSpawnDef> Props =>
+    [
+        new("OilDrum", new Vector2(700, 450)),
+        new("OilDrum", new Vector2(900, 450)),
+        new("OilDrum", new Vector2(800, 450))
+    ];
 
-        float bgCenterX = gameWidth / 2f;
-        float bgCenterY = gameHeight / 2f;
-        var bg1 = new BackgroundEntity("bg1", background, new Vector2(bgCenterX, bgCenterY), gameWidth, gameHeight);
-        var bg2 = new BackgroundEntity("bg2", background1, new Vector2(bgCenterX + gameWidth, bgCenterY), gameWidth, gameHeight);
+    public override BackgroundRenderer CreateBackgroundRenderer(ContentManager content) =>
+        BackgroundRenderer.Create(content, gameWidth, gameHeight, BackgroundCount);
 
-        return [bg1, bg2];
-    }
+    private static List<WaveDef> CreateWaveDefs() =>
+    [
+        new WaveDef(TriggerX: 800f, Enemies:
+        [
+            new EnemySpawnDef("Grunt", new Vector2(850, 550)),
+            new EnemySpawnDef("Grunt", new Vector2(900, 550))
+        ]),
+        new WaveDef(TriggerX: 1600f, Enemies:
+        [
+            new EnemySpawnDef("Grunt", new Vector2(1650, 550)),
+            new EnemySpawnDef("Grunt", new Vector2(1700, 550))
+        ])
+    ];
 }

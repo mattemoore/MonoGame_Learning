@@ -8,22 +8,17 @@ using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Game.Tests;
 
-public class TestSpatialEntity : Entity, ICombatant, ICollisionActor
+public class TestSpatialEntity(string name, Vector2 position, int width, int height, Faction faction = default) : Entity(name, position, width, height), ICombatant, ICollisionActor
 {
-    private readonly Health _health;
+    private readonly Health _health = new(100);
     public IShapeF Bounds => Frame;
-    public Faction Faction { get; protected set; }
+    public Faction Faction { get; protected set; } = faction;
     public int Health => _health.Value;
     public int MaxHealth => _health.MaxHealth;
     public bool IsAlive => _health.IsAlive;
-    public event EventHandler Died;
-
-    public TestSpatialEntity(string name, Vector2 position, int width, int height, Faction faction = default)
-        : base(name, position, width, height)
-    {
-        _health = new(100);
-        Faction = faction;
-    }
+    #pragma warning disable CS0067 // event never used in test entity
+    public event EventHandler Died = delegate { };
+#pragma warning restore CS0067
 
     public void TakeDamage(DamageInfo info) => CombatService.ApplyDamage(this, info);
 
@@ -348,14 +343,11 @@ public class HitboxTests
         Assert.That(hits, Has.Count.EqualTo(1));
     }
 
-    private class TestPropForHit : Entity, IDamageable, IHasHealth, ICollisionActor
+    private class TestPropForHit(string name, Vector2 position, int width, int height) : Entity(name, position, width, height), IDamageable, IHasHealth, ICollisionActor
     {
         public IShapeF Bounds => Frame;
         public int Health => 100;
         public int MaxHealth => 100;
-
-        public TestPropForHit(string name, Vector2 position, int width, int height)
-            : base(name, position, width, height) { }
 
         public void TakeDamage(DamageInfo info) { }
         public void OnCollision(CollisionEventArgs collisionInfo) { }

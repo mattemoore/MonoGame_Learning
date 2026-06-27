@@ -12,13 +12,13 @@ using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Core.Entities;
 
-public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, ICombatant, IHitboxProvider, IMoveableEntity, IAnimated
+public abstract class CombatActorBase(string name, Vector2 position, int width, int height, AnimatedSprite sprite, float scale, int maxHealth) : Entity(name, position, width, height), IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, ICombatant, IHitboxProvider, IMoveableEntity, IAnimated
 {
     public string LayerName => "actors";
     public IShapeF Bounds => Frame;
 
-    protected readonly SpriteRenderer SpriteRenderer;
-    protected readonly Health HealthComponent;
+    protected readonly SpriteRenderer SpriteRenderer = new(sprite, scale);
+    protected readonly Health HealthComponent = new(maxHealth);
     protected readonly AnimationFrameTracker FrameTracker = new();
 
     public AnimatedSprite Sprite => SpriteRenderer.Sprite;
@@ -34,13 +34,6 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     int IHasHealth.Health => HealthComponent.Value;
     int IHasHealth.MaxHealth => HealthComponent.MaxHealth;
     bool ICombatant.IsAlive => HealthComponent.IsAlive;
-
-    protected CombatActorBase(string name, Vector2 position, int width, int height, AnimatedSprite sprite, float scale, int maxHealth)
-        : base(name, position, width, height)
-    {
-        SpriteRenderer = new(sprite, scale);
-        HealthComponent = new(maxHealth);
-    }
 
     protected void SubscribeToAnimationEvent() =>
         Sprite.Controller.OnAnimationEvent += OnAnimationCompleted;

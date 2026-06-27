@@ -7,21 +7,15 @@ using RenderingLibrary.Graphics;
 
 namespace MonoGameLearning.Game.GameLoop;
 
-public class MenuManager
+public class MenuManager(GameStateController gameState, Action exitGame)
 {
     private static GumService GumService => GumService.Default;
-    private readonly GameStateController _gameState;
-    private readonly Action _exitGame;
+    private readonly GameStateController _gameState = gameState;
+    private readonly Action _exitGame = exitGame;
 
     private ContainerRuntime _titleScreen, _pauseScreen, _gameOverScreen, _levelCompleteScreen;
     private int _menuIndex;
     private List<TextRuntime> _activeMenuItems;
-
-    public MenuManager(GameStateController gameState, Action exitGame)
-    {
-        _gameState = gameState;
-        _exitGame = exitGame;
-    }
 
     public void BuildScreens()
     {
