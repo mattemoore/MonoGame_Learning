@@ -11,12 +11,7 @@ namespace MonoGameLearning.Game.Entities.Enemy;
 public class EnemyEntity : CombatActorBase
 {
     private readonly EnemyStateController _stateController;
-    private float _attackCooldown;
-    private float _attackDelayTimer;
-    private float _lastFacingX;
-    private float _directionUpdateTimer;
-    private const float AttackDelayDuration = 1.0f;
-    private const float DirectionUpdateInterval = 0.35f;
+    private readonly EnemyAI _ai;
 
     protected override bool IsIncapacitated => _stateController.State is EnemyState.Dead or EnemyState.Dying or EnemyState.Hurt or EnemyState.KnockedDown;
     protected override bool IsInKnockedDownState => _stateController.State == EnemyState.KnockedDown;
@@ -27,7 +22,7 @@ public class EnemyEntity : CombatActorBase
     protected override void FireDeathCompleted() => _stateController.Fire(EnemyTrigger.DeathCompleted);
     protected override void FireAttackCompleted()
     {
-        _attackCooldown = 1.5f;
+        _ai.AttackCooldown = 1.5f;
         _stateController.Fire(EnemyTrigger.AttackCompleted);
     }
 
@@ -53,6 +48,7 @@ public class EnemyEntity : CombatActorBase
         Speed = 120f;
         Sprite.Color = Color.Red;
         Faction = Faction.Enemy;
+        _ai = new EnemyAI(AttackRange, MinChaseDistance);
         _stateController = CreateStateController();
     }
 
@@ -93,60 +89,37 @@ public class EnemyEntity : CombatActorBase
 
         if (TryHandleIncapacitatedUpdate(gameTime)) return;
 
+        float deltaSeconds = (float)gameTime.ElapsedGameTime.TotalSeconds;
+        bool isIdleOrChasing = _stateController.State is EnemyState.Idle or EnemyState.Chasing;
+
         if (Target is not null)
         {
-            Vector2 toTarget = Target.Position - Position;
-            float distance = toTarget.Length();
+            var action = _ai.Update(Position, Target.Position, isIdleOrChasing, deltaSeconds);
 
-            if (distance <= AttackRange && _stateController.State is EnemyState.Idle or EnemyState.Chasing && _attackCooldown <= 0)
+            switch (action)
             {
-                if (_stateController.State == EnemyState.Chasing)
-                {
+                case AIAction.StartChase:
+                    if (_stateController.State == EnemyState.Idle)
+                        _stateController.Fire(EnemyTrigger.StartChase);
+                    break;
+                case AIAction.StopChase:
                     _stateController.Fire(EnemyTrigger.StopChase);
-                    MovementDirection = Vector2.Zero;
-                }
-
-                if (_attackDelayTimer <= 0)
-                    _attackDelayTimer = AttackDelayDuration;
-
-                _attackDelayTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
-                if (_attackDelayTimer <= 0)
-                {
-                    _attackDelayTimer = 0;
+                    break;
+                case AIAction.Attack:
                     _stateController.Fire(EnemyTrigger.AttackStart);
-                }
+                    break;
             }
-            else if (distance > AttackRange && _stateController.State is EnemyState.Idle or EnemyState.Chasing)
-            {
-                _attackDelayTimer = 0;
-                _stateController.Fire(EnemyTrigger.StartChase);
-                _directionUpdateTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
-                if (_directionUpdateTimer <= 0)
-                {
-                    _directionUpdateTimer = DirectionUpdateInterval;
-                    toTarget /= distance;
-                    MovementDirection = Mover.PreventDiagonal(toTarget);
-                    if (Math.Sign(MovementDirection.X) != Math.Sign(_lastFacingX))
-                    {
-                        _lastFacingX = MovementDirection.X;
-                        Direction = Mover.UpdateFacingDirection(Sprite, MovementDirection, Direction);
-                    }
-                }
 
-                if (distance <= MinChaseDistance)
-                    MovementDirection = Vector2.Zero;
-            }
-            else if (_stateController.State == EnemyState.Chasing && distance <= AttackRange)
-            {
-                _stateController.Fire(EnemyTrigger.StopChase);
-                MovementDirection = Vector2.Zero;
-            }
+            if (_ai.FacingChanged)
+                Direction = Mover.UpdateFacingDirection(Sprite, new Vector2(_ai.NewFacingX, 0), Direction);
+        }
+        else
+        {
+            _ai.AttackCooldown = Math.Max(0, _ai.AttackCooldown - deltaSeconds);
         }
 
-        _attackCooldown = Math.Max(0, _attackCooldown - (float)gameTime.ElapsedGameTime.TotalSeconds);
-
-        if (_stateController.State == EnemyState.Chasing && MovementDirection != Vector2.Zero)
-            Position += MovementDirection * (float)gameTime.ElapsedGameTime.TotalSeconds * Speed;
+        if (_stateController.State == EnemyState.Chasing && _ai.MovementDirection != Vector2.Zero)
+            Position += _ai.MovementDirection * deltaSeconds * Speed;
 
         AdvanceFrameAndRegisterHitboxes(gameTime);
     }
@@ -155,10 +128,7 @@ public class EnemyEntity : CombatActorBase
     {
         ResetActor(position);
         Target = target;
-        _attackCooldown = 0;
-        _attackDelayTimer = 0;
-        _directionUpdateTimer = 0;
-        _lastFacingX = 0;
+        _ai.Reset();
         Sprite.Color = Color.Red;
     }
 }

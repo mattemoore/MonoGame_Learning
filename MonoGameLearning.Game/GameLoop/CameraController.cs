@@ -13,26 +13,23 @@ public class CameraController(PlayerEntity player, int gameWidth, int gameHeight
     private readonly int _gameHeight = gameHeight;
     private readonly RectangleF _levelBounds = levelBounds;
 
-    private const float SMOOTH_FACTOR = 0.04f;
+    private const float SMOOTH_FACTOR = 0.01f;
 
     public Vector2? LockedCenter { get; set; }
 
+    public static float ComputeTargetX(float playerX, float? lockedCenterX, RectangleF levelBounds, int gameWidth)
+    {
+        if (lockedCenterX.HasValue) return lockedCenterX.Value;
+        float minX = levelBounds.Left + (gameWidth / 2f);
+        float maxX = levelBounds.Right - (gameWidth / 2f);
+        Debug.Assert(minX <= maxX, $"Level width ({levelBounds.Width}) is smaller than viewport width ({gameWidth}).");
+        return Math.Clamp(playerX, minX, maxX);
+    }
+
     public void Update(OrthographicCamera camera)
     {
-        float targetX;
+        float targetX = ComputeTargetX(_player.Position.X, LockedCenter?.X, _levelBounds, _gameWidth);
         float targetY = _gameHeight / 2f;
-
-        if (LockedCenter.HasValue)
-        {
-            targetX = LockedCenter.Value.X;
-        }
-        else
-        {
-            float minX = _levelBounds.Left + (_gameWidth / 2f);
-            float maxX = _levelBounds.Right - (_gameWidth / 2f);
-            Debug.Assert(minX <= maxX, $"Level width ({_levelBounds.Width}) is smaller than viewport width ({_gameWidth}).");
-            targetX = Math.Clamp(_player.Position.X, minX, maxX);
-        }
 
         float halfWidth = _gameWidth / 2f;
         float desiredPos = targetX - halfWidth;
