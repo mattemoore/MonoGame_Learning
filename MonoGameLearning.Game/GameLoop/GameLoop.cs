@@ -134,6 +134,13 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             _cameraController.Update(Camera);
             _player.MovementDirection = _input.MovementDirection;
 
+            var movementBounds = CameraController.ComputeMovementBounds(
+                Camera.Position.X,
+                _currentLevel.MovementBounds,
+                _levelDirector.WaveEndX);
+
+            _levelDirector.PopulateSnapshots(movementBounds);
+
             // indexed for loop to avoid heap-allocated IEnumerator<T> from IReadOnlyList<T>
             var updatables = _entityManager.Updatables;
             for (int i = 0; i < updatables.Count; i++)
@@ -148,10 +155,6 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
             ResolveCollisions();
 
-            var movementBounds = CameraController.ComputeMovementBounds(
-                Camera.Position.X,
-                _currentLevel.MovementBounds,
-                _levelDirector.WaveEndX);
             // indexed for loop to avoid heap-allocated IEnumerator<T> from IReadOnlyList<T>
             var movables = _entityManager.Movables;
             for (int i = 0; i < movables.Count; i++)
@@ -324,7 +327,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     {
         _cameraController = new CameraController(_player, GAME_WIDTH, GAME_HEIGHT, _currentLevel.MovementBounds);
 
-        _levelDirector = new LevelDirector(_entityManager, _currentLevel, _player, GAME_WIDTH, GAME_HEIGHT);
+        _levelDirector = new LevelDirector(_entityManager, _currentLevel, _player);
         _levelDirector.LevelCompleted += () => _gameState.Fire(GameTrigger.CompleteLevel);
     }
 

@@ -29,8 +29,8 @@ public class TestLevel(List<WaveDef> waveDefs, float endTriggerX, int gameWidth 
     public override BackgroundRenderer CreateBackgroundRenderer(ContentManager content) => null!;
 }
 
-public class TestLevelDirector(EntityManager entityManager, Level level, Entity player, int gameWidth, int gameHeight)
-    : LevelDirector(entityManager, level, player, gameWidth, gameHeight)
+public class TestLevelDirector(EntityManager entityManager, Level level, Entity player)
+    : LevelDirector(entityManager, level, player)
 {
     public List<Entity> SpawnedEnemies { get; } = [];
 
@@ -98,7 +98,7 @@ public class LevelDirectorTests
             ])
         ], endTriggerX: 1500f);
 
-        _director = new TestLevelDirector(_entityManager, _level, _player, 800, 600);
+        _director = new TestLevelDirector(_entityManager, _level, _player);
     }
 
     [Test]
@@ -297,7 +297,7 @@ public class LevelDirectorTests
         _player.Position = new Vector2(300, 0);
         _director.Update(new GameTime());
 
-        var newDirector = new TestLevelDirector(_entityManager, _level, _player, 800, 600);
+        var newDirector = new TestLevelDirector(_entityManager, _level, _player);
         Assert.That(newDirector.CurrentWaveIndex, Is.EqualTo(0));
         Assert.That(newDirector.IsScrollLocked, Is.False);
         Assert.That(newDirector.ShowGoPrompt, Is.False);
@@ -393,7 +393,7 @@ public class LevelDirectorTests
         _director.Update(new GameTime());
         Assert.That(_director.WaveEndX, Is.EqualTo(1100f));
 
-        var newDirector = new TestLevelDirector(_entityManager, _level, _player, 800, 600);
+        var newDirector = new TestLevelDirector(_entityManager, _level, _player);
         Assert.That(newDirector.WaveEndX, Is.Null);
     }
 
