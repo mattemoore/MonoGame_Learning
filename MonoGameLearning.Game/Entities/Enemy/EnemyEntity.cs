@@ -1,9 +1,11 @@
 using System;
 using Microsoft.Xna.Framework;
+using MonoGame.Extended;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Helpers;
+using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.Sprites;
 
 namespace MonoGameLearning.Game.Entities.Enemy;
@@ -12,6 +14,7 @@ public class EnemyEntity : CombatActorBase
 {
     private readonly EnemyStateController _stateController;
     private readonly EnemyAI _ai;
+    private readonly LevelDirector _director;
 
     protected override bool IsIncapacitated => _stateController.State is EnemyState.Dead or EnemyState.Dying or EnemyState.Hurt or EnemyState.KnockedDown;
     protected override bool IsInKnockedDownState => _stateController.State == EnemyState.KnockedDown;
@@ -42,7 +45,7 @@ public class EnemyEntity : CombatActorBase
         }
     };
 
-    public EnemyEntity(string name, Vector2 position, float scale, AnimatedSprite sprite)
+    public EnemyEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, LevelDirector director = null)
         : base(name, position, 48, 60, sprite, scale, 30, new(EnemySprite.AnimationIdle, EnemySprite.AnimationRun, EnemySprite.AnimationHurt, EnemySprite.AnimationFall, EnemySprite.AnimationDie, EnemySprite.AnimationGetUp))
     {
         Speed = 120f;
@@ -50,6 +53,7 @@ public class EnemyEntity : CombatActorBase
         Faction = Faction.Enemy;
         _ai = new EnemyAI(AttackRange, MinChaseDistance);
         _stateController = CreateStateController();
+        _director = director;
     }
 
     protected override bool CanTakeDamage() =>
@@ -89,12 +93,17 @@ public class EnemyEntity : CombatActorBase
 
         if (TryHandleIncapacitatedUpdate(gameTime)) return;
 
+        if (_director is null) return;
+
         float deltaSeconds = (float)gameTime.ElapsedGameTime.TotalSeconds;
         bool isIdleOrChasing = _stateController.State is EnemyState.Idle or EnemyState.Chasing;
 
         if (Target is not null)
         {
-            var action = _ai.Update(Position, Target.Position, isIdleOrChasing, deltaSeconds);
+            ref readonly var world = ref _director.CurrentWorld;
+            float halfW = Width * 0.5f;
+            float halfH = Height * 0.5f;
+            var action = _ai.Update(Position, halfW, halfH, world, isIdleOrChasing, deltaSeconds);
 
             switch (action)
             {
@@ -130,5 +139,42 @@ public class EnemyEntity : CombatActorBase
         Target = target;
         _ai.Reset();
         Sprite.Color = Color.Red;
+    }
+
+    public override void DrawDebug(DebugDrawContext context)
+    {
+        base.DrawDebug(context);
+
+        if (_director is null) return;
+
+        var force = _ai.Force;
+        var color = force switch
+        {
+            DominantForce.Avoid => Color.Red,
+            DominantForce.Separate => Color.Orange,
+            DominantForce.Seek => Color.Green,
+            DominantForce.Bounds => Color.Blue,
+            _ => Color.AntiqueWhite
+        };
+
+        context.SpriteBatch.DrawRectangle(Frame, color);
+
+        context.SpriteBatch.DrawCircle(Position, 50f, 16, Color.Yellow * 0.3f, 1f);
+        context.SpriteBatch.DrawCircle(Position, 90f, 16, Color.Cyan * 0.3f, 1f);
+
+        var label = force switch
+        {
+            DominantForce.Avoid => "AVOID",
+            DominantForce.Separate => "SEP",
+            DominantForce.Seek => "SEEK",
+            DominantForce.Bounds => "BOUNDS",
+            _ => ""
+        };
+        if (label.Length > 0)
+        {
+            var textSize = context.Font.MeasureString(label);
+            context.SpriteBatch.DrawString(context.Font, label,
+                new Vector2(Position.X - textSize.X * 0.5f, Position.Y - Height * 0.5f - 20f), color);
+        }
     }
 }

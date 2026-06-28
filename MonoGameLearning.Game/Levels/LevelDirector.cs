@@ -4,18 +4,21 @@ using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Helpers;
 using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.Sprites;
 
 namespace MonoGameLearning.Game.Levels;
 
-public class LevelDirector(EntityManager entityManager, Level level, Entity player, int gameWidth, int gameHeight)
+public class LevelDirector
 {
-    private readonly EntityManager _entityManager = entityManager;
-    private readonly Level _level = level;
-    private readonly Entity _player = player;
-    private readonly int _gameWidth = gameWidth;
-    private readonly int _gameHeight = gameHeight;
+    private readonly EntityManager _entityManager;
+    private readonly Level _level;
+    private readonly Entity _player;
+
+    private readonly List<ActorSnapshot> _enemyBuf = [];
+    private readonly List<ActorSnapshot> _propBuf = [];
+    private WorldSnapshot _currentSnapshot;
 
     private int _currentWaveIndex;
     private readonly List<EnemyEntity> _activeEnemies = [];
@@ -30,6 +33,43 @@ public class LevelDirector(EntityManager entityManager, Level level, Entity play
     public bool IsScrollLocked => _isScrollLocked;
     public float? WaveEndX { get; private set; }
     public float? WaveTriggerX { get; private set; }
+    public IReadOnlyList<EnemyEntity> ActiveEnemies => _activeEnemies;
+
+    public ref readonly WorldSnapshot CurrentWorld => ref _currentSnapshot;
+
+    public LevelDirector(EntityManager entityManager, Level level, Entity player)
+    {
+        _entityManager = entityManager;
+        _level = level;
+        _player = player;
+
+        _enemyBuf.Capacity = 16;
+        _propBuf.Capacity = 16;
+    }
+
+    public void PopulateSnapshots(RectangleF walkableBounds)
+    {
+        _enemyBuf.Clear();
+        for (int i = 0; i < _activeEnemies.Count; i++)
+        {
+            var enemy = _activeEnemies[i];
+            _enemyBuf.Add(new ActorSnapshot(enemy.Position, enemy.Width * 0.5f, enemy.Height * 0.5f));
+        }
+
+        _propBuf.Clear();
+        var all = _entityManager.All;
+        for (int i = 0; i < all.Count; i++)
+        {
+            if (all[i] is PropBase prop)
+                _propBuf.Add(new ActorSnapshot(prop.Position, prop.Width * 0.5f, prop.Height * 0.5f));
+        }
+
+        _currentSnapshot = new WorldSnapshot(
+            _player.Position,
+            walkableBounds,
+            _enemyBuf,
+            _propBuf);
+    }
 
     public void Update(GameTime gameTime)
     {
@@ -88,7 +128,7 @@ public class LevelDirector(EntityManager entityManager, Level level, Entity play
     {
         EnemyEntity enemy = def.Type switch
         {
-            "Grunt" => new EnemyEntity($"enemy_{Guid.NewGuid()}", def.Position, 2.0f, EnemySprite.Create()),
+            "Grunt" => new EnemyEntity($"enemy_{Guid.NewGuid()}", def.Position, 2.0f, EnemySprite.Create(), this),
             _ => throw new ArgumentOutOfRangeException(nameof(def.Type), def.Type, null)
         };
         enemy.Target = _player;

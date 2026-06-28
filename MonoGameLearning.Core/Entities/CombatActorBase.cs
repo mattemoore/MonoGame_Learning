@@ -101,7 +101,7 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
         context.SpriteBatch.Draw(Sprite, Position, 0f, new Vector2(SpriteRenderer.Scale));
     }
 
-    public void DrawDebug(DebugDrawContext context)
+    public virtual void DrawDebug(DebugDrawContext context)
     {
         context.SpriteBatch.DrawRectangle(Frame, Color.AntiqueWhite);
         context.SpriteBatch.DrawRectangle(Frame, Color.Blue);
