@@ -17,17 +17,18 @@ public class TestSpatialEntity(string name, Vector2 position, int width, int hei
     public int Health => _health.Value;
     public int MaxHealth => _health.MaxHealth;
     public bool IsAlive => _health.IsAlive;
-    #pragma warning disable CS0067 // event never used in test entity
     public event EventHandler Died = delegate { };
-#pragma warning restore CS0067
+    public bool DeathCallbackInvoked { get; private set; }
+    public bool KnockdownCallbackInvoked { get; private set; }
+    public bool HitCallbackInvoked { get; private set; }
 
     public void TakeDamage(DamageInfo info) => CombatService.ApplyDamage(this, info);
 
     bool IDamageable.CanTakeDamage() => _health.IsAlive;
     void IDamageable.ReduceHealth(int amount) => _health.Subtract(amount);
-    void IDamageable.OnDeath() { }
-    void IDamageable.OnKnockdown(DamageInfo info) { }
-    void IDamageable.OnHit(DamageInfo info) { }
+    void IDamageable.OnDeath() { DeathCallbackInvoked = true; Died?.Invoke(this, EventArgs.Empty); }
+    void IDamageable.OnKnockdown(DamageInfo info) { KnockdownCallbackInvoked = true; }
+    void IDamageable.OnHit(DamageInfo info) { HitCallbackInvoked = true; }
 }
 
 [TestFixture]
@@ -344,18 +345,19 @@ public class HitboxTests
 
     private class TestPropForHit(string name, Vector2 position, int width, int height) : Entity(name, position, width, height), IDamageable, ICollisionActor
     {
+        private readonly Health _health = new(100);
         public int Id => GetHashCode();
         public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
         public Faction Faction => Faction.Neutral;
-        public int Health => 100;
-        public int MaxHealth => 100;
-        public bool IsAlive => true;
+        public int Health => _health.Value;
+        public int MaxHealth => _health.MaxHealth;
+        public bool IsAlive => _health.IsAlive;
         public event EventHandler Died = delegate { };
 
-        public void TakeDamage(DamageInfo info) { }
-        public bool CanTakeDamage() => true;
-        public void ReduceHealth(int amount) { }
-        public void OnDeath() { }
+        public void TakeDamage(DamageInfo info) => CombatService.ApplyDamage(this, info);
+        public bool CanTakeDamage() => _health.IsAlive;
+        public void ReduceHealth(int amount) => _health.Subtract(amount);
+        public void OnDeath() => Died?.Invoke(this, EventArgs.Empty);
         public void OnKnockdown(DamageInfo info) { }
         public void OnHit(DamageInfo info) { }
     }

@@ -136,8 +136,9 @@ public class EnemyEntity : CombatActorBase
     public void Reset(Vector2 position, Entity target)
     {
         ResetActor(position);
-        Target = target;
+        _stateController.ResetToRoot();
         _ai.Reset();
+        Target = target;
         Sprite.Color = Color.Red;
     }
 

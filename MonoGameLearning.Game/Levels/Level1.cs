@@ -27,8 +27,8 @@ public class Level1(int gameWidth, int gameHeight) : Level(CreateWaveDefs(), gam
     [
         new WaveDef(TriggerX: 800f, EndX: 1200f, Enemies:
         [
-            new EnemySpawnDef("Grunt", new Vector2(850, 400)),
-            new EnemySpawnDef("Grunt", new Vector2(900, 400))
+            new EnemySpawnDef("Grunt", new Vector2(850, 480)),
+            new EnemySpawnDef("Grunt", new Vector2(900, 480))
         ]),
         new WaveDef(TriggerX: 1600f, EndX: 2000f, Enemies:
         [

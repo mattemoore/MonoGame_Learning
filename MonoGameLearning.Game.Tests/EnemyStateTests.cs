@@ -378,4 +378,42 @@ public class EnemyStateTests
         controller.Fire(EnemyTrigger.KnockdownCompleted);
         Assert.That(exitInvoked, Is.True);
     }
+
+    [Test]
+    public void ResetToRoot_FromDead_ReturnsToIdle()
+    {
+        bool idleEntryInvoked = false;
+        var controller = new EnemyStateController(new()
+        {
+            OnDyingEntry = () => { },
+            OnDeadEntry = () => { },
+            OnIdleEntry = () => idleEntryInvoked = true,
+        });
+
+        controller.Fire(EnemyTrigger.Die);
+        controller.Fire(EnemyTrigger.DeathCompleted);
+        Assert.That(controller.State, Is.EqualTo(EnemyState.Dead));
+
+        controller.ResetToRoot();
+
+        Assert.That(controller.State, Is.EqualTo(EnemyState.Idle));
+        Assert.That(idleEntryInvoked, Is.True);
+    }
+
+    [Test]
+    public void ResetToRoot_AllowsActivateToFireAgain()
+    {
+        var controller = new EnemyStateController(new()
+        {
+            OnIdleEntry = () => { },
+        });
+        controller.Fire(EnemyTrigger.Die);
+        controller.Fire(EnemyTrigger.DeathCompleted);
+
+        controller.ResetToRoot();
+
+        Assert.That(controller.CanFire(EnemyTrigger.Activate), Is.True);
+        // Fire Activate — Dummy.OnActivate should fire which calls Activate trigger
+        Assert.That(controller.State, Is.EqualTo(EnemyState.Idle));
+    }
 }
