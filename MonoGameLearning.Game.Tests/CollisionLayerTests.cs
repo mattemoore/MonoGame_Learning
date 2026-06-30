@@ -3,29 +3,16 @@ using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
-using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Game.Tests;
 
 public class TestProp(string name, Vector2 position, int width, int height)
-    : Entity(name, position, width, height), ICollisionActor, IDamageable
+    : Entity(name, position, width, height), ICollisionActor
 {
     public int Id => GetHashCode();
     public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
-    public Faction Faction => Faction.Neutral;
-    public int Health { get; protected set; }
-    public int MaxHealth { get; protected set; }
-    public bool IsAlive => true;
-    public event EventHandler Died = delegate { };
-
-    public void TakeDamage(DamageInfo info) { }
-    public bool CanTakeDamage() => true;
-    public void ReduceHealth(int amount) => Health -= amount;
-    public void OnDeath() { }
-    public void OnKnockdown(DamageInfo info) { }
-    public void OnHit(DamageInfo info) { }
 }
 
 public class PassThroughActor(string name, Vector2 position, int width, int height)

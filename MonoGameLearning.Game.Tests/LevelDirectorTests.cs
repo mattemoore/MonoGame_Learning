@@ -9,7 +9,6 @@ using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Game.Entities.Enemy;
-using MonoGameLearning.Game.GameLoop;
 using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.Rendering;
 
@@ -34,14 +33,10 @@ public class TestLevelDirector(EntityManager entityManager, Level level, Entity 
 {
     public List<Entity> SpawnedEnemies { get; } = [];
 
-    protected override EnemyEntity CreateEnemy(EnemySpawnDef def)
+    protected override void InitializePool()
     {
-        #pragma warning disable SYSLIB0050
-        var enemy = (EnemyEntity)FormatterServices.GetUninitializedObject(typeof(EnemyEntity));
-#pragma warning restore SYSLIB0050
-        enemy.Position = def.Position;
-        SpawnedEnemies.Add(enemy);
-        return enemy;
+        EnemyPool = new TestEnemyPool(entityManager, this, SpawnedEnemies);
+        EnemyPool.Build(level);
     }
 
     protected override void OnEnemyDied(object sender, EventArgs e)
@@ -56,12 +51,35 @@ public class TestLevelDirector(EntityManager entityManager, Level level, Entity 
     }
 }
 
+public class TestEnemyPool(EntityManager entityManager, LevelDirector director, List<Entity> spawnedEnemies)
+    : EnemyPool(entityManager, director, (type, i) =>
+    {
+#pragma warning disable SYSLIB0050
+        var enemy = (EnemyEntity)FormatterServices.GetUninitializedObject(typeof(EnemyEntity));
+#pragma warning restore SYSLIB0050
+        return enemy;
+    })
+{
+    public override EnemyEntity Rent(string type, Vector2 position, Entity target)
+    {
+        var enemy = base.Rent(type, position, target);
+        spawnedEnemies.Add(enemy);
+        return enemy;
+    }
+
+    protected override void OnRentEnemy(EnemyEntity enemy, Vector2 position, Entity target)
+    {
+        // Can't call enemy.Reset() — FormatterServices-created enemies have null private readonly
+        // fields (_stateController, _ai, Sprite). Setting Position is sufficient for wave-tracking tests.
+        enemy.Position = position;
+    }
+}
+
 [TestFixture]
 public class LevelDirectorTests
 {
     private static readonly RectangleF Bounds = new(0, 0, 2000, 600);
     private EntityManager _entityManager;
-    private CameraController _cameraController;
     private TestLevel _level;
     private Entity _player;
     private TestLevelDirector _director;
@@ -83,7 +101,6 @@ public class LevelDirectorTests
     {
         var world = CreateTestWorld();
         _entityManager = new EntityManager(world);
-        _cameraController = new CameraController(null!, 800, 600, new RectangleF(0, 0, 2000, 600));
         _player = new TestPlayerEntity("player", Vector2.Zero);
         _level = new TestLevel(
         [
@@ -281,6 +298,8 @@ public class LevelDirectorTests
 
         var spawned = _director.SpawnedEnemies.ToList();
         #pragma warning disable SYSLIB0050
+        // FormatterServices is required because EnemyEntity requires AnimatedSprite (needs GraphicsDevice).
+        // These enemies are only used for wave-tracking bookkeeping, not entity initialization or AI.
         var extraEnemy = (EnemyEntity)FormatterServices.GetUninitializedObject(typeof(EnemyEntity));
 #pragma warning restore SYSLIB0050
         _director.SimulateEnemyDied(extraEnemy);
@@ -420,6 +439,8 @@ public class LevelDirectorTests
         {
             var enemy = (EnemyEntity)entity;
             _director.SimulateEnemyDied(enemy);
+            Assert.That(enemy.Position, Is.EqualTo(new Vector2(-99999, -99999)),
+                "Enemy position must be sentinel after death — prevents off-screen render.");
         }
         _entityManager.ProcessPending();
 

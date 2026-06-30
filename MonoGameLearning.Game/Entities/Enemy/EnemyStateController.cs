@@ -34,6 +34,7 @@ public enum EnemyState
 public enum EnemyTrigger
 {
     Activate,
+    Reset,
     StartChase,
     StopChase,
     AttackStart,
@@ -91,7 +92,12 @@ public class EnemyStateController
     public EnemyStateController(EnemyStateEntryCallbacks callbacks = null)
     {
         StateMachine = new(EnemyState.Dummy);
+        ConfigureStateMachine(callbacks);
+        StateMachine.Activate();
+    }
 
+    private void ConfigureStateMachine(EnemyStateEntryCallbacks callbacks)
+    {
         var allStates = (EnemyState[])Enum.GetValues(typeof(EnemyState));
         foreach (var state in allStates)
         {
@@ -137,8 +143,16 @@ public class EnemyStateController
                 foreach (var trigger in ignored)
                     config.Ignore(trigger);
             }
-        }
 
+            if (state != EnemyState.Dummy)
+                config.Permit(EnemyTrigger.Reset, EnemyState.Dummy);
+        }
+    }
+
+    public void ResetToRoot()
+    {
+        if (StateMachine.CanFire(EnemyTrigger.Reset))
+            StateMachine.Fire(EnemyTrigger.Reset);
         StateMachine.Activate();
     }
 

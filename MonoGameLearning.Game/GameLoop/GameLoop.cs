@@ -160,6 +160,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             for (int i = 0; i < movables.Count; i++)
             {
                 var movable = movables[i];
+                if (movable is IDamageable { IsAlive: false }) continue;
                 movable.MovementBounds = movementBounds;
                 Core.Entities.Helpers.Mover.ClampToBounds((Entity)movable, movable.MovementBounds);
             }

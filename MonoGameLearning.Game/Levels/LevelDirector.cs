@@ -6,7 +6,6 @@ using MonoGame.Extended;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Helpers;
 using MonoGameLearning.Game.Entities.Enemy;
-using MonoGameLearning.Game.Sprites;
 
 namespace MonoGameLearning.Game.Levels;
 
@@ -15,6 +14,8 @@ public class LevelDirector
     private readonly EntityManager _entityManager;
     private readonly Level _level;
     private readonly Entity _player;
+
+    protected EnemyPool EnemyPool { get; set; }
 
     private readonly List<ActorSnapshot> _enemyBuf = [];
     private readonly List<ActorSnapshot> _propBuf = [];
@@ -45,6 +46,14 @@ public class LevelDirector
 
         _enemyBuf.Capacity = 16;
         _propBuf.Capacity = 16;
+
+        InitializePool();
+    }
+
+    protected virtual void InitializePool()
+    {
+        EnemyPool = new EnemyPool(_entityManager, this);
+        EnemyPool.Build(_level);
     }
 
     public void PopulateSnapshots(RectangleF walkableBounds)
@@ -118,22 +127,10 @@ public class LevelDirector
 
         foreach (var def in wave.Enemies)
         {
-            var enemy = CreateEnemy(def);
+            var enemy = EnemyPool.Rent(def.Type, def.Position, _player);
+            enemy.Died += OnEnemyDied;
             _activeEnemies.Add(enemy);
-            _entityManager.Register(enemy);
         }
-    }
-
-    protected virtual EnemyEntity CreateEnemy(EnemySpawnDef def)
-    {
-        EnemyEntity enemy = def.Type switch
-        {
-            "Grunt" => new EnemyEntity($"enemy_{Guid.NewGuid()}", def.Position, 2.0f, EnemySprite.Create(), this),
-            _ => throw new ArgumentOutOfRangeException(nameof(def.Type), def.Type, null)
-        };
-        enemy.Target = _player;
-        enemy.Died += OnEnemyDied;
-        return enemy;
     }
 
     protected virtual void OnEnemyDied(object sender, EventArgs e)
@@ -141,6 +138,6 @@ public class LevelDirector
         if (sender is not EnemyEntity enemy) return;
         enemy.Died -= OnEnemyDied;
         _activeEnemies.Remove(enemy);
-        _entityManager.Destroy(enemy);
+        EnemyPool.Return(enemy);
     }
 }
