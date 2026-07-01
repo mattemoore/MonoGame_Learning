@@ -5,7 +5,7 @@ description: Audit every test in the solution for real-world fidelity — verify
 
 ## Workflow
 
-1. Find all test files. Use `glob` to find `*Tests.cs` files inside `MonoGameLearning.Game.Tests/`.
+1. Find all test files. Use `glob` to find `*Tests.cs` files inside `MonoGameLearning.Game.Tests/` and `MonoGameLearning.Core.Tests/`.
 
 2. Classify each test file into one of three fidelity tiers:
 
