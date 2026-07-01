@@ -7,6 +7,7 @@ description: Analyze the full codebase for architectural complexity — leaky ab
 
 1. Map the project structure by reading the top-level directory trees of each project:
    - `MonoGameLearning.Core/`
+   - `MonoGameLearning.Core.Tests/`
    - `MonoGameLearning.Game/`
    - `MonoGameLearning.Game.Tests/`
    
