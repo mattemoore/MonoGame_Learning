@@ -2,12 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
+using MonoGameLearning.Core.GameCore;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Helpers;
 using MonoGameLearning.Game.Entities.Enemy;
 
 namespace MonoGameLearning.Game.Levels;
+
+#pragma warning disable CS8524 // Owned enums SpawnSide/SpawnVertical — switch is exhaustive without discard
 
 public class LevelDirector
 {
@@ -125,11 +129,102 @@ public class LevelDirector
         WaveTriggerX = wave.TriggerX;
         WaveEndX = wave.EndX;
 
+        float cameraLeftEdge = GameCore.Camera?.Position.X ?? 0f;
+        float gameWidth = GameCore.Camera is not null
+            ? GameCore.ViewportAdapter.VirtualWidth
+            : 800;
+
+        var walkableBounds = _level.MovementBounds;
+        float walkableTop = walkableBounds.Y;
+        float walkableBottom = walkableBounds.Bottom;
+
         foreach (var def in wave.Enemies)
         {
-            var enemy = EnemyPool.Rent(def.Type, def.Position, _player);
+            float halfW = 24f;
+            float halfH = 30f;
+            Vector2 pos = ComputeSpawnPosition(def.Side, def.Vertical, cameraLeftEdge, gameWidth, walkableTop, walkableBottom, halfW, halfH);
+
+            FacingDirection initialFacing = def.Side switch
+            {
+                SpawnSide.Left => FacingDirection.Right,
+                SpawnSide.Right => FacingDirection.Left,
+            };
+
+            var enemy = EnemyPool.Rent(def.Type, pos, _player);
+            // FormatterServices-created test enemies have null Sprite — guard to avoid NPE.
+            if (enemy.Sprite is not null)
+            {
+                enemy.Direction = initialFacing;
+                enemy.Sprite.Effect = initialFacing == FacingDirection.Left
+                    ? SpriteEffects.FlipHorizontally
+                    : SpriteEffects.None;
+
+                Vector2 walkDir = initialFacing == FacingDirection.Left ? new Vector2(-1, 0) : new Vector2(1, 0);
+                float targetX = initialFacing == FacingDirection.Left
+                    ? cameraLeftEdge + gameWidth - halfW - 50f
+                    : cameraLeftEdge + halfW + 50f;
+                enemy.SetSpawnWalkData(walkDir, targetX);
+            }
+
             enemy.Died += OnEnemyDied;
             _activeEnemies.Add(enemy);
+        }
+    }
+
+    private static Vector2 ComputeSpawnPosition(
+        SpawnSide side,
+        SpawnVertical vertical,
+        float cameraLeftEdge,
+        float gameWidth,
+        float walkableTopY,
+        float walkableBottomY,
+        float entityHalfWidth,
+        float entityHalfHeight)
+    {
+        float x = side switch
+        {
+            SpawnSide.Left => cameraLeftEdge - entityHalfWidth - 100f,
+            SpawnSide.Right => cameraLeftEdge + gameWidth + entityHalfWidth + 100f,
+        };
+
+        float y = vertical switch
+        {
+            SpawnVertical.Top => walkableTopY + entityHalfHeight + 10f,
+            SpawnVertical.Middle => (walkableTopY + walkableBottomY) * 0.5f,
+            SpawnVertical.Bottom => walkableBottomY - entityHalfHeight - 10f,
+        };
+
+        y = MathHelper.Clamp(y, walkableTopY, walkableBottomY);
+
+        return new Vector2(x, y);
+    }
+
+    public void DrawDebug(DebugDrawContext context)
+    {
+        var waves = _level.WaveDefs;
+        if (_currentWaveIndex >= waves.Count) return;
+
+        var nextWave = waves[_currentWaveIndex];
+        if (_waveTriggered) return;
+
+        float cameraLeftEdge = GameCore.Camera?.Position.X ?? 0f;
+        float gameWidth = GameCore.Camera is not null
+            ? GameCore.ViewportAdapter.VirtualWidth
+            : 800;
+
+        var walkableBounds = _level.MovementBounds;
+        float walkableTop = walkableBounds.Y;
+        float walkableBottom = walkableBounds.Bottom;
+
+        foreach (var def in nextWave.Enemies)
+        {
+            float halfW = 24f;
+            float halfH = 30f;
+            Vector2 pos = ComputeSpawnPosition(def.Side, def.Vertical, cameraLeftEdge, gameWidth, walkableTop, walkableBottom, halfW, halfH);
+
+            Color color = def.Side == SpawnSide.Left ? Color.Cyan : Color.Magenta;
+            context.SpriteBatch.DrawCircle(pos, 8f, 12, color, 2f);
+            context.SpriteBatch.DrawString(context.Font, def.Type, new Vector2(pos.X + 12f, pos.Y - 8f), color);
         }
     }
 

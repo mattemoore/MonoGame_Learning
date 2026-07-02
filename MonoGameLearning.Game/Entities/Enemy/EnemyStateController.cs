@@ -17,11 +17,14 @@ public class EnemyStateEntryCallbacks
     public Action OnDyingEntry { get; init; }
     public Action OnDyingExit { get; init; }
     public Action OnDeadEntry { get; init; }
+    public Action OnEnteringEntry { get; init; }
+    public Action OnEnteringExit { get; init; }
 }
 
 public enum EnemyState
 {
     Dummy,
+    Entering,
     Idle,
     Chasing,
     Attacking,
@@ -35,6 +38,8 @@ public enum EnemyTrigger
 {
     Activate,
     Reset,
+    StartEntering,
+    SpawnWalkCompleted,
     StartChase,
     StopChase,
     AttackStart,
@@ -55,6 +60,7 @@ public class EnemyStateController
     private static readonly Dictionary<(EnemyState, EnemyTrigger), EnemyState> Transitions = new()
     {
         [(EnemyState.Dummy, EnemyTrigger.Activate)] = EnemyState.Idle,
+        [(EnemyState.Idle, EnemyTrigger.StartEntering)] = EnemyState.Entering,
         [(EnemyState.Idle, EnemyTrigger.StartChase)] = EnemyState.Chasing,
         [(EnemyState.Idle, EnemyTrigger.AttackStart)] = EnemyState.Attacking,
         [(EnemyState.Idle, EnemyTrigger.TakeDamage)] = EnemyState.Hurt,
@@ -75,11 +81,22 @@ public class EnemyStateController
         [(EnemyState.KnockedDown, EnemyTrigger.KnockdownCompleted)] = EnemyState.Idle,
         [(EnemyState.KnockedDown, EnemyTrigger.Die)] = EnemyState.Dying,
         [(EnemyState.Dying, EnemyTrigger.DeathCompleted)] = EnemyState.Dead,
+        [(EnemyState.Entering, EnemyTrigger.SpawnWalkCompleted)] = EnemyState.Idle,
+        [(EnemyState.Entering, EnemyTrigger.Die)] = EnemyState.Dying,
     };
 
     private static readonly Dictionary<EnemyState, HashSet<EnemyTrigger>> IgnoredTriggers = new()
     {
         [EnemyState.Dummy] = [EnemyTrigger.AttackCompleted],
+        [EnemyState.Entering] =
+        [
+            EnemyTrigger.Activate, EnemyTrigger.Reset, EnemyTrigger.StartEntering,
+            EnemyTrigger.StartChase, EnemyTrigger.StopChase,
+            EnemyTrigger.AttackStart, EnemyTrigger.AttackCompleted,
+            EnemyTrigger.TakeDamage, EnemyTrigger.TakeKnockdown,
+            EnemyTrigger.KnockdownCompleted, EnemyTrigger.HurtCompleted,
+            EnemyTrigger.DeathCompleted,
+        ],
         [EnemyState.Idle] = [EnemyTrigger.Activate, EnemyTrigger.AttackCompleted, EnemyTrigger.StopChase],
         [EnemyState.Chasing] = [EnemyTrigger.StartChase, EnemyTrigger.Activate, EnemyTrigger.AttackCompleted],
         [EnemyState.Attacking] = [EnemyTrigger.StartChase, EnemyTrigger.StopChase, EnemyTrigger.AttackStart, EnemyTrigger.Activate],
@@ -108,6 +125,7 @@ public class EnemyStateController
                 var entry = state switch
                 {
                     EnemyState.Idle => callbacks.OnIdleEntry,
+                    EnemyState.Entering => callbacks.OnEnteringEntry,
                     EnemyState.Chasing => callbacks.OnChasingEntry,
                     EnemyState.Attacking => callbacks.OnAttackingEntry,
                     EnemyState.Hurt => callbacks.OnHurtEntry,
@@ -120,6 +138,7 @@ public class EnemyStateController
 
                 var exit = state switch
                 {
+                    EnemyState.Entering => callbacks.OnEnteringExit,
                     EnemyState.Attacking => callbacks.OnAttackingExit,
                     EnemyState.Hurt => callbacks.OnHurtExit,
                     EnemyState.KnockedDown => callbacks.OnKnockdownExit,

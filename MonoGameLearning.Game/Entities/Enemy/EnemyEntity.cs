@@ -16,6 +16,9 @@ public class EnemyEntity : CombatActorBase
     private readonly EnemyAI _ai;
     private readonly LevelDirector _director;
 
+    private float _spawnWalkTargetX;
+    private Vector2 _spawnWalkDirection;
+
     protected override bool IsIncapacitated => _stateController.State is EnemyState.Dead or EnemyState.Dying or EnemyState.Hurt or EnemyState.KnockedDown;
     protected override bool IsInKnockedDownState => _stateController.State == EnemyState.KnockedDown;
     protected override bool IsInHurtState => _stateController.State == EnemyState.Hurt;
@@ -84,8 +87,25 @@ public class EnemyEntity : CombatActorBase
         OnKnockdownExit = KnockdownExit(),
         OnDyingEntry = DyingEntry(),
         OnDyingExit = DyingExit(),
-        OnDeadEntry = DeadEntry()
+        OnDeadEntry = DeadEntry(),
+        OnEnteringEntry = () =>
+        {
+            Sprite.SetAnimation(Animations.Run);
+        },
+        OnEnteringExit = () =>
+        {
+            _spawnWalkDirection = Vector2.Zero;
+            _spawnWalkTargetX = 0f;
+        }
     });
+
+    public void SetSpawnWalkData(Vector2 direction, float targetX)
+    {
+        _spawnWalkDirection = direction;
+        _spawnWalkTargetX = targetX;
+        if (_stateController is not null)
+            _stateController.Fire(EnemyTrigger.StartEntering);
+    }
 
     public override void Update(GameTime gameTime)
     {
@@ -93,9 +113,21 @@ public class EnemyEntity : CombatActorBase
 
         if (TryHandleIncapacitatedUpdate(gameTime)) return;
 
-        if (_director is null) return;
-
         float deltaSeconds = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+        if (_stateController.State == EnemyState.Entering)
+        {
+            Position += _spawnWalkDirection * deltaSeconds * Speed;
+            bool passedTarget = _spawnWalkDirection.X > 0
+                ? Position.X >= _spawnWalkTargetX
+                : Position.X <= _spawnWalkTargetX;
+            if (passedTarget)
+                _stateController.Fire(EnemyTrigger.SpawnWalkCompleted);
+            AdvanceFrameAndRegisterHitboxes(gameTime);
+            return;
+        }
+
+        if (_director is null) return;
         bool isIdleOrChasing = _stateController.State is EnemyState.Idle or EnemyState.Chasing;
 
         if (Target is not null)
@@ -140,6 +172,8 @@ public class EnemyEntity : CombatActorBase
         _ai.Reset();
         Target = target;
         Sprite.Color = Color.Red;
+        _spawnWalkTargetX = 0f;
+        _spawnWalkDirection = Vector2.Zero;
     }
 
     public override void DrawDebug(DebugDrawContext context)
