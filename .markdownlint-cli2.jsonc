@@ -1,0 +1,10 @@
+{
+  // Line length rule disabled — project docs use long description lines
+  "config": {
+    "MD013": false,
+    // First-line heading rule disabled — SKILL files use YAML frontmatter
+    "MD041": false
+  },
+  "globs": ["*.md", ".kilo/**/*.md", "MonoGameLearning.Game/**/*.md"],
+  "ignores": ["**/node_modules/**", "**/worktrees/**"]
+}
