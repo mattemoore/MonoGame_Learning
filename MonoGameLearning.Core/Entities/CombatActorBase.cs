@@ -27,7 +27,7 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
     protected readonly AnimationFrameTracker FrameTracker = new();
     protected readonly AnimationSet Animations = animations;
 
-    public AnimatedSprite Sprite => SpriteRenderer.Sprite;
+    public AnimatedSprite Sprite => SpriteRenderer?.Sprite;
     public RectangleF MovementBounds { get; set; }
     public Vector2 MovementDirection { get; set; }
     public float Speed { get; set; }

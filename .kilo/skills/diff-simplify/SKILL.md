@@ -1,5 +1,5 @@
 ---
-name: simplify-diff
+name: diff-simplify
 description: Examine staged and unstaged changes for simplification opportunities. Look for code that could be made simpler by adding constraints, accepting tradeoffs, or removing unneeded flexibility. Do not propose feature additions — only reductions and simplifications.
 ---
 

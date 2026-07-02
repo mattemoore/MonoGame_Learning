@@ -40,12 +40,12 @@ public class EnemyPoolTests
         [
             new WaveDef(TriggerX: 300f, EndX: 1100f, Enemies:
             [
-                new EnemySpawnDef("Grunt", new Vector2(350, 500)),
-                new EnemySpawnDef("Grunt", new Vector2(400, 500)),
+                new EnemySpawnDef("Grunt", SpawnSide.Left, SpawnVertical.Middle),
+                new EnemySpawnDef("Grunt", SpawnSide.Left, SpawnVertical.Middle),
             ]),
             new WaveDef(TriggerX: 900f, EndX: 1700f, Enemies:
             [
-                new EnemySpawnDef("Grunt", new Vector2(950, 500)),
+                new EnemySpawnDef("Grunt", SpawnSide.Left, SpawnVertical.Middle),
             ])
         ], endTriggerX: 1500f);
     }

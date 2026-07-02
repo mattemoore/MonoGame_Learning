@@ -416,4 +416,72 @@ public class EnemyStateTests
         // Fire Activate — Dummy.OnActivate should fire which calls Activate trigger
         Assert.That(controller.State, Is.EqualTo(EnemyState.Idle));
     }
+
+    // --- Entering state transitions ---
+
+    [Test]
+    public void FromIdle_StartEntering_TransitionsToEntering()
+    {
+        _controller.Fire(EnemyTrigger.StartEntering);
+        Assert.That(_controller.State, Is.EqualTo(EnemyState.Entering));
+    }
+
+    [Test]
+    public void FromEntering_SpawnWalkCompleted_TransitionsToIdle()
+    {
+        _controller.Fire(EnemyTrigger.StartEntering);
+        _controller.Fire(EnemyTrigger.SpawnWalkCompleted);
+        Assert.That(_controller.State, Is.EqualTo(EnemyState.Idle));
+    }
+
+    [Test]
+    public void FromEntering_Die_TransitionsToDying()
+    {
+        _controller.Fire(EnemyTrigger.StartEntering);
+        _controller.Fire(EnemyTrigger.Die);
+        Assert.That(_controller.State, Is.EqualTo(EnemyState.Dying));
+    }
+
+    [Test]
+    public void WhileEntering_StartChase_IsIgnored()
+    {
+        _controller.Fire(EnemyTrigger.StartEntering);
+        _controller.Fire(EnemyTrigger.StartChase);
+        Assert.That(_controller.State, Is.EqualTo(EnemyState.Entering));
+    }
+
+    [Test]
+    public void WhileEntering_AttackAndHurtTriggers_AreIgnored()
+    {
+        _controller.Fire(EnemyTrigger.StartEntering);
+        _controller.Fire(EnemyTrigger.AttackStart);
+        Assert.That(_controller.State, Is.EqualTo(EnemyState.Entering));
+        _controller.Fire(EnemyTrigger.TakeDamage);
+        Assert.That(_controller.State, Is.EqualTo(EnemyState.Entering));
+        _controller.Fire(EnemyTrigger.TakeKnockdown);
+        Assert.That(_controller.State, Is.EqualTo(EnemyState.Entering));
+    }
+
+    [Test]
+    public void EnteringEntryCallback_IsInvoked_OnStateEntry()
+    {
+        bool entryInvoked = false;
+        var controller = new EnemyStateController(new() { OnEnteringEntry = () => entryInvoked = true });
+        controller.Fire(EnemyTrigger.StartEntering);
+        Assert.That(entryInvoked, Is.True);
+    }
+
+    [Test]
+    public void EnteringExitCallback_IsInvoked_OnStateExit()
+    {
+        bool exitInvoked = false;
+        var controller = new EnemyStateController(new()
+        {
+            OnEnteringEntry = () => { },
+            OnEnteringExit = () => exitInvoked = true
+        });
+        controller.Fire(EnemyTrigger.StartEntering);
+        controller.Fire(EnemyTrigger.SpawnWalkCompleted);
+        Assert.That(exitInvoked, Is.True);
+    }
 }

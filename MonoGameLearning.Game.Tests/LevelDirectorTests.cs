@@ -28,8 +28,10 @@ public class TestLevel(List<WaveDef> waveDefs, float endTriggerX, int gameWidth 
     public override BackgroundRenderer CreateBackgroundRenderer(ContentManager content) => null!;
 }
 
+#pragma warning disable CS9107 // Captured by base class — needed for InitializePool() called from base ctor
 public class TestLevelDirector(EntityManager entityManager, Level level, Entity player)
     : LevelDirector(entityManager, level, player)
+#pragma warning restore CS9107
 {
     public List<Entity> SpawnedEnemies { get; } = [];
 
@@ -106,12 +108,12 @@ public class LevelDirectorTests
         [
             new WaveDef(TriggerX: 300f, EndX: 1100f, Enemies:
             [
-                new EnemySpawnDef("Grunt", new Vector2(350, 500)),
-                new EnemySpawnDef("Grunt", new Vector2(400, 500))
+                new EnemySpawnDef("Grunt", SpawnSide.Left, SpawnVertical.Middle),
+                new EnemySpawnDef("Grunt", SpawnSide.Left, SpawnVertical.Middle),
             ]),
             new WaveDef(TriggerX: 900f, EndX: 1700f, Enemies:
             [
-                new EnemySpawnDef("Grunt", new Vector2(950, 500))
+                new EnemySpawnDef("Grunt", SpawnSide.Left, SpawnVertical.Middle),
             ])
         ], endTriggerX: 1500f);
 

@@ -1,5 +1,5 @@
 ---
-name: commit
+name: diff-commit
 description: Stage all tracked+untracked changes and commit with a concise, descriptive message generated from the diff.
 ---
 
