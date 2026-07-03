@@ -8,7 +8,8 @@ public enum GameState
     Playing,
     Paused,
     GameOver,
-    LevelComplete
+    LevelComplete,
+    Settings
 }
 
 public enum GameTrigger
@@ -17,7 +18,8 @@ public enum GameTrigger
     PauseToggle,
     PlayerDied,
     CompleteLevel,
-    ReturnToTitle
+    ReturnToTitle,
+    OpenSettings
 }
 
 public class GameStateController
@@ -30,7 +32,8 @@ public class GameStateController
         StateMachine = new StateMachine<GameState, GameTrigger>(GameState.TitleScreen);
 
         StateMachine.Configure(GameState.TitleScreen)
-            .Permit(GameTrigger.StartGame, GameState.Playing);
+            .Permit(GameTrigger.StartGame, GameState.Playing)
+            .Permit(GameTrigger.OpenSettings, GameState.Settings);
 
         StateMachine.Configure(GameState.Playing)
             .Permit(GameTrigger.PauseToggle, GameState.Paused)
@@ -39,7 +42,8 @@ public class GameStateController
 
         StateMachine.Configure(GameState.Paused)
             .Permit(GameTrigger.PauseToggle, GameState.Playing)
-            .Permit(GameTrigger.ReturnToTitle, GameState.TitleScreen);
+            .Permit(GameTrigger.ReturnToTitle, GameState.TitleScreen)
+            .Permit(GameTrigger.OpenSettings, GameState.Settings);
 
         StateMachine.Configure(GameState.GameOver)
             .Permit(GameTrigger.StartGame, GameState.Playing)
@@ -47,6 +51,10 @@ public class GameStateController
 
         StateMachine.Configure(GameState.LevelComplete)
             .Permit(GameTrigger.ReturnToTitle, GameState.TitleScreen);
+
+        StateMachine.Configure(GameState.Settings)
+            .Permit(GameTrigger.ReturnToTitle, GameState.TitleScreen)
+            .Permit(GameTrigger.PauseToggle, GameState.Paused);
     }
 
     public void Fire(GameTrigger trigger)

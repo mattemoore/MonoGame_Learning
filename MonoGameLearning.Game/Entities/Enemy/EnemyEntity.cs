@@ -52,7 +52,8 @@ public class EnemyEntity : CombatActorBase
         : base(name, position, 48, 60, sprite, scale, 30, new(EnemySprite.AnimationIdle, EnemySprite.AnimationRun, EnemySprite.AnimationHurt, EnemySprite.AnimationFall, EnemySprite.AnimationDie, EnemySprite.AnimationGetUp))
     {
         Speed = 120f;
-        Sprite.Color = Color.Red;
+        if (Sprite is not null)
+            Sprite.Color = Color.Red;
         Faction = Faction.Enemy;
         _ai = new EnemyAI(AttackRange, MinChaseDistance);
         _stateController = CreateStateController();
@@ -70,7 +71,7 @@ public class EnemyEntity : CombatActorBase
     protected override void OnHit(DamageInfo info) =>
         _stateController.Fire(EnemyTrigger.TakeDamage);
 
-    private EnemyStateController CreateStateController() => new(new()
+    protected virtual EnemyStateController CreateStateController() => new(new()
     {
         OnIdleEntry = () => Sprite.SetAnimation(Animations.Idle),
         OnChasingEntry = () => Sprite.SetAnimation(Animations.Run),
@@ -171,7 +172,8 @@ public class EnemyEntity : CombatActorBase
         _stateController.ResetToRoot();
         _ai.Reset();
         Target = target;
-        Sprite.Color = Color.Red;
+        if (Sprite is not null)
+            Sprite.Color = Color.Red;
         _spawnWalkTargetX = 0f;
         _spawnWalkDirection = Vector2.Zero;
     }

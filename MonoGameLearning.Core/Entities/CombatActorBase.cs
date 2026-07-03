@@ -43,16 +43,23 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
 
     protected void PlayAnimation(string key)
     {
+        if (Sprite is null) return;
         UnsubscribeFromAnimationEvent();
         Sprite.SetAnimation(key);
         SubscribeToAnimationEvent();
     }
 
-    private void SubscribeToAnimationEvent() =>
+    private void SubscribeToAnimationEvent()
+    {
+        if (Sprite is null) return;
         Sprite.Controller.OnAnimationEvent += OnAnimationCompleted;
+    }
 
-    private void UnsubscribeFromAnimationEvent() =>
+    private void UnsubscribeFromAnimationEvent()
+    {
+        if (Sprite is null) return;
         Sprite.Controller.OnAnimationEvent -= OnAnimationCompleted;
+    }
 
     protected void OnAnimationCompleted(IAnimationController controller, AnimationEventTrigger trigger)
     {
@@ -116,7 +123,7 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
 
     protected void AdvanceFrameAndRegisterHitboxes(GameTime gameTime)
     {
-        Debug.Assert(Sprite is not null, $"CombatActorBase [{Name}] has no Sprite assigned");
+        if (Sprite is null) return;
         FrameTracker.AdvanceOnFrameChange(Sprite, gameTime);
 
         if (CurrentMove is not null && FrameTracker.TryGetNewFrame(out var newFrameIndex))
@@ -161,7 +168,7 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
     {
         if (!IsIncapacitated) return false;
         MovementDirection = Vector2.Zero;
-        Sprite.Update(gameTime);
+        Sprite?.Update(gameTime);
         return true;
     }
 
@@ -172,8 +179,11 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
         HealthComponent.SetToMax();
         MovementDirection = Vector2.Zero;
         Direction = FacingDirection.Right;
-        Sprite.Effect = SpriteEffects.None;
-        Sprite.SetAnimation(Animations.Idle);
+        if (Sprite is not null)
+        {
+            Sprite.Effect = SpriteEffects.None;
+            Sprite.SetAnimation(Animations.Idle);
+        }
         CurrentMove = null;
         FrameTracker.Reset();
         KnockdownPhase = KnockdownPhase.Falling;

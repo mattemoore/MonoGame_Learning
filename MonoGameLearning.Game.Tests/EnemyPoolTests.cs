@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
@@ -115,25 +114,16 @@ public class EnemyPoolTests
     private static EnemyEntity MockFactory(string type, int index)
     {
         _mockCounter++;
-#pragma warning disable SYSLIB0050
-        var enemy = (EnemyEntity)FormatterServices.GetUninitializedObject(typeof(EnemyEntity));
-#pragma warning restore SYSLIB0050
-        return enemy;
+        return new TestEnemyEntity($"test_enemy_{_mockCounter}", Vector2.Zero);
     }
 
-    /// <summary>
-    /// Test pool that overrides OnRentEnemy to skip Reset (which NPEs on mock enemies with null Sprite,
-    /// _stateController, and _ai — all private readonly fields that FormatterServices can't initialize).
-    /// Sets Position and Target directly instead. The full Reset() path is exercised only in integration
-    /// tests with a real GraphicsDevice that can construct AnimatedSprite instances.
-    /// </summary>
     private class TestEnemyPool(EntityManager entityManager, LevelDirector director)
-        : EnemyPool(entityManager, director, MockFactory)
-    {
-        protected override void OnRentEnemy(EnemyEntity enemy, Vector2 position, Entity target)
+        : EnemyPool(entityManager, director, (type, index) =>
         {
-            enemy.Position = position;
-        }
+            _mockCounter++;
+            return new TestEnemyEntity($"test_enemy_{_mockCounter}", Vector2.Zero);
+        })
+    {
     }
 
     private class EntityStub(string name, Vector2 position, int width, int height)

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using MonoGame.Extended;
@@ -54,26 +53,13 @@ public class TestLevelDirector(EntityManager entityManager, Level level, Entity 
 }
 
 public class TestEnemyPool(EntityManager entityManager, LevelDirector director, List<Entity> spawnedEnemies)
-    : EnemyPool(entityManager, director, (type, i) =>
-    {
-#pragma warning disable SYSLIB0050
-        var enemy = (EnemyEntity)FormatterServices.GetUninitializedObject(typeof(EnemyEntity));
-#pragma warning restore SYSLIB0050
-        return enemy;
-    })
+    : EnemyPool(entityManager, director, (type, i) => new TestEnemyEntity($"test_enemy_{i}", Vector2.Zero))
 {
     public override EnemyEntity Rent(string type, Vector2 position, Entity target)
     {
         var enemy = base.Rent(type, position, target);
         spawnedEnemies.Add(enemy);
         return enemy;
-    }
-
-    protected override void OnRentEnemy(EnemyEntity enemy, Vector2 position, Entity target)
-    {
-        // Can't call enemy.Reset() — FormatterServices-created enemies have null private readonly
-        // fields (_stateController, _ai, Sprite). Setting Position is sufficient for wave-tracking tests.
-        enemy.Position = position;
     }
 }
 
@@ -101,8 +87,7 @@ public class LevelDirectorTests
     [SetUp]
     public void Setup()
     {
-        var world = CreateTestWorld();
-        _entityManager = new EntityManager(world);
+        _entityManager = new EntityManager(CreateTestWorld());
         _player = new TestPlayerEntity("player", Vector2.Zero);
         _level = new TestLevel(
         [
@@ -299,11 +284,7 @@ public class LevelDirectorTests
         _director.Update(new GameTime());
 
         var spawned = _director.SpawnedEnemies.ToList();
-        #pragma warning disable SYSLIB0050
-        // FormatterServices is required because EnemyEntity requires AnimatedSprite (needs GraphicsDevice).
-        // These enemies are only used for wave-tracking bookkeeping, not entity initialization or AI.
-        var extraEnemy = (EnemyEntity)FormatterServices.GetUninitializedObject(typeof(EnemyEntity));
-#pragma warning restore SYSLIB0050
+        var extraEnemy = new TestEnemyEntity("outside", Vector2.Zero);
         _director.SimulateEnemyDied(extraEnemy);
 
         _director.Update(new GameTime());
