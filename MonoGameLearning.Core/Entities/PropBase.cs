@@ -20,9 +20,7 @@ public abstract class PropBase(string name, Vector2 position, AnimatedSprite spr
 
     public AnimatedSprite Sprite => SpriteRenderer.Sprite;
     public Faction Faction => Faction.Neutral;
-    #pragma warning disable CS0067
     public event EventHandler Died;
-#pragma warning restore CS0067
 
     int IDamageable.Health => HealthComponent.Value;
     int IDamageable.MaxHealth => HealthComponent.MaxHealth;
@@ -48,5 +46,9 @@ public abstract class PropBase(string name, Vector2 position, AnimatedSprite spr
 
     public abstract void TakeDamage(DamageInfo info);
 
-    protected void OnDestroyed() => Destroyed?.Invoke(this);
+    protected void OnDestroyed()
+    {
+        Died?.Invoke(this, EventArgs.Empty);
+        Destroyed?.Invoke(this);
+    }
 }

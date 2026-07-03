@@ -15,7 +15,6 @@ using MonoGameLearning.Core.Input;
 using MonoGameLearning.Core.Settings;
 using MonoGameLearning.Game.Entities.GoIndicator;
 using MonoGameLearning.Game.Entities.Player;
-using MonoGameLearning.Game.Entities.Props;
 using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.Rendering;
 using MonoGameLearning.Game.Sprites;
@@ -264,20 +263,6 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _gameState.Fire(GameTrigger.PlayerDied);
     }
 
-    private void RegisterOilDrum(PropSpawnDef prop)
-    {
-        var drum = new OilDrumEntity(prop.Type, prop.Position, 1.0f, OilDrumSprite.Create());
-        drum.Destroyed += OnOilDrumDestroyed;
-        _entityManager.Register(drum);
-    }
-
-    private void OnOilDrumDestroyed(Entity drum)
-    {
-        if (drum is OilDrumEntity oilDrum)
-            oilDrum.Destroyed -= OnOilDrumDestroyed;
-        _entityManager.Destroy(drum);
-    }
-
     private void OnActionTriggered(InputAction action)
     {
         if (_actionHandlers.TryGetValue(action, out var handler))
@@ -308,14 +293,12 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
         _entityManager.Register(_player);
 
-        foreach (var prop in _currentLevel.Props)
-            RegisterOilDrum(prop);
-
         if (_goIndicator is not null)
             _entityManager.Register(_goIndicator);
 
         AssignHitboxService();
         InitLevelSystems();
+        _levelDirector.SpawnProps(_currentLevel.Props);
     }
 
     private void InitLevelSystems()

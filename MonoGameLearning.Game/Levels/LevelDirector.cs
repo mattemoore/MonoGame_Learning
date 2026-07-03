@@ -4,10 +4,13 @@ using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
+using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.GameCore;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Helpers;
 using MonoGameLearning.Game.Entities.Enemy;
+using MonoGameLearning.Game.Entities.Props;
+using MonoGameLearning.Game.Sprites;
 
 namespace MonoGameLearning.Game.Levels;
 
@@ -58,6 +61,23 @@ public class LevelDirector
     {
         EnemyPool = new EnemyPool(_entityManager, this);
         EnemyPool.Build(_level);
+    }
+
+    public void SpawnProps(List<PropSpawnDef> propDefs)
+    {
+        foreach (var prop in propDefs)
+        {
+            var drum = new OilDrumEntity(prop.Type, prop.Position, 1.0f, OilDrumSprite.Create());
+            drum.Destroyed += OnPropDestroyed;
+            _entityManager.Register(drum);
+        }
+    }
+
+    private void OnPropDestroyed(Entity prop)
+    {
+        if (prop is OilDrumEntity oilDrum)
+            oilDrum.Destroyed -= OnPropDestroyed;
+        _entityManager.Destroy(prop);
     }
 
     public void PopulateSnapshots(RectangleF walkableBounds)

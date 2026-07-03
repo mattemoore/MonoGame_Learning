@@ -1,4 +1,6 @@
-namespace MonoGameLearning.Core.Combat;
+using MonoGameLearning.Core.Combat;
+
+namespace MonoGameLearning.Game.Entities.Props;
 
 public static class OilDrumDamage
 {
