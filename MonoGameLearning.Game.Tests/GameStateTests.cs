@@ -69,5 +69,39 @@ namespace MonoGameLearning.Game.Tests
             _controller.Fire(GameTrigger.PauseToggle);
             Assert.That(_controller.State, Is.EqualTo(GameState.TitleScreen));
         }
+
+        [Test]
+        public void OpenSettings_FromTitleScreen_TransitionsToSettings()
+        {
+            _controller.Fire(GameTrigger.OpenSettings);
+            Assert.That(_controller.State, Is.EqualTo(GameState.Settings));
+        }
+
+        [Test]
+        public void OpenSettings_FromPaused_TransitionsToSettings()
+        {
+            _controller.Fire(GameTrigger.StartGame);
+            _controller.Fire(GameTrigger.PauseToggle);
+            _controller.Fire(GameTrigger.OpenSettings);
+            Assert.That(_controller.State, Is.EqualTo(GameState.Settings));
+        }
+
+        [Test]
+        public void ReturnToTitle_FromSettings_TransitionsToTitle()
+        {
+            _controller.Fire(GameTrigger.OpenSettings);
+            _controller.Fire(GameTrigger.ReturnToTitle);
+            Assert.That(_controller.State, Is.EqualTo(GameState.TitleScreen));
+        }
+
+        [Test]
+        public void PauseToggle_FromSettings_TransitionsToPaused()
+        {
+            _controller.Fire(GameTrigger.StartGame);
+            _controller.Fire(GameTrigger.PauseToggle);
+            _controller.Fire(GameTrigger.OpenSettings);
+            _controller.Fire(GameTrigger.PauseToggle);
+            Assert.That(_controller.State, Is.EqualTo(GameState.Paused));
+        }
     }
 }

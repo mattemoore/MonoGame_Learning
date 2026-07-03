@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Gum.Forms;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
@@ -8,14 +7,13 @@ using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
 using MonoGame.Extended.Graphics;
-using MonoGameGum;
-using MonoGameGum.GueDeriving;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Interfaces;
 using MonoGameLearning.Core.GameCore;
 using MonoGameLearning.Core.Input;
-using MonoGameLearning.Game.Entities.Enemy;
+using MonoGameLearning.Core.Settings;
+using MonoGameLearning.Game.Entities.GoIndicator;
 using MonoGameLearning.Game.Entities.Player;
 using MonoGameLearning.Game.Entities.Props;
 using MonoGameLearning.Game.Levels;
@@ -28,16 +26,13 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 {
     public const int GAME_WIDTH = 800;
     public const int GAME_HEIGHT = 600;
-    public const int RESOLUTION_WIDTH = 1024;
-    public const int RESOLUTION_HEIGHT = 768;
+    private static readonly int RESOLUTION_WIDTH = ResolutionSettings.Load().Width;
+    private static readonly int RESOLUTION_HEIGHT = ResolutionSettings.Load().Height;
     public const bool IS_FULL_SCREEN = false;
     private PlayerEntity _player;
     private Level _currentLevel;
     private EntityManager _entityManager;
     private InputManager _input;
-    private TextRuntime _debugWindow1, _debugWindow2;
-    private CollisionWorld2D _collisionWorld;
-    private static GumService GumService => GumService.Default;
     private int _numBackgroundsDrawn, _numEntitiesDrawn;
 
     private GameStateController _gameState;
@@ -47,7 +42,9 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private SpriteFont _debugFont;
     private LevelDirector _levelDirector;
     private BackgroundRenderer _backgroundRenderer;
+    private CollisionWorld2D _collisionWorld;
     private Dictionary<InputAction, Action> _actionHandlers;
+    private GoIndicatorEntity _goIndicator;
 
     protected override void Initialize()
     {
@@ -63,27 +60,12 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                 ResetGame();
         });
 
-        _menuManager = new MenuManager(_gameState, Exit);
+        _menuManager = new MenuManager(_gameState, Exit, Gum);
 
-        GumService.Initialize(this, DefaultVisualsVersion.V3);
-        _debugWindow1 = new TextRuntime();
-        _debugWindow1.AddToRoot();
-        _debugWindow1.Visible = false;
-        _debugWindow1.Anchor(Gum.Wireframe.Anchor.TopLeft);
-
-        _debugWindow2 = new TextRuntime();
-        _debugWindow2.AddToRoot();
-        _debugWindow2.Visible = false;
-        _debugWindow2.Anchor(Gum.Wireframe.Anchor.TopRight);
-        _debugWindow2.Width = 200;
-        _debugWindow2.Height = 200;
-        _debugWindow2.X = -200;
-        _debugWindow2.HorizontalAlignment = RenderingLibrary.Graphics.HorizontalAlignment.Right;
+        base.Initialize();
 
         _menuManager.BuildScreens();
         _menuManager.OnGameStateChanged();
-
-        base.Initialize();
     }
 
     protected override void LoadContent()
@@ -101,6 +83,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
         _player.Died += OnPlayerDied;
 
+        GoIndicatorSprite.Load(Content);
+
         _actionHandlers = new()
         {
             [InputAction.Action1] = () => { if (_gameState.State == GameState.Playing) _player.Attack(_player.Attack1Move); },
@@ -116,6 +100,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         };
 
         ReinitLevel();
+        _goIndicator = new GoIndicatorEntity("goIndicator", GoIndicatorSprite.Texture);
+        _entityManager.Register(_goIndicator);
     }
 
     protected override void Update(GameTime gameTime)
@@ -141,7 +127,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
             _levelDirector.PopulateSnapshots(movementBounds);
 
-            // indexed for loop to avoid heap-allocated IEnumerator<T> from IReadOnlyList<T>
+            _goIndicator.Visible = _levelDirector.ShowGoPrompt;
+
             var updatables = _entityManager.Updatables;
             for (int i = 0; i < updatables.Count; i++)
                 updatables[i].Update(gameTime);
@@ -155,7 +142,6 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
             ResolveCollisions();
 
-            // indexed for loop to avoid heap-allocated IEnumerator<T> from IReadOnlyList<T>
             var movables = _entityManager.Movables;
             for (int i = 0; i < movables.Count; i++)
             {
@@ -166,7 +152,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             }
         }
 
-        GumService.Update(gameTime);
+        Gum.Update(gameTime);
         base.Update(gameTime);
     }
 
@@ -185,10 +171,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             var cameraBounds = Camera.BoundingRectangle;
 
             _backgroundRenderer.Render(renderCtx);
-            _backgroundRenderer.Render(renderCtx);
             _numBackgroundsDrawn = _backgroundRenderer.LastFrameDrawCount;
 
-            // indexed for loop to avoid heap-allocated IEnumerator<T> from IReadOnlyList<T>
             var renderables = _entityManager.Renderables;
             for (int i = 0; i < renderables.Count; i++)
             {
@@ -204,7 +188,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             {
                 var debugCtx = new DebugDrawContext(SpriteBatch, _debugFont);
                 foreach (var drawable in _entityManager.DebugDrawables)
+                {
+                    if (drawable is IScreenRenderable) continue;
                     drawable.DrawDebug(debugCtx);
+                }
 
                 foreach (var wave in _currentLevel.WaveDefs)
                 {
@@ -225,31 +212,36 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                 var waveStatus = _levelDirector.CurrentWaveIndex < _currentLevel.WaveDefs.Count
                     ? $"Wave: {_levelDirector.CurrentWaveIndex + 1}/{_currentLevel.WaveDefs.Count}"
                     : "All waves done";
-                _debugWindow1.Text = $"FPS: {FPSCounter.FramesPerSecond}\n" +
-                                     $"State: {_gameState.State}\n" +
-                                     $"{waveStatus} | Active: {_levelDirector.ActiveEnemyCount} | Locked: {_levelDirector.IsScrollLocked}\n" +
-                                     $"Viewport: Virtual-{ViewportAdapter.VirtualWidth}x{ViewportAdapter.VirtualHeight} Actual-{ViewportAdapter.ViewportWidth}x{ViewportAdapter.ViewportHeight}\n" +
-                                     $"Screen Buffer: {Graphics.PreferredBackBufferWidth}x{Graphics.PreferredBackBufferHeight}\n" +
-                                     $"Window: {Window.ClientBounds.Width}x{Window.ClientBounds.Height}";
-                _debugWindow2.Text = $"BGs draw: {_numBackgroundsDrawn}\n" +
-                                     $"Ents draw: {_numEntitiesDrawn}";
+                Gum.DebugOverlay.SetText(
+                    $"FPS: {FPSCounter.FramesPerSecond}\n" +
+                    $"State: {_gameState.State}\n" +
+                    $"{waveStatus} | Active: {_levelDirector.ActiveEnemyCount} | Locked: {_levelDirector.IsScrollLocked}\n" +
+                    $"Viewport: Virtual-{ViewportAdapter.VirtualWidth}x{ViewportAdapter.VirtualHeight} Actual-{ViewportAdapter.ViewportWidth}x{ViewportAdapter.ViewportHeight}\n" +
+                    $"Screen Buffer: {Graphics.PreferredBackBufferWidth}x{Graphics.PreferredBackBufferHeight}\n" +
+                    $"Window: {Window.ClientBounds.Width}x{Window.ClientBounds.Height}",
+                    $"BGs draw: {_numBackgroundsDrawn}\nEnts draw: {_numEntitiesDrawn}");
             }
             SpriteBatch.End();
 
-            if (_levelDirector.ShowGoPrompt)
+            SpriteBatch.Begin();
+            var uiRenderCtx = new RenderContext(SpriteBatch, Camera);
+            var screenRenderables = _entityManager.ScreenRenderables;
+            for (int i = 0; i < screenRenderables.Count; i++)
+                screenRenderables[i].Render(uiRenderCtx);
+
+            if (IsDebug)
             {
-                SpriteBatch.Begin();
-                var goText = "GO ->";
-                float scale = 3f;
-                var textSize = _debugFont.MeasureString(goText) * scale;
-                SpriteBatch.DrawString(_debugFont, goText,
-                    new Vector2(ViewportAdapter.VirtualWidth - textSize.X - 20, ViewportAdapter.VirtualHeight / 2f - textSize.Y / 2f),
-                    Color.LimeGreen, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
-                SpriteBatch.End();
+                var uiDebugCtx = new DebugDrawContext(SpriteBatch, _debugFont);
+                for (int i = 0; i < screenRenderables.Count; i++)
+                {
+                    if (screenRenderables[i] is IDebugDrawable dbg)
+                        dbg.DrawDebug(uiDebugCtx);
+                }
             }
+            SpriteBatch.End();
         }
 
-        GumService.Draw();
+        Gum.Draw();
         base.Draw(gameTime);
     }
 
@@ -295,8 +287,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private void ToggleDebug()
     {
         IsDebug = !IsDebug;
-        _debugWindow1.Visible = !_debugWindow1.Visible;
-        _debugWindow2.Visible = !_debugWindow2.Visible;
+        Gum.DebugOverlay.Visible = IsDebug;
     }
 
     private void ResetGame()
@@ -319,6 +310,9 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
         foreach (var prop in _currentLevel.Props)
             RegisterOilDrum(prop);
+
+        if (_goIndicator is not null)
+            _entityManager.Register(_goIndicator);
 
         AssignHitboxService();
         InitLevelSystems();

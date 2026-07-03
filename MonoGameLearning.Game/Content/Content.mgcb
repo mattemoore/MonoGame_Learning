@@ -38,6 +38,13 @@
 /processorParam:TextureFormat=Color
 /build:backgrounds/background1.png
 
+#begin fonts/DebugFont.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:fonts/DebugFont.spritefont
+
 #begin images/adventurer-texture.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -55,7 +62,7 @@
 /processor:TexturePackerProcessor
 /build:images/adventurer.json
 
-#begin images/cardsSmall_tilemap_packed.png
+#begin images/arrow.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -65,7 +72,7 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:images/cardsSmall_tilemap_packed.png;images/cards.png
+/build:images/arrow.png
 
 #begin images/oilcan-texture.png
 /importer:TextureImporter
@@ -83,23 +90,4 @@
 /importer:TexturePackerJsonImporter
 /processor:TexturePackerProcessor
 /build:images/oilcan.json
-
-#begin images/logo.png
-/importer:TextureImporter
-/processor:TextureProcessor
-/processorParam:ColorKeyColor=255,0,255,255
-/processorParam:ColorKeyEnabled=True
-/processorParam:GenerateMipmaps=False
-/processorParam:PremultiplyAlpha=True
-/processorParam:ResizeToPowerOfTwo=False
-/processorParam:MakeSquare=False
-/processorParam:TextureFormat=Color
-/build:images/logo.png
-
-#begin fonts/DebugFont.spritefont
-/importer:FontDescriptionImporter
-/processor:FontDescriptionProcessor
-/processorParam:PremultiplyAlpha=True
-/processorParam:TextureFormat=Compressed
-/build:fonts/DebugFont.spritefont
 
