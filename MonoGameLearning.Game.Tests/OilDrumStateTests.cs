@@ -1,4 +1,5 @@
 using MonoGameLearning.Core.Combat;
+using MonoGameLearning.Game.Entities.Props;
 
 namespace MonoGameLearning.Game.Tests;
 

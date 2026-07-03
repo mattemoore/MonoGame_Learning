@@ -7,19 +7,24 @@
 
 ### Problem — Nullable director creates a silent dead path
 
-`EnemyEntity` constructor accepts `LevelDirector director = null`. In production, a director is always provided. The null guard in `Update()` (`if (_director is null) return;`) causes the enemy to silently skip all AI, movement, and world queries — producing a non-functional entity with no diagnostic feedback. The null path only exists to accommodate tests that construct enemies via `FormatterServices.GetUninitializedObject` (bypassing the constructor entirely).
+`EnemyEntity` constructor accepts `LevelDirector director = null`. In production, a director is always provided. The null guard in `Update()` (`if (_director is null) return;`) causes the enemy to silently skip all AI, movement, and world queries — producing a non-functional entity with no diagnostic feedback. The null path only exists to accommodate `TestEnemyEntity` which passes `null!` directly to the constructor.
 
 ### Impact — Hidden precondition and misleading API
 
 - Hidden precondition: enemies without a director compile but don't work
 - The nullable parameter signals "optional" when it's actually required in production
-- Tests use `FormatterServices` + override `OnRentEnemy` to avoid the dependency, but the pool's `DefaultFactory` always provides a director
+- `TestEnemyEntity` passes `null!` for both `sprite` and `director`, and its callers in test code (`EnemyPoolTests.MockFactory`, `TestEnemyPool`) never provide a director either
 
 ### Suggestion — Make director required
 
-Make `LevelDirector` a required (non-nullable) constructor parameter. Remove the null guard in `Update()` and `DrawDebug()`. Update pool-based tests to route enemy construction through `DefaultFactory` (or pass a test `LevelDirector` stub) instead of using `FormatterServices.GetUninitializedObject`.
+Make `LevelDirector` a required (non-nullable) constructor parameter. Remove the null guard in `Update()` and `DrawDebug()`. Update `TestEnemyEntity` to accept an optional `LevelDirector` via its constructor so callers can pass a test `LevelDirector` stub. In `DefaultFactory` the director is always provided, so production code is unaffected.
 
 ### Files to change — Finding 1
+
+- `MonoGameLearning.Game/Entities/Enemy/EnemyEntity.cs` — make `director` required (non-nullable), remove `= null`, remove null guards in `Update()` and `DrawDebug()`
+- `MonoGameLearning.Game.Tests/TestEnemyEntity.cs` — add `LevelDirector director = null` parameter, pass it to base
+- `MonoGameLearning.Game.Tests/EnemyPoolTests.cs` — `DirectorStub` exists for these tests; pass it through `TestEnemyEntity`
+- `MonoGameLearning.Game.Tests/LevelDirectorTests.cs` — `TestEnemyEntity` used for "outside wave" test; provide director stub there too
 
 ---
 
@@ -49,12 +54,13 @@ Split `IDamageable` into two interfaces:
 
 ### Files to change — Finding 2
 
-- `MonoGameLearning.Core/Entities/Interfaces/IDamageable.cs` — split into two interfaces (or make `Died` optional via default interface implementation)
-- `MonoGameLearning.Core/Entities/PropBase.cs` — implement `IDamageRecipient` only, remove `Died` suppression
-- `MonoGameLearning.Core/Entities/CombatActorBase.cs` — implement both interfaces
-- `MonoGameLearning.Core/Entities/EntityManager.cs` — check `IDamageRecipient` instead of `IDamageable` where appropriate
-- `MonoGameLearning.Game/Entities/Props/OilDrumEntity.cs` — update base interface if needed
-- Test files referencing `IDamageable` on props — verify compatibility
+- `MonoGameLearning.Core/Entities/Interfaces/IDamageable.cs` — split into `IDamageRecipient` (damage/methods) + `IDamageNotifier` (``Died`` event)
+- `MonoGameLearning.Core/Entities/PropBase.cs` — implement `IDamageRecipient` only, remove `#pragma warning disable CS0067` and ``Died`` event
+- `MonoGameLearning.Core/Entities/CombatActorBase.cs` — implement both `IDamageRecipient` + `IDamageNotifier`
+- `MonoGameLearning.Core/Entities/EntityManager.cs` — update `_damageables` and `_combatants` lists to track `IDamageRecipient` instead of `IDamageable`
+- `MonoGameLearning.Game/GameLoop/GameLoop.cs` — update `is IDamageable` checks to `is IDamageRecipient`
+- `MonoGameLearning.Game.Tests/HitboxTests.cs` — update `TestSpatialEntity` and `TestPropForHit` to implement `IDamageRecipient` + optionally `IDamageNotifier`
+- `MonoGameLearning.Game.Tests/LevelDirectorTests.cs` — verify `OilDrumEntity` compatibility (if used in prop path)
 
 ---
 
@@ -79,9 +85,10 @@ Move prop lifecycle into `LevelDirector`, following the same pattern as enemy ma
 
 ### Files to change — Finding 3
 
-- `MonoGameLearning.Game/Levels/LevelDirector.cs` — add prop management (spawn, register, destroy)
-- `MonoGameLearning.Game/GameLoop/GameLoop.cs` — remove `RegisterOilDrum`, `OnOilDrumDestroyed`, delegate prop setup to `LevelDirector`
-- `MonoGameLearning.Game/Levels/Level.cs` or new file — optional prop pool class if needed
+- `MonoGameLearning.Game/Levels/LevelDirector.cs` — add prop lifecycle methods (e.g., `SpawnProps`, `OnPropDestroyed`), prop pool or tracking list
+- `MonoGameLearning.Game/GameLoop/GameLoop.cs` — remove `RegisterOilDrum()` and `OnOilDrumDestroyed()`, replace `foreach (var prop in _currentLevel.Props) RegisterOilDrum(prop)` with `_levelDirector.SpawnProps(_currentLevel.Props)`
+- `MonoGameLearning.Game/Levels/Level.cs` — `Props` remains the level data source
+- `MonoGameLearning.Game/Levels/PropSpawnDef.cs` — no change needed, already a generic record
 
 ---
 
@@ -106,6 +113,7 @@ Move `OilDrumBehavior` and `OilDrumDamage` into the Game project (e.g., `MonoGam
 
 ### Files to change — Finding 4
 
-- Move `MonoGameLearning.Core/Combat/OilDrumDamage.cs` → `MonoGameLearning.Game/Entities/Props/OilDrumDamage.cs`
-- `MonoGameLearning.Game/Entities/Props/OilDrumEntity.cs` — update using directives
-- `MonoGameLearning.Game.Tests/OilDrumStateTests.cs` — update using directives
+- Move `MonoGameLearning.Core/Combat/OilDrumDamage.cs` → `MonoGameLearning.Game/Entities/Props/OilDrumDamage.cs` — update namespace to `MonoGameLearning.Game.Entities.Props`
+- Move `MonoGameLearning.Core/Combat/OilDrumBehavior.cs` → `MonoGameLearning.Game/Entities/Props/OilDrumBehavior.cs` — update namespace to `MonoGameLearning.Game.Entities.Props`
+- `MonoGameLearning.Game/Entities/Props/OilDrumEntity.cs` — update `using MonoGameLearning.Core.Combat` to `using MonoGameLearning.Game.Entities.Props`
+- `MonoGameLearning.Game.Tests/OilDrumStateTests.cs` — update `using MonoGameLearning.Core.Combat` to `using MonoGameLearning.Game.Entities.Props`

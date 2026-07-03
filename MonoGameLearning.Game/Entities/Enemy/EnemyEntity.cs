@@ -48,7 +48,7 @@ public class EnemyEntity : CombatActorBase
         }
     };
 
-    public EnemyEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, LevelDirector director = null)
+    public EnemyEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, LevelDirector director)
         : base(name, position, 48, 60, sprite, scale, 30, new(EnemySprite.AnimationIdle, EnemySprite.AnimationRun, EnemySprite.AnimationHurt, EnemySprite.AnimationFall, EnemySprite.AnimationDie, EnemySprite.AnimationGetUp))
     {
         Speed = 120f;
@@ -128,7 +128,6 @@ public class EnemyEntity : CombatActorBase
             return;
         }
 
-        if (_director is null) return;
         bool isIdleOrChasing = _stateController.State is EnemyState.Idle or EnemyState.Chasing;
 
         if (Target is not null)
@@ -181,8 +180,6 @@ public class EnemyEntity : CombatActorBase
     public override void DrawDebug(DebugDrawContext context)
     {
         base.DrawDebug(context);
-
-        if (_director is null) return;
 
         var force = _ai.Force;
         var color = force switch

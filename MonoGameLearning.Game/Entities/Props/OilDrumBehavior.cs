@@ -1,4 +1,4 @@
-namespace MonoGameLearning.Core.Combat;
+namespace MonoGameLearning.Game.Entities.Props;
 
 public class OilDrumBehavior
 {
