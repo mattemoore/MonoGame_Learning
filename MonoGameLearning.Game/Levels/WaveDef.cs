@@ -1,9 +1,8 @@
 using System.Collections.Generic;
-using Microsoft.Xna.Framework;
 
 namespace MonoGameLearning.Game.Levels;
 
-public record EnemySpawnDef(string Type, Vector2 Position);
+public record EnemySpawnDef(string Type, SpawnSide Side, SpawnVertical Vertical);
 
 public record WaveDef(float TriggerX, float EndX, List<EnemySpawnDef> Enemies)
 {
