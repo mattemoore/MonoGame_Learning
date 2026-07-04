@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended.Graphics;
 
-namespace MonoGameLearning.Core.Entities.Helpers;
+namespace MonoGameLearning.Core.Rendering;
 
 public class SpriteRenderer(AnimatedSprite sprite, float scale)
 {

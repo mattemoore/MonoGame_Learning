@@ -1,6 +1,6 @@
 using Microsoft.Xna.Framework.Graphics;
 
-namespace MonoGameLearning.Core.Entities;
+namespace MonoGameLearning.Core.Rendering;
 
 public class DebugDrawContext(SpriteBatch spriteBatch, SpriteFont font)
 {

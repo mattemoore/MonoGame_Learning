@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.Graphics;
 
-namespace MonoGameLearning.Core.Entities.Helpers;
+namespace MonoGameLearning.Core.Entities.Components;
 
 public static class Mover
 {

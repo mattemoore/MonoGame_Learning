@@ -3,7 +3,7 @@ using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
-using MonoGameLearning.Core.Entities.Helpers;
+using MonoGameLearning.Core.Entities.Components;
 using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Game.Tests;

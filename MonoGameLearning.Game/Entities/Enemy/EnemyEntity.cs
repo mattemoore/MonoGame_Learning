@@ -4,7 +4,8 @@ using MonoGame.Extended;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
-using MonoGameLearning.Core.Entities.Helpers;
+using MonoGameLearning.Core.Entities.Components;
+using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.Sprites;
 

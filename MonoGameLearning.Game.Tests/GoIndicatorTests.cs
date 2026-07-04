@@ -5,6 +5,8 @@ using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Interfaces;
+using MonoGameLearning.Core.Rendering;
+using MonoGameLearning.Core.UI;
 using MonoGameLearning.Game.Entities.GoIndicator;
 
 namespace MonoGameLearning.Game.Tests;

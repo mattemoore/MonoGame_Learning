@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 
-namespace MonoGameLearning.Core.Entities;
+namespace MonoGameLearning.Core.Rendering;
 
 public static class HealthDisplay
 {

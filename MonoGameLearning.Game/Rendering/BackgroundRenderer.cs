@@ -6,6 +6,7 @@ using MonoGame.Extended;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Interfaces;
+using MonoGameLearning.Core.Rendering;
 
 namespace MonoGameLearning.Game.Rendering;
 

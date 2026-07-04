@@ -7,11 +7,13 @@ using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
 using MonoGame.Extended.Graphics;
+using MonoGameLearning.Core;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Components;
 using MonoGameLearning.Core.Entities.Interfaces;
-using MonoGameLearning.Core.GameCore;
 using MonoGameLearning.Core.Input;
+using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Core.Settings;
 using MonoGameLearning.Game.Entities.GoIndicator;
 using MonoGameLearning.Game.Entities.Player;
@@ -147,7 +149,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                 var movable = movables[i];
                 if (movable is IDamageable { IsAlive: false }) continue;
                 movable.MovementBounds = movementBounds;
-                Core.Entities.Helpers.Mover.ClampToBounds((Entity)movable, movable.MovementBounds);
+                Mover.ClampToBounds((Entity)movable, movable.MovementBounds);
             }
         }
 

@@ -1,6 +1,6 @@
 using System;
 
-namespace MonoGameLearning.Core.Entities.Helpers;
+namespace MonoGameLearning.Core.Entities.Components;
 
 public class Health(int maxHealth)
 {

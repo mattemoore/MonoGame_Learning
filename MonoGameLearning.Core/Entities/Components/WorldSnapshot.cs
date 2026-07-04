@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 
-namespace MonoGameLearning.Core.Entities.Helpers;
+namespace MonoGameLearning.Core.Entities.Components;
 
 public readonly record struct WorldSnapshot(
     Vector2 PlayerPosition,
