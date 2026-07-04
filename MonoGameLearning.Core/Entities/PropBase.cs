@@ -8,6 +8,7 @@ using MonoGameLearning.Core.Entities.Components;
 using MonoGameLearning.Core.Entities.Interfaces;
 using MonoGameLearning.Core.Rendering;
 
+
 namespace MonoGameLearning.Core.Entities;
 
 public abstract class PropBase(string name, Vector2 position, AnimatedSprite sprite, float scale, int maxHealth) : Entity(name, position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale)), IRenderable, IDebugDrawable, ICollisionActor, IDamageable
@@ -42,7 +43,10 @@ public abstract class PropBase(string name, Vector2 position, AnimatedSprite spr
     {
         context.SpriteBatch.DrawRectangle(Frame, Color.AntiqueWhite);
         context.SpriteBatch.DrawRectangle(Frame, Color.Blue);
-        HealthDisplay.Draw(context.SpriteBatch, context.Font, Frame, HealthComponent.Value, HealthComponent.MaxHealth);
+        var text = HealthComponent.ToDisplayString();
+        var size = context.Font.MeasureString(text);
+        context.SpriteBatch.DrawString(context.Font, text,
+            new Vector2(Frame.Center.X - size.X / 2, Frame.Top - size.Y - 2), Color.White);
     }
 
     public abstract void TakeDamage(DamageInfo info);

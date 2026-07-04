@@ -10,4 +10,5 @@ public class Health(int maxHealth)
 
     public void Subtract(int amount) => Value = Math.Max(0, Value - amount);
     public void SetToMax() => Value = MaxHealth;
+    public string ToDisplayString() => $"{Value}/{MaxHealth}";
 }
