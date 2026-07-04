@@ -1,4 +1,4 @@
-using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Rendering;
 
 namespace MonoGameLearning.Game.Tests;
 

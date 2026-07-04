@@ -2,8 +2,10 @@ using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
+using MonoGameLearning.Core;
 using MonoGameLearning.Core.Entities;
-using MonoGameLearning.Core.GameCore;
+using MonoGameLearning.Core.Rendering;
+using MonoGameLearning.Core.UI;
 
 namespace MonoGameLearning.Game.Entities.GoIndicator;
 

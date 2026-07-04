@@ -4,8 +4,9 @@ using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Combat;
-using MonoGameLearning.Core.Entities.Helpers;
+using MonoGameLearning.Core.Entities.Components;
 using MonoGameLearning.Core.Entities.Interfaces;
+using MonoGameLearning.Core.Rendering;
 
 namespace MonoGameLearning.Core.Entities;
 

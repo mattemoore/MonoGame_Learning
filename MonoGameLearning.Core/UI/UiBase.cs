@@ -1,7 +1,9 @@
 using Microsoft.Xna.Framework;
+using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Interfaces;
+using MonoGameLearning.Core.Rendering;
 
-namespace MonoGameLearning.Core.Entities;
+namespace MonoGameLearning.Core.UI;
 
 public abstract class UiBase(string name, Vector2 position, int width, int height)
     : Entity(name, position, width, height), IUpdatable, IScreenRenderable, IDebugDrawable

@@ -1,7 +1,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 
-namespace MonoGameLearning.Core.Entities;
+namespace MonoGameLearning.Core.Rendering;
 
 public class RenderContext(SpriteBatch spriteBatch, OrthographicCamera camera)
 {

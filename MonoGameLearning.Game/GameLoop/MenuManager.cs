@@ -4,6 +4,7 @@ using Gum.Converters;
 using Gum.DataTypes;
 using Gum.GueDeriving;
 using Microsoft.Xna.Framework;
+using MonoGameLearning.Core;
 using MonoGameLearning.Core.Settings;
 using MonoGameLearning.Core.UI;
 using RenderingLibrary.Graphics;
@@ -124,7 +125,7 @@ public class MenuManager(GameStateController gameState, Action exitGame, GumMana
 
         var selected = _resolutionOptions[_resolutionIndex];
         ResolutionSettings.Save(selected);
-        SettingsService.Apply(MonoGameLearning.Core.GameCore.GameCore.Graphics, selected);
+        SettingsService.Apply(GameCore.Graphics, selected);
 
         _currentResolutionLabel.Text = $"Current: {selected.Width}x{selected.Height}";
     }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 
-namespace MonoGameLearning.Core.Entities.Helpers;
+namespace MonoGameLearning.Core.Entities.Components;
 
 public class EnemyAI(float attackRange, float minChaseDistance)
 {

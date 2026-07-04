@@ -6,13 +6,10 @@ using MonoGame.Extended;
 using MonoGame.Extended.ViewportAdapters;
 using MonoGameLearning.Core.UI;
 
-namespace MonoGameLearning.Core.GameCore;
+namespace MonoGameLearning.Core;
 
 public class GameCore : Game
 {
-    /// <summary>
-    /// Singleton instance reference. MonoGame Game is single-instance per process.
-    /// </summary>
     internal static GameCore s_instance;
     public static GameCore Instance => s_instance;
     public static GraphicsDeviceManager Graphics { get; private set; }
