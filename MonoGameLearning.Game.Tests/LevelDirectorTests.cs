@@ -2,11 +2,13 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
+using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.Rendering;
@@ -470,5 +472,64 @@ public class LevelDirectorTests
         _director.Update(new GameTime());
 
         Assert.That(completed, Is.True);
+    }
+
+    [Test]
+    [Ignore("SpriteBatch is a sealed MonoGame type — requires a real GraphicsDevice or a mock wrapper. " +
+        "The test documents the intent: DrawDebug should not throw for state-based logic errors " +
+        "(as opposed to null SpriteBatch NRE which is expected).")]
+    public void DrawDebug_DoesNotThrow_WhenGameNotStarted()
+    {
+        // Initial state: _currentWaveIndex == 0, not triggered, not scroll-locked.
+        // DrawDebug will attempt DrawLine calls on the null SpriteBatch and throw NRE,
+        // but that's expected — the test is for state-logic exceptions only.
+        var ctx = new DebugDrawContext(null!, null!);
+        Assert.DoesNotThrow(() => _director.DrawDebug(ctx));
+    }
+
+    [Test]
+    [Ignore("SpriteBatch is a sealed MonoGame type — requires a real GraphicsDevice or a mock wrapper. " +
+        "The test documents the intent: DrawDebug should not throw for state-based logic errors " +
+        "(as opposed to null SpriteBatch NRE which is expected).")]
+    public void DrawDebug_DoesNotThrow_WhenScrollLocked()
+    {
+        _player.Position = new Vector2(300, 0);
+        _director.Update(new GameTime());
+        Assert.That(_director.IsScrollLocked, Is.True);
+
+        var ctx = new DebugDrawContext(null!, null!);
+        Assert.DoesNotThrow(() => _director.DrawDebug(ctx));
+    }
+
+    [Test]
+    [Ignore("SpriteBatch is a sealed MonoGame type — requires a real GraphicsDevice or a mock wrapper. " +
+        "The test documents the intent: DrawDebug should not throw for state-based logic errors " +
+        "(as opposed to null SpriteBatch NRE which is expected).")]
+    public void DrawDebug_DoesNotThrow_AfterAllWavesComplete()
+    {
+        // Drive both waves to completion
+        _player.Position = new Vector2(300, 0);
+        _director.Update(new GameTime());
+        foreach (var entity in _director.SpawnedEnemies.ToList())
+        {
+            var enemy = (EnemyEntity)entity;
+            _director.SimulateEnemyDied(enemy);
+        }
+        _director.Update(new GameTime());
+
+        _player.Position = new Vector2(1200, 0);
+        _director.Update(new GameTime());
+        foreach (var entity in _director.SpawnedEnemies.ToList())
+        {
+            var enemy = (EnemyEntity)entity;
+            _director.SimulateEnemyDied(enemy);
+        }
+        _director.Update(new GameTime());
+
+        // Now _currentWaveIndex >= waves.Count — all waves done
+        Assert.That(_director.CurrentWaveIndex, Is.EqualTo(2));
+
+        var ctx = new DebugDrawContext(null!, null!);
+        Assert.DoesNotThrow(() => _director.DrawDebug(ctx));
     }
 }

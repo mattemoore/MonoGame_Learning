@@ -194,21 +194,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                     drawable.DrawDebug(debugCtx);
                 }
 
-                foreach (var wave in _currentLevel.WaveDefs)
-                {
-                    SpriteBatch.DrawLine(wave.TriggerX, 0, wave.TriggerX, ViewportAdapter.VirtualHeight, Color.Cyan * 0.4f, 2f);
-                    SpriteBatch.DrawLine(wave.EndX, 0, wave.EndX, ViewportAdapter.VirtualHeight, Color.Yellow * 0.4f, 2f);
-                }
-
-                SpriteBatch.DrawLine(_currentLevel.EndTriggerX, 0, _currentLevel.EndTriggerX, ViewportAdapter.VirtualHeight, Color.Orange * 0.4f, 2f);
-
-                if (_levelDirector.IsScrollLocked)
-                {
-                    SpriteBatch.DrawLine(_levelDirector.WaveTriggerX!.Value, 0, _levelDirector.WaveTriggerX.Value, ViewportAdapter.VirtualHeight, Color.Cyan * 0.7f, 2f);
-                    SpriteBatch.DrawLine(_levelDirector.WaveEndX!.Value, 0, _levelDirector.WaveEndX.Value, ViewportAdapter.VirtualHeight, Color.Yellow * 0.7f, 2f);
-                }
-
-                SpriteBatch.DrawLine(0, _currentLevel.WalkableTopY, _currentLevel.MovementBounds.Right, _currentLevel.WalkableTopY, Color.Lime * 0.5f, 2f);
+                _levelDirector.DrawDebug(debugCtx);
 
                 var waveStatus = _levelDirector.CurrentWaveIndex < _currentLevel.WaveDefs.Count
                     ? $"Wave: {_levelDirector.CurrentWaveIndex + 1}/{_currentLevel.WaveDefs.Count}"
