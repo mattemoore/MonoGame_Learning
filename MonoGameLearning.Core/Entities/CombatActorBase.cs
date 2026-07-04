@@ -113,7 +113,10 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
     {
         context.SpriteBatch.DrawRectangle(Frame, Color.AntiqueWhite);
         context.SpriteBatch.DrawRectangle(Frame, Color.Blue);
-        HealthDisplay.Draw(context.SpriteBatch, context.Font, Frame, HealthComponent.Value, HealthComponent.MaxHealth);
+        var text = HealthComponent.ToDisplayString();
+        var size = context.Font.MeasureString(text);
+        context.SpriteBatch.DrawString(context.Font, text,
+            new Vector2(Frame.Center.X - size.X / 2, Frame.Top - size.Y - 2), Color.White);
 
         if (HitboxService is not null)
         {
