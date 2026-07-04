@@ -3,7 +3,6 @@ using System.Diagnostics;
 using Microsoft.Xna.Framework.Content;
 using MonoGame.Extended;
 using MonoGameLearning.Core.Entities;
-using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Game.Rendering;
 
 namespace MonoGameLearning.Game.Levels;
@@ -50,6 +49,4 @@ public abstract class Level
     }
 
     public abstract BackgroundRenderer CreateBackgroundRenderer(ContentManager content);
-
-    public virtual void DrawDebug(DebugDrawContext context) { }
 }

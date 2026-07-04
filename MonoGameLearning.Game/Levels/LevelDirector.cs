@@ -223,8 +223,26 @@ public class LevelDirector
     public void DrawDebug(DebugDrawContext context)
     {
         var waves = _level.WaveDefs;
-        if (_currentWaveIndex >= waves.Count) return;
+        float vh = GameCore.ViewportAdapter.VirtualHeight;
 
+        foreach (var wave in waves)
+        {
+            context.SpriteBatch.DrawLine(wave.TriggerX, 0, wave.TriggerX, vh, Color.Cyan * 0.4f, 2f);
+            context.SpriteBatch.DrawLine(wave.EndX, 0, wave.EndX, vh, Color.Yellow * 0.4f, 2f);
+        }
+
+        context.SpriteBatch.DrawLine(_level.EndTriggerX, 0, _level.EndTriggerX, vh, Color.Orange * 0.4f, 2f);
+
+        float levelRight = _level.MovementBounds.Right;
+        context.SpriteBatch.DrawLine(0, _level.WalkableTopY, levelRight, _level.WalkableTopY, Color.Lime * 0.5f, 2f);
+
+        if (_isScrollLocked && WaveTriggerX.HasValue && WaveEndX.HasValue)
+        {
+            context.SpriteBatch.DrawLine(WaveTriggerX.Value, 0, WaveTriggerX.Value, vh, Color.Cyan * 0.7f, 2f);
+            context.SpriteBatch.DrawLine(WaveEndX.Value, 0, WaveEndX.Value, vh, Color.Yellow * 0.7f, 2f);
+        }
+
+        if (_currentWaveIndex >= waves.Count) return;
         var nextWave = waves[_currentWaveIndex];
         if (_waveTriggered) return;
 
