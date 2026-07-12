@@ -18,7 +18,7 @@ public class GoIndicatorEntity(string name, Texture2D texture)
     private float _flashAlpha = 1f;
     private float _pulseScale = 1f;
 
-    public const float SCALE = 0.5f;
+    public const float SCALE = 0.3f;
     public const float PULSE_AMPLITUDE = 0.04f;
     public const int MARGIN = 20;
     public const float FLASH_PERIOD = 0.8f;

@@ -4,15 +4,24 @@ using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Components;
-using MonoGameLearning.Game.Sprites;
+using MonoGameLearning.Core.UI;
+using MonoGameLearning.Game.AnimatedSprites;
 
 namespace MonoGameLearning.Game.Entities.Player;
 
-public class PlayerEntity : CombatActorBase
+public class PlayerEntity : CombatActorBase, IHudPlayerData
 {
+    public const int InitialLives = 3;
+
     private PlayerStateController _stateController;
     private float _invincibilityTimer;
     private MoveData _pendingMove;
+
+    public int Lives { get; set; } = InitialLives;
+    public bool IsInvincible => _invincibilityTimer > 0;
+    string IHudPlayerData.Name => Name;
+    int IHudPlayerData.Health => HealthComponent.Value;
+    int IHudPlayerData.MaxHealth => HealthComponent.MaxHealth;
 
     public readonly MoveData Attack1Move = new()
     {
@@ -82,7 +91,7 @@ public class PlayerEntity : CombatActorBase
         _stateController.Fire(PlayerTrigger.TakeDamage);
     }
 
-    private PlayerStateController CreateStateController() => new(new()
+    protected virtual PlayerStateController CreateStateController() => new(new()
     {
         OnIdleEntry = () => Sprite.SetAnimation(Animations.Idle),
         OnMovingEntry = () => Sprite.SetAnimation(Animations.Run),
@@ -136,5 +145,10 @@ public class PlayerEntity : CombatActorBase
     {
         ResetActor(position);
         _stateController = CreateStateController();
+    }
+
+    public void Respawn()
+    {
+        _invincibilityTimer = 2.5f;
     }
 }

@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using MonoGame.Extended.Graphics;
 
-namespace MonoGameLearning.Game.Sprites;
+namespace MonoGameLearning.Game.AnimatedSprites;
 
 public static class OilDrumSprite
 {

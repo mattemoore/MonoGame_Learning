@@ -3,7 +3,7 @@ using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Interfaces;
-using MonoGameLearning.Game.Sprites;
+using MonoGameLearning.Game.AnimatedSprites;
 
 namespace MonoGameLearning.Game.Entities.Props;
 

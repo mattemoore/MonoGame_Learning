@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using MonoGame.Extended.Collisions;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities.Interfaces;
@@ -7,6 +8,7 @@ namespace MonoGameLearning.Core.Entities;
 
 public class EntityManager(CollisionWorld2D world)
 {
+    public HitboxService HitboxService { get; set; }
     public void Clear()
     {
         _all.Clear();
@@ -69,10 +71,14 @@ public class EntityManager(CollisionWorld2D world)
         _pendingDestroy.Clear();
     }
 
-    private static void TryAdd<T>(Entity entity, List<T> list) where T : class
+    private static bool TryAdd<T>(Entity entity, List<T> list) where T : class
     {
         if (entity is T t)
+        {
             list.Add(t);
+            return true;
+        }
+        return false;
     }
 
     private static void TryRemove<T>(Entity entity, List<T> list) where T : class
@@ -100,7 +106,8 @@ public class EntityManager(CollisionWorld2D world)
             world.Insert(prop, "props");
         }
         TryAdd<IDamageable>(entity, _damageables);
-        TryAdd<IHitboxProvider>(entity, _hitboxProviders);
+        if (TryAdd<IHitboxProvider>(entity, _hitboxProviders))
+            TryInjectHitboxService(entity);
         TryAdd<IMoveableEntity>(entity, _movables);
         TryAdd<IDebugDrawable>(entity, _debugDrawables);
         TryAdd<IDamageable>(entity, _combatants);
@@ -128,5 +135,19 @@ public class EntityManager(CollisionWorld2D world)
         TryRemove<IMoveableEntity>(entity, _movables);
         TryRemove<IDebugDrawable>(entity, _debugDrawables);
         TryRemove<IDamageable>(entity, _combatants);
+    }
+
+    private void TryInjectHitboxService(Entity entity)
+    {
+        if (entity is not IHitboxProvider provider)
+            return;
+
+        if (HitboxService is null)
+        {
+            Debug.WriteLine($"[EntityManager] HitboxService is null — {entity.GetType().Name} \"{entity.Name}\" registered without hitbox support");
+            return;
+        }
+
+        provider.HitboxService = HitboxService;
     }
 }

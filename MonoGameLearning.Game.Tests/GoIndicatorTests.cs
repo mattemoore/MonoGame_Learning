@@ -127,7 +127,7 @@ public class GoIndicatorTests
     [Test]
     public void GoIndicator_Constants_AreDefined()
     {
-        Assert.That(GoIndicatorEntity.SCALE, Is.EqualTo(0.5f));
+        Assert.That(GoIndicatorEntity.SCALE, Is.EqualTo(0.3f));
         Assert.That(GoIndicatorEntity.MARGIN, Is.EqualTo(20));
         Assert.That(GoIndicatorEntity.FLASH_PERIOD, Is.EqualTo(0.8f));
     }
