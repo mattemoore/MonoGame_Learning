@@ -11,7 +11,7 @@ using MonoGameLearning.Core.Entities.Components;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.Entities.Props;
-using MonoGameLearning.Game.Sprites;
+using MonoGameLearning.Game.AnimatedSprites;
 
 namespace MonoGameLearning.Game.Levels;
 

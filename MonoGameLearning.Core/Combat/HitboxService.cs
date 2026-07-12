@@ -40,7 +40,7 @@ public record struct HitResult
 
 public class HitboxService
 {
-    private record ActiveHitbox
+    private readonly record struct ActiveHitbox
     {
         public Entity Owner { get; init; }
         public RectangleF Bounds { get; init; }

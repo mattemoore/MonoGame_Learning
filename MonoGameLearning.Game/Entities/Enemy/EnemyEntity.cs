@@ -7,7 +7,7 @@ using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Components;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Game.Levels;
-using MonoGameLearning.Game.Sprites;
+using MonoGameLearning.Game.AnimatedSprites;
 
 namespace MonoGameLearning.Game.Entities.Enemy;
 

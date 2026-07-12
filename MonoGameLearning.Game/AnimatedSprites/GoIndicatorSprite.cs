@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace MonoGameLearning.Game.Sprites;
+namespace MonoGameLearning.Game.AnimatedSprites;
 
 public static class GoIndicatorSprite
 {

@@ -6,6 +6,9 @@
     <PublishReadyToRun>false</PublishReadyToRun>
     <TieredCompilation>false</TieredCompilation>
   </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MonoGameLearning.Game.Tests" />
+  </ItemGroup>
   <PropertyGroup>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
   </PropertyGroup>

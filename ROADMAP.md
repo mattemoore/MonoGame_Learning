@@ -72,6 +72,17 @@ Control player movement and camera tracking during fights.
 
 ---
 
+## [ ] Milestone 5: Sound Engine
+
+Implement a sound and music system for audio feedback.
+
+- [ ] **Audio Manager**: Create a central `SoundManager` (or integrate into `GameCore`) for loading and playing sound effects and music tracks via MonoGame's `SoundEffect` and `Song` APIs.
+- [ ] **SFX Cues**: Define sound effect triggers for core gameplay events (punch, hit, knock down, enemy death, player hurt, jump, menu select, level complete).
+- [ ] **Music Playback**: Add background music playback with crossfade or transition support between gameplay and menu states.
+- [ ] **Volume Controls**: Expose master SFX and music volume settings, persisted via a config file or `Preferences`.
+
+---
+
 ## [x] Milestone 6: MonoGame.Extended 6.0 Upgrade
 
 - [x] **Package Version Bumps**: Bump `MonoGame.Extended` and `MonoGame.Extended.Content.Pipeline` from `5.3.1` to `6.0.0`.
@@ -84,9 +95,9 @@ Control player movement and camera tracking during fights.
 
 Provide visual feedback of game parameters using basic text/shapes.
 
-- [ ] **Player HUD**:
-  - [ ] Draw a health bar and remaining lives counter for the active player.
-- [ ] **Enemy HUD**:
-  - [ ] Display the active enemy's health bar (or a boss health bar at the bottom) when engaged in combat.
+- [x] **Player HUD**:
+  - [x] Draw a health bar and remaining lives counter for the active player.
+- [x] **Enemy HUD**:
+  - [x] Display the active enemy's health bar (or a boss health bar at the bottom) when engaged in combat.
 - [ ] **Score and Timer**:
   - [ ] Add a running level timer and score counter to the top-center HUD.

@@ -3,6 +3,9 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="MonoGameLearning.Game.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Gum.MonoGame" Version="2026.7.3.1" />
     <PackageReference Include="Gum.Shapes.MonoGame" Version="2026.7.3.1" />
     <PackageReference Include="MonoGame.Extended" Version="6.0.0" />

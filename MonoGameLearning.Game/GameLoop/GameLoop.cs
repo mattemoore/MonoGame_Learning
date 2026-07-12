@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
@@ -15,11 +16,12 @@ using MonoGameLearning.Core.Entities.Interfaces;
 using MonoGameLearning.Core.Input;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Core.Settings;
+using MonoGameLearning.Core.UI;
 using MonoGameLearning.Game.Entities.GoIndicator;
 using MonoGameLearning.Game.Entities.Player;
 using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.Rendering;
-using MonoGameLearning.Game.Sprites;
+using MonoGameLearning.Game.AnimatedSprites;
 
 namespace MonoGameLearning.Game.GameLoop;
 
@@ -46,6 +48,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private CollisionWorld2D _collisionWorld;
     private Dictionary<InputAction, Action> _actionHandlers;
     private GoIndicatorEntity _goIndicator;
+    private HudService _hudService;
 
     protected override void Initialize()
     {
@@ -83,6 +86,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         OilDrumSprite.Load(Content);
 
         _player.Died += OnPlayerDied;
+        _hudService = new HudService(_player, _debugFont);
 
         GoIndicatorSprite.Load(Content);
 
@@ -138,10 +142,16 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             foreach (var hit in hitResults)
             {
                 if (hit.Target is IDamageable damageable)
+                {
                     damageable.TakeDamage(new DamageInfo { Amount = hit.Damage, Knockdown = hit.Knockdown, Strength = hit.Strength });
+                    if (damageable.Faction == Faction.Enemy)
+                        _hudService.OnEnemyHit(damageable);
+                }
             }
 
             ResolveCollisions();
+
+            _hudService.SetProximityTarget(FindNearestAliveEnemy(_player.Position, _entityManager.All));
 
             var movables = _entityManager.Movables;
             for (int i = 0; i < movables.Count; i++)
@@ -248,7 +258,40 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
     private void OnPlayerDied(object sender, EventArgs e)
     {
-        _gameState.Fire(GameTrigger.PlayerDied);
+        if (_player.Lives > 0)
+        {
+            _player.Lives--;
+            RespawnPlayer();
+        }
+        else
+        {
+            _gameState.Fire(GameTrigger.PlayerDied);
+        }
+    }
+
+    private const float SPAWN_BUFFER_X = 60f;
+    private const float LEVEL_EDGE_BUFFER = 10f;
+
+    internal static Vector2 ComputeRespawnPosition(float cameraX, RectangleF movementBounds, float walkableTopY)
+    {
+        float levelLeft = movementBounds.X;
+        float levelRight = movementBounds.Right;
+        float desiredX = cameraX + SPAWN_BUFFER_X;
+        float clampedX = Math.Clamp(desiredX, levelLeft + LEVEL_EDGE_BUFFER, levelRight - LEVEL_EDGE_BUFFER);
+        Debug.Assert(clampedX >= levelLeft + LEVEL_EDGE_BUFFER,
+            "Respawn X clamped below level-left buffer — camera is before level start?");
+        return new Vector2(clampedX, walkableTopY);
+    }
+
+    internal Vector2 ComputeRespawnPosition()
+    {
+        return ComputeRespawnPosition(GameCore.Camera?.Position.X ?? _currentLevel.MovementBounds.X, _currentLevel.MovementBounds, _currentLevel.WalkableTopY);
+    }
+
+    private void RespawnPlayer()
+    {
+        _player.Reset(ComputeRespawnPosition());
+        _player.Respawn();
     }
 
     private void OnActionTriggered(InputAction action)
@@ -266,8 +309,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private void ResetGame()
     {
         _hitboxService.ClearAll();
+        _player.Lives = PlayerEntity.InitialLives;
         _player.Reset(new Vector2(100, 450));
         _entityManager.Clear();
+        _hudService?.ClearTargetState();
         ReinitLevel();
         Camera.Position = Vector2.Zero;
     }
@@ -278,13 +323,16 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _backgroundRenderer = _currentLevel.CreateBackgroundRenderer(Content);
         _collisionWorld = CreateCollisionWorld(_currentLevel.MovementBounds);
         _entityManager = new EntityManager(_collisionWorld);
+        _entityManager.HitboxService = _hitboxService;
 
         _entityManager.Register(_player);
 
         if (_goIndicator is not null)
             _entityManager.Register(_goIndicator);
 
-        AssignHitboxService();
+        if (_hudService is not null)
+            _entityManager.Register(_hudService.RootWidget);
+
         InitLevelSystems();
         _levelDirector.SpawnProps(_currentLevel.Props);
     }
@@ -297,10 +345,23 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _levelDirector.LevelCompleted += () => _gameState.Fire(GameTrigger.CompleteLevel);
     }
 
-    private void AssignHitboxService()
+    private static IDamageable FindNearestAliveEnemy(Vector2 origin, IReadOnlyList<Entity> entities)
     {
-        foreach (var provider in _entityManager.HitboxProviders)
-            provider.HitboxService = _hitboxService;
+        IDamageable nearest = null;
+        float nearestDist = float.MaxValue;
+        for (int i = 0; i < entities.Count; i++)
+        {
+            if (entities[i] is IDamageable { IsAlive: true, Faction: Faction.Enemy } d)
+            {
+                float dist = Math.Abs(((Entity)d).Position.X - origin.X);
+                if (dist < nearestDist)
+                {
+                    nearestDist = dist;
+                    nearest = d;
+                }
+            }
+        }
+        return nearest;
     }
 
     private static CollisionWorld2D CreateCollisionWorld(RectangleF bounds)

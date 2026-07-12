@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Game.Entities.Enemy;
-using MonoGameLearning.Game.Sprites;
+using MonoGameLearning.Game.AnimatedSprites;
 
 namespace MonoGameLearning.Game.Levels;
 
