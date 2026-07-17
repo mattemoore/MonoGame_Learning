@@ -57,12 +57,15 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _input = new InputManager();
         _input.ActionTriggered += OnActionTriggered;
         _audio = new AudioManager();
+        SettingsService.LoadAudio();
+        _audio.SfxVolume = SettingsService.AudioSettings.SfxVolume;
+        _audio.MusicVolume = SettingsService.AudioSettings.MusicVolume;
         _hitboxService = new();
 
         _gameState = new GameStateController();
         _gameState.StateMachine.OnTransitioned(t =>
         {
-            _menuManager.OnGameStateChanged();
+            _menuManager.OnGameStateChanged(t.Source);
             if (t.Destination == GameState.Playing && t.Source != GameState.Paused)
                 ResetGame();
 
@@ -90,12 +93,17 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                 _audio.SetPaused(false);
         });
 
-        _menuManager = new MenuManager(_gameState, Exit, Gum, _audio.PlaySfx, () => SettingsService.AudioSettings, SettingsService.SaveAudio);
+        _menuManager = new MenuManager(_gameState, Exit, Gum, _audio.PlaySfx, () => SettingsService.AudioSettings, settings =>
+        {
+            SettingsService.SaveAudio(settings);
+            _audio.SfxVolume = settings.SfxVolume;
+            _audio.MusicVolume = settings.MusicVolume;
+        });
 
         base.Initialize();
 
         _menuManager.BuildScreens();
-        _menuManager.OnGameStateChanged();
+        _menuManager.OnGameStateChanged(GameState.TitleScreen);
     }
 
     protected override void LoadContent()

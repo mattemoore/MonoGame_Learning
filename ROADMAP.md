@@ -85,14 +85,14 @@ Provide visual feedback of game parameters using basic text/shapes.
 
 ---
 
-## [ ] Milestone 6: Sound Engine
+## [x] Milestone 6: Sound Engine
 
 Implement a sound and music system for audio feedback.
 
-- [ ] **Audio Manager**: Create a central `SoundManager` (or integrate into `GameCore`) for loading and playing sound effects and music tracks via MonoGame's `SoundEffect` and `Song` APIs.
-- [ ] **SFX Cues**: Define sound effect triggers for core gameplay events (punch, hit, knock down, enemy death, player hurt, jump, menu select, level complete).
-- [ ] **Music Playback**: Add background music playback with crossfade or transition support between gameplay and menu states.
-- [ ] **Volume Controls**: Expose master SFX and music volume settings, persisted via a config file or `Preferences`.
+- [x] **Audio Manager**: Create a central `AudioManager` for loading and playing sound effects and music tracks via MonoGame's `SoundEffect` API.
+- [x] **SFX Cues**: Define sound effect triggers for core gameplay events (punch, hit, knock down, enemy death, player hurt, menu select, level complete, go prompt).
+- [x] **Music Playback**: Add background music playback with transition support between gameplay and menu states.
+- [x] **Volume Controls**: Expose master SFX and music volume settings, persisted via `SettingsService`.
 
 ---
 

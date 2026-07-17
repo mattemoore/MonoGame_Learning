@@ -25,6 +25,7 @@ public class MenuManager
     private int _menuIndex;
     private List<TextRuntime> _activeMenuItems;
     private readonly GumManager _gum;
+    private GameState _previousState;
 
     private TextRuntime _resCursor, _resLabel, _resValue;
     private TextRuntime _sfxCursor, _sfxLabel, _sfxValue;
@@ -50,8 +51,11 @@ public class MenuManager
         BuildSettingsScreen();
     }
 
-    public void OnGameStateChanged()
+    public void OnGameStateChanged(GameState previousState)
     {
+        if (_gameState.State == GameState.Settings)
+            _previousState = previousState;
+
         _titleScreen.Visible = _gameState.State == GameState.TitleScreen;
         _pauseScreen.Visible = _gameState.State == GameState.Paused;
         _gameOverScreen.Visible = _gameState.State == GameState.GameOver;
@@ -86,7 +90,10 @@ public class MenuManager
                 _exitGame();
                 break;
             case GameState.Settings:
-                _gameState.Fire(GameTrigger.ReturnToTitle);
+                if (_previousState == GameState.Paused)
+                    _gameState.Fire(GameTrigger.PauseToggle);
+                else
+                    _gameState.Fire(GameTrigger.ReturnToTitle);
                 break;
         }
     }
@@ -132,7 +139,7 @@ public class MenuManager
         {
             // SFX volume
             var settings = _getAudioSettings();
-            float vol = Math.Clamp(settings.SfxVolume + delta * 0.1f, 0f, 1f);
+            float vol = MathF.Round(Math.Clamp(settings.SfxVolume + delta * 0.05f, 0f, 1f) * 20f) / 20f;
             _setAudioSettings(new AudioSettings(vol, settings.MusicVolume));
             UpdateSettingsDisplays();
         }
@@ -140,7 +147,7 @@ public class MenuManager
         {
             // Music volume
             var settings = _getAudioSettings();
-            float vol = Math.Clamp(settings.MusicVolume + delta * 0.1f, 0f, 1f);
+            float vol = MathF.Round(Math.Clamp(settings.MusicVolume + delta * 0.05f, 0f, 1f) * 20f) / 20f;
             _setAudioSettings(new AudioSettings(settings.SfxVolume, vol));
             UpdateSettingsDisplays();
         }
@@ -304,10 +311,10 @@ public class MenuManager
     {
         var res = ResolutionSettings.Current;
         var audio = _getAudioSettings();
-        int sfxPct = (int)(audio.SfxVolume * 100);
-        int musicPct = (int)(audio.MusicVolume * 100);
-        int sfxBars = (int)(audio.SfxVolume * 10);
-        int musicBars = (int)(audio.MusicVolume * 10);
+        int sfxPct = (int)MathF.Round(audio.SfxVolume * 100f);
+        int musicPct = (int)MathF.Round(audio.MusicVolume * 100f);
+        int sfxBars = (int)MathF.Round(audio.SfxVolume * 10f);
+        int musicBars = (int)MathF.Round(audio.MusicVolume * 10f);
         string sfxBarStr = new string('█', sfxBars) + new string('░', 10 - sfxBars);
         string musicBarStr = new string('█', musicBars) + new string('░', 10 - musicBars);
 
