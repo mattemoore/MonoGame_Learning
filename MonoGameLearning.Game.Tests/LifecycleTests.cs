@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGameLearning.Game.GameLoop;
 

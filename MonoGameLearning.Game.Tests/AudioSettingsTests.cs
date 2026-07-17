@@ -1,5 +1,3 @@
-using System.IO;
-using System.Text.Json;
 using MonoGameLearning.Core.Settings;
 
 namespace MonoGameLearning.Game.Tests;
@@ -79,7 +77,7 @@ public class AudioSettingsTests
         });
     }
 
-[Test]
+    [Test]
     public void CorruptJson_FallsBackToDefaults()
     {
         File.WriteAllText(GetTestPath(), "not valid json");
