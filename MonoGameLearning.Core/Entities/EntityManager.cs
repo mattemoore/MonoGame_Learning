@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Microsoft.Xna.Framework;
 using MonoGame.Extended.Collisions;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities.Interfaces;
@@ -69,6 +71,25 @@ public class EntityManager(CollisionWorld2D world)
             RemoveFromTypedLists(entity);
         }
         _pendingDestroy.Clear();
+    }
+
+    public IDamageable FindNearestAliveEnemy(Vector2 origin)
+    {
+        IDamageable nearest = null;
+        float nearestDist = float.MaxValue;
+        for (int i = 0; i < _all.Count; i++)
+        {
+            if (_all[i] is IDamageable { IsAlive: true, Faction: Faction.Enemy } d)
+            {
+                float dist = Math.Abs(((Entity)d).Position.X - origin.X);
+                if (dist < nearestDist)
+                {
+                    nearestDist = dist;
+                    nearest = d;
+                }
+            }
+        }
+        return nearest;
     }
 
     private static bool TryAdd<T>(Entity entity, List<T> list) where T : class

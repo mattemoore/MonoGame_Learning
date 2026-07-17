@@ -5,7 +5,7 @@ using MonoGameLearning.Game.Entities.Player;
 namespace MonoGameLearning.Game.Tests;
 
 class PlayerEntityTester(string name, Vector2 position, float scale)
-    : PlayerEntity(name, position, scale, null!)
+    : PlayerEntity(name, position, scale, null!, null!)
 {
     protected override PlayerStateController CreateStateController()
     {

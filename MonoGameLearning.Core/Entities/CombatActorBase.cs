@@ -6,6 +6,7 @@ using MonoGame.Extended;
 using MonoGame.Extended.Animations;
 using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Graphics;
+using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities.Components;
 using MonoGameLearning.Core.Entities.Interfaces;
@@ -17,7 +18,7 @@ public record struct AnimationSet(string Idle, string Run, string Hurt, string F
 
 public enum KnockdownPhase { Falling, GettingUp }
 
-public abstract class CombatActorBase(string name, Vector2 position, int width, int height, AnimatedSprite sprite, float scale, int maxHealth, AnimationSet animations) : Entity(name, position, width, height), IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, IDamageable, IHitboxProvider, IMoveableEntity, IAnimated
+public abstract class CombatActorBase(string name, Vector2 position, int width, int height, AnimatedSprite sprite, float scale, int maxHealth, AnimationSet animations, AudioManager audio) : Entity(name, position, width, height), IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, IDamageable, IHitboxProvider, IMoveableEntity, IAnimated
 {
     public static string LayerName => "actors";
     public int Id => GetHashCode();
@@ -27,6 +28,7 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
     protected readonly Health HealthComponent = new(maxHealth);
     protected readonly AnimationFrameTracker FrameTracker = new();
     protected readonly AnimationSet Animations = animations;
+    protected readonly AudioManager Audio = audio;
 
     public AnimatedSprite Sprite => SpriteRenderer?.Sprite;
     public RectangleF MovementBounds { get; set; }
@@ -37,6 +39,7 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
     public FacingDirection Direction { get; set; } = FacingDirection.Right;
     public Faction Faction { get; protected set; }
     public event EventHandler Died;
+    protected SfxId? LastImpactSfx { get; set; }
 
     int IDamageable.Health => HealthComponent.Value;
     int IDamageable.MaxHealth => HealthComponent.MaxHealth;
@@ -191,5 +194,6 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
         CurrentMove = null;
         FrameTracker.Reset();
         KnockdownPhase = KnockdownPhase.Falling;
+        LastImpactSfx = null;
     }
 }

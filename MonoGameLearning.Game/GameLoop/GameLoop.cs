@@ -9,6 +9,7 @@ using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core;
+using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Components;
@@ -47,6 +48,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private BackgroundRenderer _backgroundRenderer;
     private CollisionWorld2D _collisionWorld;
     private Dictionary<InputAction, Action> _actionHandlers;
+    private AudioManager _audio;
     private GoIndicatorEntity _goIndicator;
     private HudService _hudService;
 
@@ -54,6 +56,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     {
         _input = new InputManager();
         _input.ActionTriggered += OnActionTriggered;
+        _audio = new AudioManager();
         _hitboxService = new();
 
         _gameState = new GameStateController();
@@ -62,9 +65,32 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             _menuManager.OnGameStateChanged();
             if (t.Destination == GameState.Playing && t.Source != GameState.Paused)
                 ResetGame();
+
+            switch (t.Destination)
+            {
+                case GameState.TitleScreen:
+                case GameState.Settings:
+                    _audio.PlayMusic(MusicId.TitleMenu);
+                    break;
+                case GameState.Playing:
+                    _audio.PlayMusic(MusicId.Gameplay);
+                    break;
+                case GameState.LevelComplete:
+                    _audio.PlayMusic(MusicId.LevelComplete);
+                    break;
+                case GameState.Paused:
+                    _audio.SetPaused(true);
+                    break;
+                case GameState.GameOver:
+                    _audio.PlayMusic(null);
+                    break;
+            }
+
+            if (t.Source == GameState.Paused && t.Destination != GameState.Paused)
+                _audio.SetPaused(false);
         });
 
-        _menuManager = new MenuManager(_gameState, Exit, Gum);
+        _menuManager = new MenuManager(_gameState, Exit, Gum, _audio.PlaySfx, () => SettingsService.AudioSettings, SettingsService.SaveAudio);
 
         base.Initialize();
 
@@ -78,9 +104,14 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
         _debugFont = Content.Load<SpriteFont>("fonts/DebugFont");
 
+        _audio.LoadContent(Content);
+
+        // Play music for the initial state (OnTransitioned never fires for the starting state)
+        _audio.PlayMusic(MusicId.TitleMenu);
+
         PlayerSprite.Load(Content);
         AnimatedSprite playerSprite = PlayerSprite.Create();
-        _player = new PlayerEntity("player", new Vector2(100, 450), 2.0f, playerSprite);
+        _player = new PlayerEntity("player", new Vector2(100, 450), 2.0f, playerSprite, _audio);
 
         EnemySprite.Load(Content);
         OilDrumSprite.Load(Content);
@@ -102,6 +133,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             [InputAction.DebugComplete] = () => { if (IsDebug && _gameState.State == GameState.Playing) _gameState.Fire(GameTrigger.CompleteLevel); },
             [InputAction.MenuUp] = () => _menuManager.HandleMenuNavigation(-1),
             [InputAction.MenuDown] = () => _menuManager.HandleMenuNavigation(1),
+            [InputAction.MenuLeft] = () => _menuManager.HandleMenuAdjust(-1),
+            [InputAction.MenuRight] = () => _menuManager.HandleMenuAdjust(1),
         };
 
         ReinitLevel();
@@ -111,6 +144,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
     protected override void Update(GameTime gameTime)
     {
+        _audio.Update();
+
         _input.Mode = _gameState.State == GameState.Playing ? InputMode.Gameplay : InputMode.Menu;
         _input.Update(gameTime);
 
@@ -143,7 +178,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             {
                 if (hit.Target is IDamageable damageable)
                 {
-                    damageable.TakeDamage(new DamageInfo { Amount = hit.Damage, Knockdown = hit.Knockdown, Strength = hit.Strength });
+                    damageable.TakeDamage(new DamageInfo { Amount = hit.Damage, Knockdown = hit.Knockdown, Strength = hit.Strength, ImpactSfx = hit.ImpactSfx });
                     if (damageable.Faction == Faction.Enemy)
                         _hudService.OnEnemyHit(damageable);
                 }
@@ -151,7 +186,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
             ResolveCollisions();
 
-            _hudService.SetProximityTarget(FindNearestAliveEnemy(_player.Position, _entityManager.All));
+            _hudService.SetProximityTarget(_entityManager.FindNearestAliveEnemy(_player.Position));
 
             var movables = _entityManager.Movables;
             for (int i = 0; i < movables.Count; i++)
@@ -341,27 +376,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     {
         _cameraController = new CameraController(_player, GAME_WIDTH, GAME_HEIGHT, _currentLevel.MovementBounds);
 
-        _levelDirector = new LevelDirector(_entityManager, _currentLevel, _player);
+        _levelDirector = new LevelDirector(_entityManager, _currentLevel, _player, _audio);
         _levelDirector.LevelCompleted += () => _gameState.Fire(GameTrigger.CompleteLevel);
-    }
-
-    private static IDamageable FindNearestAliveEnemy(Vector2 origin, IReadOnlyList<Entity> entities)
-    {
-        IDamageable nearest = null;
-        float nearestDist = float.MaxValue;
-        for (int i = 0; i < entities.Count; i++)
-        {
-            if (entities[i] is IDamageable { IsAlive: true, Faction: Faction.Enemy } d)
-            {
-                float dist = Math.Abs(((Entity)d).Position.X - origin.X);
-                if (dist < nearestDist)
-                {
-                    nearestDist = dist;
-                    nearest = d;
-                }
-            }
-        }
-        return nearest;
     }
 
     private static CollisionWorld2D CreateCollisionWorld(RectangleF bounds)

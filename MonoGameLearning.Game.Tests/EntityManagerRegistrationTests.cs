@@ -10,9 +10,14 @@ using MonoGameLearning.Core.Rendering;
 
 namespace MonoGameLearning.Game.Tests;
 
-internal sealed class StubCombatActor(string name, Vector2 position, int width, int height)
-    : CombatActorBase(name, position, width, height, null!, 1f, 100, new(null!, null!, null!, null!, null!, null!))
+internal sealed class StubCombatActor : CombatActorBase
 {
+    public StubCombatActor(string name, Vector2 position, int width, int height, Faction faction = Faction.Player)
+        : base(name, position, width, height, null!, 1f, 100, new(null!, null!, null!, null!, null!, null!), null!)
+    {
+        Faction = faction;
+    }
+
     public void CallAdvanceFrameAndRegisterHitboxes(GameTime gt) => AdvanceFrameAndRegisterHitboxes(gt);
     public override void Update(GameTime gameTime) { }
     protected override bool IsIncapacitated => false;
@@ -347,5 +352,58 @@ public class EntityManagerRegistrationTests
         actor.HitboxService = new HitboxService();
 
         Assert.DoesNotThrow(() => actor.CallAdvanceFrameAndRegisterHitboxes(new GameTime()));
+    }
+
+    // --- FindNearestAliveEnemy ---
+
+    [Test]
+    public void FindNearestAliveEnemy_NoEnemies_ReturnsNull()
+    {
+        var mgr = new EntityManager(CreateTestWorld());
+        Assert.That(mgr.FindNearestAliveEnemy(Vector2.Zero), Is.Null);
+    }
+
+    [Test]
+    public void FindNearestAliveEnemy_OnlyPlayerUnits_ReturnsNull()
+    {
+        var mgr = new EntityManager(CreateTestWorld());
+        mgr.Register(new StubCombatActor("player", new Vector2(100, 0), 50, 50, Faction.Player));
+        Assert.That(mgr.FindNearestAliveEnemy(Vector2.Zero), Is.Null);
+    }
+
+    [Test]
+    public void FindNearestAliveEnemy_SingleEnemy_ReturnsThatEnemy()
+    {
+        var mgr = new EntityManager(CreateTestWorld());
+        var enemy = new StubCombatActor("enemy", new Vector2(200, 0), 50, 50, Faction.Enemy);
+        mgr.Register(enemy);
+        Assert.That(mgr.FindNearestAliveEnemy(Vector2.Zero), Is.SameAs(enemy));
+    }
+
+    [Test]
+    public void FindNearestAliveEnemy_MultipleEnemies_ReturnsClosest()
+    {
+        var mgr = new EntityManager(CreateTestWorld());
+        var far = new StubCombatActor("far", new Vector2(500, 0), 50, 50, Faction.Enemy);
+        var close = new StubCombatActor("close", new Vector2(100, 0), 50, 50, Faction.Enemy);
+        mgr.Register(far);
+        mgr.Register(close);
+        Assert.That(mgr.FindNearestAliveEnemy(Vector2.Zero), Is.SameAs(close));
+    }
+
+    [Test]
+    public void FindNearestAliveEnemy_DeadEnemy_Excluded()
+    {
+        var mgr = new EntityManager(CreateTestWorld());
+        var dead = new StubCombatActor("dead", new Vector2(50, 0), 50, 50, Faction.Enemy);
+        // Dead entity still in the list — simulate by reducing health to 0
+        // but StubCombatActor has no health manipulation. Instead, verify
+        // that alive enemies are found even when dead ones exist.
+        mgr.Register(dead);
+        // Reduce health to 0 via the IDamageable interface
+        ((IDamageable)dead).ReduceHealth(100);
+        var alive = new StubCombatActor("alive", new Vector2(200, 0), 50, 50, Faction.Enemy);
+        mgr.Register(alive);
+        Assert.That(mgr.FindNearestAliveEnemy(Vector2.Zero), Is.SameAs(alive));
     }
 }

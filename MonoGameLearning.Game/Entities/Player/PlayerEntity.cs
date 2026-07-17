@@ -1,6 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended.Graphics;
+using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Components;
@@ -28,6 +29,8 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
         AnimationKey = PlayerSprite.AnimationAttack1,
         Damage = 5,
         Strength = AttackStrength.Light,
+        AttackSfx = SfxId.AttackSwing1,
+        ImpactSfx = SfxId.HitLight,
         FrameHitboxes = new()
         {
             [1] = [new() { Offset = new Vector2(35, 0), Size = new Point(45, 40) }],
@@ -39,6 +42,8 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
         AnimationKey = PlayerSprite.AnimationAttack2,
         Damage = 8,
         Strength = AttackStrength.Medium,
+        AttackSfx = SfxId.AttackSwing2,
+        ImpactSfx = SfxId.HitLight,
         FrameHitboxes = new()
         {
             [1] = [new() { Offset = new Vector2(45, -10), Size = new Point(50, 50) }],
@@ -51,6 +56,8 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
         Damage = 12,
         Knockdown = true,
         Strength = AttackStrength.Heavy,
+        AttackSfx = SfxId.AttackSwing3,
+        ImpactSfx = SfxId.HitHeavy,
         FrameHitboxes = new()
         {
             [2] = [new() { Offset = new Vector2(50, 0), Size = new Point(55, 40) }],
@@ -66,8 +73,8 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
     protected override void FireDeathCompleted() => _stateController.Fire(PlayerTrigger.DeathCompleted);
     protected override void FireAttackCompleted() => _stateController.Fire(PlayerTrigger.AttackCompleted);
 
-    public PlayerEntity(string name, Vector2 position, float scale, AnimatedSprite sprite)
-        : base(name, position, 48, 60, sprite, scale, 100, new(PlayerSprite.AnimationIdle, PlayerSprite.AnimationRun, PlayerSprite.AnimationHurt, PlayerSprite.AnimationFall, PlayerSprite.AnimationDie, PlayerSprite.AnimationGetUp))
+    public PlayerEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, AudioManager audio)
+        : base(name, position, 48, 60, sprite, scale, 100, new(PlayerSprite.AnimationIdle, PlayerSprite.AnimationRun, PlayerSprite.AnimationHurt, PlayerSprite.AnimationFall, PlayerSprite.AnimationDie, PlayerSprite.AnimationGetUp), audio)
     {
         Speed = 200f;
         Faction = Faction.Player;
@@ -81,12 +88,14 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
 
     protected override void OnKnockdown(DamageInfo info)
     {
+        LastImpactSfx = info.ImpactSfx;
         _invincibilityTimer = 1.5f;
         _stateController.Fire(PlayerTrigger.TakeKnockdown);
     }
 
     protected override void OnHit(DamageInfo info)
     {
+        LastImpactSfx = info.ImpactSfx;
         _invincibilityTimer = 1.0f;
         _stateController.Fire(PlayerTrigger.TakeDamage);
     }
@@ -100,15 +109,34 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
             CurrentMove = _pendingMove;
             FrameTracker.Reset();
             PlayAnimation(_pendingMove.AnimationKey);
+            if (_pendingMove.AttackSfx.HasValue)
+                Audio.PlaySfx(_pendingMove.AttackSfx.Value);
         },
         OnAttackingExit = AttackingExit(),
-        OnHurtEntry = HurtEntry(),
+        OnHurtEntry = () =>
+        {
+            PlayAnimation(Animations.Hurt);
+            if (LastImpactSfx.HasValue)
+                Audio.PlaySfx(LastImpactSfx.Value);
+            Audio.PlaySfx(SfxId.PlayerHurt);
+        },
         OnHurtExit = HurtExit(),
-        OnKnockdownEntry = KnockdownEntry(),
+        OnKnockdownEntry = () =>
+        {
+            KnockdownPhase = KnockdownPhase.Falling;
+            PlayAnimation(Animations.Fall);
+            if (LastImpactSfx.HasValue)
+                Audio.PlaySfx(LastImpactSfx.Value);
+            Audio.PlaySfx(SfxId.Knockdown);
+        },
         OnKnockdownExit = KnockdownExit(),
-        OnDyingEntry = DyingEntry(),
+        OnDyingEntry = () =>
+        {
+            PlayAnimation(Animations.Die);
+            Audio.PlaySfx(SfxId.PlayerDeath);
+        },
         OnDyingExit = DyingExit(),
-        OnDeadEntry = DeadEntry()
+        OnDeadEntry = DeadEntry(),
     });
 
     public override void Update(GameTime gameTime)

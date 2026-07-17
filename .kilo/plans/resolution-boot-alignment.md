@@ -84,12 +84,12 @@ Gum's `EnableExpandToWindow(1f)` might resize the underlying window or set its o
 
 ## Files Involved
 
-| File | Role |
-|---|---|
-| `MonoGameLearning.Core/GameCore/GameCore.cs` | Initialization order, GraphicsDeviceManager setup |
-| `MonoGameLearning.Game/GameLoop/GameLoop.cs` | Static initializer loading saved resolution |
-| `MonoGameLearning.Core/Settings/ResolutionSettings.cs` | Resolution persistence |
-| `MonoGameLearning.Core/UI/GumManager.cs` | Gum canvas sizing |
+| File                                                                   | Role                                                       |
+|------------------------------------------------------------------------|------------------------------------------------------------|
+| `MonoGameLearning.Core/GameCore/GameCore.cs`                           | Initialization order, GraphicsDeviceManager setup          |
+| `MonoGameLearning.Game/GameLoop/GameLoop.cs`                           | Static initializer loading saved resolution                |
+| `MonoGameLearning.Core/Settings/ResolutionSettings.cs`                 | Resolution persistence                                     |
+| `MonoGameLearning.Core/UI/GumManager.cs`                               | Gum canvas sizing                                          |
 
 ## Acceptance Criteria
 

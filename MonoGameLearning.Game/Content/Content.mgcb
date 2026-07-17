@@ -91,3 +91,117 @@
 /processor:TexturePackerProcessor
 /build:images/oilcan.json
 
+#begin audio/attack_swing1.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/attack_swing1.wav
+
+#begin audio/attack_swing2.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/attack_swing2.wav
+
+#begin audio/attack_swing3.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/attack_swing3.wav
+
+#begin audio/enemy_attack_swing.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/enemy_attack_swing.wav
+
+#begin audio/hit_light.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/hit_light.wav
+
+#begin audio/hit_heavy.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/hit_heavy.wav
+
+#begin audio/knockdown.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/knockdown.wav
+
+#begin audio/player_hurt.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/player_hurt.wav
+
+#begin audio/enemy_hurt.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/enemy_hurt.wav
+
+#begin audio/enemy_death.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/enemy_death.wav
+
+#begin audio/player_death.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/player_death.wav
+
+#begin audio/menu_navigate.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/menu_navigate.wav
+
+#begin audio/menu_confirm.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/menu_confirm.wav
+
+#begin audio/go_prompt_bell.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/go_prompt_bell.wav
+
+#begin audio/music_titlemenu.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/music_titlemenu.wav
+
+#begin audio/music_gameplay.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/music_gameplay.wav
+
+#begin audio/music_levelcomplete.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/music_levelcomplete.wav
+
+#begin audio/hit_metal.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/hit_metal.wav
+
+#begin audio/prop_explosion.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/prop_explosion.wav
+

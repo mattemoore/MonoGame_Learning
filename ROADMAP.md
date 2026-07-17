@@ -72,7 +72,20 @@ Control player movement and camera tracking during fights.
 
 ---
 
-## [ ] Milestone 5: Sound Engine
+## [x] Milestone 5: HUD & Score
+
+Provide visual feedback of game parameters using basic text/shapes.
+
+- [x] **Player HUD**:
+  - [x] Draw a health bar and remaining lives counter for the active player.
+- [x] **Enemy HUD**:
+  - [x] Display the active enemy's health bar (or a boss health bar at the bottom) when engaged in combat.
+- [ ] **Score and Timer**:
+  - [ ] Add a running level timer and score counter to the top-center HUD.
+
+---
+
+## [ ] Milestone 6: Sound Engine
 
 Implement a sound and music system for audio feedback.
 
@@ -83,21 +96,13 @@ Implement a sound and music system for audio feedback.
 
 ---
 
-## [x] Milestone 6: MonoGame.Extended 6.0 Upgrade
+## [ ] Milestone 7: Gamepad Support & Input Remapping
 
-- [x] **Package Version Bumps**: Bump `MonoGame.Extended` and `MonoGame.Extended.Content.Pipeline` from `5.3.1` to `6.0.0`.
-- [x] **Collision API Migration**: Replace legacy `CollisionComponent`/`IShapeF`/`CollisionEventArgs` with `CollisionWorld2D`/`CollisionShape2D`/`CollisionResult2D` from v6.
-- [x] **Entity Rewrite**: `CombatActorBase`, `PropBase`, `TriggerEntity` now implement v6 `ICollisionActor` (with `Id` + `Shape` instead of `Bounds` + `OnCollision`).
-- [x] **EntityManager Rewrite**: Uses `CollisionWorld2D` for actor insertion/removal with named layers ("actors", "props").
-- [x] **GameLoop Rewrite**: Collision world creation with layer filtering (actor-prop only, no actor-actor/prop-prop). `ResolveCollisions()` drives pushback via `QueryCollisionPairs`.
-- [x] **Test Migration**: All 6 test files updated for v6 API. 6 new tests for layer filtering, shape resolution, and cross-layer behavior.
-- [x] **Build & Test Green**: 0 warnings, 0 errors, 216 tests passing.
+Add game controller support and allow players to rebind keyboard and gamepad controls at runtime.
 
-Provide visual feedback of game parameters using basic text/shapes.
-
-- [x] **Player HUD**:
-  - [x] Draw a health bar and remaining lives counter for the active player.
-- [x] **Enemy HUD**:
-  - [x] Display the active enemy's health bar (or a boss health bar at the bottom) when engaged in combat.
-- [ ] **Score and Timer**:
-  - [ ] Add a running level timer and score counter to the top-center HUD.
+- [ ] **Gamepad Detection**: Integrate `GamePad` state reads into `InputManager` alongside keyboard, normalising both into `InputAction` events.
+- [ ] **Gamepad Bindings**: Define sensible gamepad defaults (d-pad/stick for movement, face buttons for attacks, start/select for confirm/back).
+- [ ] **Gamepad UI Hints**: Show gamepad-specific control text (e.g., button icons or names) on the title screen and settings menu when a controller is detected.
+- [ ] **Rebinding Screen**: Add a "Controls" section to the settings menu where each action can be reassigned a keyboard key or gamepad button.
+- [ ] **Persistence**: Save rebound controls to a config file and load them on startup, so rebinds survive restart.
+- [ ] **Conflict Detection**: Prevent or flag duplicate bindings when remapping (e.g., warn if two actions map to the same key).

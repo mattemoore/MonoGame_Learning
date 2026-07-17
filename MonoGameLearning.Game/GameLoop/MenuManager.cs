@@ -5,6 +5,7 @@ using Gum.DataTypes;
 using Gum.GueDeriving;
 using Microsoft.Xna.Framework;
 using MonoGameLearning.Core;
+using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Settings;
 using MonoGameLearning.Core.UI;
 using RenderingLibrary.Graphics;
@@ -12,25 +13,40 @@ using HorizontalAlignment = RenderingLibrary.Graphics.HorizontalAlignment;
 
 namespace MonoGameLearning.Game.GameLoop;
 
-public class MenuManager(GameStateController gameState, Action exitGame, GumManager gum)
+public class MenuManager
 {
-    private readonly GameStateController _gameState = gameState;
-    private readonly Action _exitGame = exitGame;
+    private readonly GameStateController _gameState;
+    private readonly Action _exitGame;
+    private readonly Action<SfxId> _playSfx;
+    private readonly Func<AudioSettings> _getAudioSettings;
+    private readonly Action<AudioSettings> _setAudioSettings;
 
     private ContainerRuntime _titleScreen, _pauseScreen, _gameOverScreen, _levelCompleteScreen, _settingsScreen;
     private int _menuIndex;
     private List<TextRuntime> _activeMenuItems;
-    private List<ResolutionSetting> _resolutionOptions;
-    private int _resolutionIndex;
-    private TextRuntime _currentResolutionLabel;
-    private List<TextRuntime> _resolutionItems;
+    private readonly GumManager _gum;
+
+    private TextRuntime _resCursor, _resLabel, _resValue;
+    private TextRuntime _sfxCursor, _sfxLabel, _sfxValue;
+    private TextRuntime _musicCursor, _musicLabel, _musicValue;
+
+    public MenuManager(GameStateController gameState, Action exitGame, GumManager gum,
+        Action<SfxId> playSfx, Func<AudioSettings> getAudioSettings, Action<AudioSettings> setAudioSettings)
+    {
+        _gameState = gameState;
+        _exitGame = exitGame;
+        _gum = gum;
+        _playSfx = playSfx;
+        _getAudioSettings = getAudioSettings;
+        _setAudioSettings = setAudioSettings;
+    }
 
     public void BuildScreens()
     {
-        _titleScreen = gum.CreateScreen("BEAT 'EM UP", new Color(10, 15, 40), Color.Gold, ["Start Game", "Settings", "Exit"]);
-        _pauseScreen = gum.CreateScreen("PAUSED", new Color(0, 0, 0, 180), Color.White, ["Resume", "Settings", "Quit to Title"]);
-        _gameOverScreen = gum.CreateScreen("GAME OVER", new Color(60, 5, 5, 220), Color.Red, ["Retry", "Quit to Title"]);
-        _levelCompleteScreen = gum.CreateScreen("LEVEL COMPLETE!", new Color(20, 40, 10, 220), Color.Gold, ["Return to Title"]);
+        _titleScreen = _gum.CreateScreen("BEAT 'EM UP", new Color(10, 15, 40), Color.Gold, ["Start Game", "Settings", "Exit"]);
+        _pauseScreen = _gum.CreateScreen("PAUSED", new Color(0, 0, 0, 180), Color.White, ["Resume", "Settings", "Quit to Title"]);
+        _gameOverScreen = _gum.CreateScreen("GAME OVER", new Color(60, 5, 5, 220), Color.Red, ["Retry", "Quit to Title"]);
+        _levelCompleteScreen = _gum.CreateScreen("LEVEL COMPLETE!", new Color(20, 40, 10, 220), Color.Gold, ["Return to Title"]);
         BuildSettingsScreen();
     }
 
@@ -48,12 +64,14 @@ public class MenuManager(GameStateController gameState, Action exitGame, GumMana
             GameState.Paused => [(TextRuntime)_pauseScreen.Children[2], (TextRuntime)_pauseScreen.Children[3], (TextRuntime)_pauseScreen.Children[4]],
             GameState.GameOver => [(TextRuntime)_gameOverScreen.Children[2], (TextRuntime)_gameOverScreen.Children[3]],
             GameState.LevelComplete => [(TextRuntime)_levelCompleteScreen.Children[2]],
-            GameState.Settings => BuildResolutionItems(),
+            GameState.Settings => [_resValue, _sfxValue, _musicValue],
             _ => []
         };
         _menuIndex = 0;
-        _resolutionIndex = 0;
-        UpdateMenuCursor();
+        if (_gameState.State == GameState.Settings)
+            UpdateSettingsDisplays();
+        else
+            UpdateMenuCursor();
     }
 
     public void HandleBack()
@@ -77,22 +95,61 @@ public class MenuManager(GameStateController gameState, Action exitGame, GumMana
     {
         if (_gameState.State == GameState.Playing) return;
 
-        if (_gameState.State == GameState.Settings)
-        {
-            if (_resolutionOptions is not { Count: > 0 }) return;
-            _resolutionIndex = Math.Clamp(_resolutionIndex + delta, 0, _resolutionOptions.Count - 1);
-            UpdateResolutionDisplay();
-            return;
-        }
-
         if (_activeMenuItems is not { Count: > 0 }) return;
 
         _menuIndex = Math.Clamp(_menuIndex + delta, 0, _activeMenuItems.Count - 1);
-        UpdateMenuCursor();
+        _playSfx(SfxId.MenuNavigate);
+        if (_gameState.State == GameState.Settings)
+            UpdateSettingsDisplays();
+        else
+            UpdateMenuCursor();
+    }
+
+    public void HandleMenuAdjust(int delta)
+    {
+        if (_gameState.State != GameState.Settings) return;
+
+        if (_menuIndex == 0)
+        {
+            // Resolution: cycle through available options
+            var options = ResolutionSettings.AvailableResolutions;
+            int currentIdx = -1;
+            for (int i = 0; i < options.Count; i++)
+            {
+                if (options[i].Width == ResolutionSettings.Current.Width && options[i].Height == ResolutionSettings.Current.Height)
+                {
+                    currentIdx = i;
+                    break;
+                }
+            }
+            int newIdx = Math.Clamp(currentIdx + delta, 0, options.Count - 1);
+            var selected = options[newIdx];
+            ResolutionSettings.Save(selected);
+            SettingsService.Apply(GameCore.Graphics, selected);
+            UpdateSettingsDisplays();
+        }
+        else if (_menuIndex == 1)
+        {
+            // SFX volume
+            var settings = _getAudioSettings();
+            float vol = Math.Clamp(settings.SfxVolume + delta * 0.1f, 0f, 1f);
+            _setAudioSettings(new AudioSettings(vol, settings.MusicVolume));
+            UpdateSettingsDisplays();
+        }
+        else if (_menuIndex == 2)
+        {
+            // Music volume
+            var settings = _getAudioSettings();
+            float vol = Math.Clamp(settings.MusicVolume + delta * 0.1f, 0f, 1f);
+            _setAudioSettings(new AudioSettings(settings.SfxVolume, vol));
+            UpdateSettingsDisplays();
+        }
     }
 
     public void HandleConfirm()
     {
+        _playSfx(SfxId.MenuConfirm);
+
         switch (_gameState.State)
         {
             case GameState.TitleScreen:
@@ -120,14 +177,8 @@ public class MenuManager(GameStateController gameState, Action exitGame, GumMana
 
     private void ApplySelectedResolution()
     {
-        if (_resolutionOptions is not { Count: > 0 }) return;
-        if (_resolutionIndex < 0 || _resolutionIndex >= _resolutionOptions.Count) return;
-
-        var selected = _resolutionOptions[_resolutionIndex];
-        ResolutionSettings.Save(selected);
+        var selected = ResolutionSettings.Current;
         SettingsService.Apply(GameCore.Graphics, selected);
-
-        _currentResolutionLabel.Text = $"Current: {selected.Width}x{selected.Height}";
     }
 
     private void BuildSettingsScreen()
@@ -155,118 +206,117 @@ public class MenuManager(GameStateController gameState, Action exitGame, GumMana
 
         var titleText = new TextRuntime
         {
-            Text = "RESOLUTION",
+            Text = "SETTINGS",
             X = 0,
-            Y = -120,
+            Y = -180,
             XOrigin = HorizontalAlignment.Center,
             YOrigin = VerticalAlignment.Center,
             XUnits = GeneralUnitType.PixelsFromMiddle,
             YUnits = GeneralUnitType.PixelsFromMiddle,
             HorizontalAlignment = HorizontalAlignment.Center,
-            FontScale = 2f,
+            FontScale = 2.5f,
             Red = 200,
             Green = 200,
             Blue = 100
         };
         _settingsScreen.Children.Add(titleText);
 
-        var hintText = new TextRuntime
+        static TextRuntime MakeLabel(float y, string text, float x)
         {
-            Text = "Select and confirm to apply",
-            X = 0,
-            Y = -80,
-            XOrigin = HorizontalAlignment.Center,
-            YOrigin = VerticalAlignment.Center,
-            XUnits = GeneralUnitType.PixelsFromMiddle,
-            YUnits = GeneralUnitType.PixelsFromMiddle,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            FontScale = 1f,
-            Red = 180,
-            Green = 180,
-            Blue = 180
-        };
-        _settingsScreen.Children.Add(hintText);
-
-        _currentResolutionLabel = new TextRuntime
-        {
-            Text = "",
-            X = 0,
-            Y = -40,
-            XOrigin = HorizontalAlignment.Center,
-            YOrigin = VerticalAlignment.Center,
-            XUnits = GeneralUnitType.PixelsFromMiddle,
-            YUnits = GeneralUnitType.PixelsFromMiddle,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            FontScale = 1f,
-            Red = 100,
-            Green = 200,
-            Blue = 255
-        };
-        _settingsScreen.Children.Add(_currentResolutionLabel);
-
-        var navHint = new TextRuntime
-        {
-            Text = "ESC: Back",
-            X = 0,
-            Y = 200,
-            XOrigin = HorizontalAlignment.Center,
-            YOrigin = VerticalAlignment.Center,
-            XUnits = GeneralUnitType.PixelsFromMiddle,
-            YUnits = GeneralUnitType.PixelsFromMiddle,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            FontScale = 1f,
-            Red = 120,
-            Green = 120,
-            Blue = 120
-        };
-        _settingsScreen.Children.Add(navHint);
-
-        _resolutionOptions = [.. ResolutionSettings.AvailableResolutions];
-        _resolutionItems = [];
-        float yOffset = -10;
-        for (int i = 0; i < _resolutionOptions.Count; i++)
-        {
-            var opt = _resolutionOptions[i];
-            var item = new TextRuntime
+            return new TextRuntime
             {
-                Text = $"  {opt.Width}x{opt.Height}",
-                X = 0,
-                Y = yOffset,
-                XOrigin = HorizontalAlignment.Center,
+                Text = text,
+                X = x, Y = y,
+                XOrigin = HorizontalAlignment.Left,
                 YOrigin = VerticalAlignment.Center,
                 XUnits = GeneralUnitType.PixelsFromMiddle,
                 YUnits = GeneralUnitType.PixelsFromMiddle,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                FontScale = 1.2f,
-                Red = 200,
-                Green = 200,
-                Blue = 200
+                HorizontalAlignment = HorizontalAlignment.Left,
+                FontScale = 1.4f,
+                Red = 200, Green = 200, Blue = 200
             };
-            _settingsScreen.Children.Add(item);
-            _resolutionItems.Add(item);
-            yOffset += 30;
         }
-    }
 
-    private List<TextRuntime> BuildResolutionItems()
-    {
-        int currentIdx = _resolutionOptions.FindIndex(r => r.Width == ResolutionSettings.Current.Width && r.Height == ResolutionSettings.Current.Height);
-        _resolutionIndex = currentIdx >= 0 ? currentIdx : 0;
+        const float cursorX = -200;
+        const float labelX = -180;
+        const float valueX = 80;
 
-        _currentResolutionLabel.Text = $"Current: {ResolutionSettings.Current.Width}x{ResolutionSettings.Current.Height}";
+        _resCursor = MakeLabel(-80, " ", cursorX);
+        _resCursor.Red = 200; _resCursor.Green = 200; _resCursor.Blue = 0;
+        _settingsScreen.Children.Add(_resCursor);
+        _resLabel = MakeLabel(-80, "Resolution", labelX);
+        _settingsScreen.Children.Add(_resLabel);
+        _resValue = MakeLabel(-80, "", valueX);
+        _resValue.HorizontalAlignment = HorizontalAlignment.Center;
+        _resValue.XOrigin = HorizontalAlignment.Center;
+        _settingsScreen.Children.Add(_resValue);
 
-        UpdateResolutionDisplay();
-        return _resolutionItems;
-    }
+        _sfxCursor = MakeLabel(-30, " ", cursorX);
+        _sfxCursor.Red = 200; _sfxCursor.Green = 200; _sfxCursor.Blue = 0;
+        _settingsScreen.Children.Add(_sfxCursor);
+        _sfxLabel = MakeLabel(-30, "SFX Volume", labelX);
+        _settingsScreen.Children.Add(_sfxLabel);
+        _sfxValue = MakeLabel(-30, "", valueX);
+        _sfxValue.HorizontalAlignment = HorizontalAlignment.Center;
+        _sfxValue.XOrigin = HorizontalAlignment.Center;
+        _settingsScreen.Children.Add(_sfxValue);
 
-    private void UpdateResolutionDisplay()
-    {
-        for (int i = 0; i < _resolutionOptions.Count && i < _resolutionItems.Count; i++)
+        _musicCursor = MakeLabel(20, " ", cursorX);
+        _musicCursor.Red = 200; _musicCursor.Green = 200; _musicCursor.Blue = 0;
+        _settingsScreen.Children.Add(_musicCursor);
+        _musicLabel = MakeLabel(20, "Music Volume", labelX);
+        _settingsScreen.Children.Add(_musicLabel);
+        _musicValue = MakeLabel(20, "", valueX);
+        _musicValue.HorizontalAlignment = HorizontalAlignment.Center;
+        _musicValue.XOrigin = HorizontalAlignment.Center;
+        _settingsScreen.Children.Add(_musicValue);
+
+        var navHint = new TextRuntime
         {
-            if (_resolutionItems[i] is not TextRuntime text) continue;
-            var opt = _resolutionOptions[i];
-            text.Text = (i == _resolutionIndex ? "> " : "  ") + $"{opt.Width}x{opt.Height}";
-        }
+            Text = "Navigate: Arrow Keys    Adjust: Left/Right",
+            X = 0, Y = 120,
+            XOrigin = HorizontalAlignment.Center,
+            YOrigin = VerticalAlignment.Center,
+            XUnits = GeneralUnitType.PixelsFromMiddle,
+            YUnits = GeneralUnitType.PixelsFromMiddle,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            FontScale = 1f,
+            Red = 140, Green = 140, Blue = 140
+        };
+        _settingsScreen.Children.Add(navHint);
+
+        var escHint = new TextRuntime
+        {
+            Text = "ESC: Back",
+            X = 0, Y = 200,
+            XOrigin = HorizontalAlignment.Center,
+            YOrigin = VerticalAlignment.Center,
+            XUnits = GeneralUnitType.PixelsFromMiddle,
+            YUnits = GeneralUnitType.PixelsFromMiddle,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            FontScale = 1f,
+            Red = 120, Green = 120, Blue = 120
+        };
+        _settingsScreen.Children.Add(escHint);
+    }
+
+    private void UpdateSettingsDisplays()
+    {
+        var res = ResolutionSettings.Current;
+        var audio = _getAudioSettings();
+        int sfxPct = (int)(audio.SfxVolume * 100);
+        int musicPct = (int)(audio.MusicVolume * 100);
+        int sfxBars = (int)(audio.SfxVolume * 10);
+        int musicBars = (int)(audio.MusicVolume * 10);
+        string sfxBarStr = new string('█', sfxBars) + new string('░', 10 - sfxBars);
+        string musicBarStr = new string('█', musicBars) + new string('░', 10 - musicBars);
+
+        _resCursor.Text = _menuIndex == 0 ? ">" : " ";
+        _sfxCursor.Text = _menuIndex == 1 ? ">" : " ";
+        _musicCursor.Text = _menuIndex == 2 ? ">" : " ";
+        _resValue.Text = $"{res.Width}x{res.Height}";
+        _sfxValue.Text = $"{sfxBarStr} {sfxPct}%";
+        _musicValue.Text = $"{musicBarStr} {musicPct}%";
     }
 
     private void UpdateMenuCursor()

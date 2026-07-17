@@ -5,7 +5,7 @@ using MonoGameLearning.Game.Levels;
 namespace MonoGameLearning.Game.Tests;
 
 class TestEnemyEntity(string name, Vector2 position, LevelDirector? director = null)
-    : EnemyEntity(name, position, 1f, null!, director!)
+    : EnemyEntity(name, position, 1f, null!, null!, director!)
 {
     protected override EnemyStateController CreateStateController()
     {

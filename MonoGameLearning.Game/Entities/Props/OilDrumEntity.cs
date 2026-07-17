@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using MonoGame.Extended.Graphics;
+using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Interfaces;
@@ -10,6 +11,7 @@ namespace MonoGameLearning.Game.Entities.Props;
 public class OilDrumEntity : PropBase, IUpdatable
 {
     private readonly OilDrumBehavior _behavior = new();
+    private readonly AudioManager _audio;
 
     private string SelectAnimation() => HealthComponent.Value switch
     {
@@ -18,9 +20,10 @@ public class OilDrumEntity : PropBase, IUpdatable
         _ => OilDrumSprite.AnimationIdle
     };
 
-    public OilDrumEntity(string name, Vector2 position, float scale, AnimatedSprite sprite)
+    public OilDrumEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, AudioManager audio)
         : base(name, position, sprite, scale, 6)
     {
+        _audio = audio;
         Sprite.Color = Color.White;
         Sprite.SetAnimation(SelectAnimation());
     }
@@ -44,10 +47,12 @@ public class OilDrumEntity : PropBase, IUpdatable
 
         if (!HealthComponent.IsAlive)
         {
+            _audio.PlaySfx(SfxId.PropExplosion);
             OnDestroyed();
         }
         else
         {
+            _audio.PlaySfx(SfxId.HitMetal);
             _behavior.ApplyStun();
             Sprite.SetAnimation(SelectAnimation());
         }
