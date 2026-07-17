@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
+using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Interfaces;
 
@@ -36,6 +37,7 @@ public record struct HitResult
     public Entity Source { get; init; }
     public bool Knockdown { get; init; }
     public AttackStrength Strength { get; init; }
+    public SfxId? ImpactSfx { get; init; }
 }
 
 public class HitboxService
@@ -47,6 +49,7 @@ public class HitboxService
         public int Damage { get; init; }
         public bool Knockdown { get; init; }
         public AttackStrength Strength { get; init; }
+        public SfxId? ImpactSfx { get; init; }
     }
 
     private readonly List<ActiveHitbox> _activeHitboxes = [];
@@ -68,6 +71,7 @@ public class HitboxService
                 Damage = move.Damage,
                 Knockdown = move.Knockdown,
                 Strength = move.Strength,
+                ImpactSfx = move.ImpactSfx,
             });
         }
     }
@@ -100,7 +104,8 @@ public class HitboxService
                     Damage = active.Damage,
                     Source = active.Owner,
                     Knockdown = active.Knockdown,
-                    Strength = active.Strength
+                    Strength = active.Strength,
+                    ImpactSfx = active.ImpactSfx,
                 });
             }
         }

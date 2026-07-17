@@ -31,7 +31,7 @@ public class TestLevel(List<WaveDef> waveDefs, float endTriggerX, int gameWidth 
 
 #pragma warning disable CS9107 // Captured by base class — needed for InitializePool() called from base ctor
 public class TestLevelDirector(EntityManager entityManager, Level level, Entity player)
-    : LevelDirector(entityManager, level, player)
+    : LevelDirector(entityManager, level, player, null!)
 #pragma warning restore CS9107
 {
     public List<Entity> SpawnedEnemies { get; } = [];
@@ -55,7 +55,7 @@ public class TestLevelDirector(EntityManager entityManager, Level level, Entity 
 }
 
 public class TestEnemyPool(EntityManager entityManager, LevelDirector director, List<Entity> spawnedEnemies)
-    : EnemyPool(entityManager, director, (type, i) => new TestEnemyEntity($"test_enemy_{i}", Vector2.Zero))
+    : EnemyPool(entityManager, director, null!, (type, i) => new TestEnemyEntity($"test_enemy_{i}", Vector2.Zero))
 {
     public override EnemyEntity Rent(string type, Vector2 position, Entity target)
     {

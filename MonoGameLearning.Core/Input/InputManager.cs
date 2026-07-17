@@ -17,7 +17,9 @@ public enum InputAction
     DebugKill,
     DebugComplete,
     MenuUp,
-    MenuDown
+    MenuDown,
+    MenuLeft,
+    MenuRight
 }
 
 public enum InputMode
@@ -49,6 +51,8 @@ public class InputManager
             (new() { Keys.C }, InputAction.DebugComplete, InputMode.Gameplay),
             (new() { Keys.Up, Keys.W }, InputAction.MenuUp, InputMode.Menu),
             (new() { Keys.Down, Keys.S }, InputAction.MenuDown, InputMode.Menu),
+            (new() { Keys.Left, Keys.A }, InputAction.MenuLeft, InputMode.Menu),
+            (new() { Keys.Right, Keys.D }, InputAction.MenuRight, InputMode.Menu),
         ];
 
         _movementBindings =

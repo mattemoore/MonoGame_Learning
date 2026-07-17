@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.AnimatedSprites;
@@ -24,14 +25,16 @@ public class EnemyPool
 
     protected readonly EntityManager EntityManager;
     private readonly LevelDirector _director;
+    private readonly AudioManager _audio;
     private readonly Func<string, int, EnemyEntity> _factory;
     protected readonly Dictionary<string, Stack<EnemyEntity>> Free = [];
     protected readonly Dictionary<EnemyEntity, string> EntityType = [];
 
-    public EnemyPool(EntityManager entityManager, LevelDirector director, Func<string, int, EnemyEntity> factory = null)
+    public EnemyPool(EntityManager entityManager, LevelDirector director, AudioManager audio, Func<string, int, EnemyEntity> factory = null)
     {
         EntityManager = entityManager;
         _director = director;
+        _audio = audio;
         _factory = factory ?? DefaultFactory;
     }
 
@@ -106,7 +109,7 @@ public class EnemyPool
     {
         EnemyEntity enemy = type switch
         {
-            "Grunt" => new EnemyEntity($"grunt_pool_{index}", Sentinel, 2.0f, EnemySprite.Create(), _director),
+            "Grunt" => new EnemyEntity($"grunt_pool_{index}", Sentinel, 2.0f, EnemySprite.Create(), _audio, _director),
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };
         WarmUpAnimations(enemy);

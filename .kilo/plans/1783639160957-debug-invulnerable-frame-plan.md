@@ -28,9 +28,11 @@ In `MonoGameLearning.Game/Entities/Player/PlayerEntity.cs`:
 
 - Add `IInvulnerable` to the class declaration's interface list (alongside `IHudPlayerData`).
 - Add explicit interface implementation mapping to the existing public property:
+
   ```csharp
   bool IInvulnerable.IsInvulnerable => IsInvincible;
   ```
+
 - Do **not** rename `IsInvincible` — `HudService` (`MonoGameLearning.Core/UI/HudService.cs:131, 376`) and existing tests reference it.
 
 No change to `_invincibilityTimer` semantics. `OnHit` (1.0s), `OnKnockdown` (1.5s), and `Respawn` (2.5s) keep working as today.
@@ -94,11 +96,11 @@ No changes to `GameLoop.cs`, `HudService.cs`, `EnemyEntity.cs`, or any sprite cl
 
 ## Risks & Mitigations
 
-- **Risk:** Future enemy invulnerability gets visually clobbered by the AI-force rectangle.  
+- **Risk:** Future enemy invulnerability gets visually clobbered by the AI-force rectangle.
   **Mitigation:** Documented in this plan as out of scope; review during any future enemy-invulnerability PR.
-- **Risk:** Interface surface added but only one consumer (the base debug draw).  
+- **Risk:** Interface surface added but only one consumer (the base debug draw).
   **Mitigation:** Minimal cost (one interface, one explicit impl). Enables future enemies/props to opt in trivially without re-planning the visual treatment.
-- **Risk:** `IsInvulnerable` could be confused with `IDamageable` semantics.  
+- **Risk:** `IsInvulnerable` could be confused with `IDamageable` semantics.
   **Mitigation:** Interface name mirrors "invulnerable" (the visual concept), not `IsInvincible` (the player-specific property name). Existing `IsInvincible` API is unchanged.
 
 ## Out of Scope

@@ -19,6 +19,7 @@ public class GameCore : Game
     public static OrthographicCamera Camera { get; private set; }
     public static BoxingViewportAdapter ViewportAdapter { get; private set; }
 
+
     public GumManager Gum { get; }
 
     public bool IsDebug { get; set; }

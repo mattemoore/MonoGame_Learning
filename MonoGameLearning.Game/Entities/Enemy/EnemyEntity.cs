@@ -2,6 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGame.Extended.Graphics;
+using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Components;
@@ -42,6 +43,8 @@ public class EnemyEntity : CombatActorBase
         AnimationKey = EnemySprite.AnimationAttack1,
         Damage = 5,
         Strength = AttackStrength.Light,
+        AttackSfx = SfxId.EnemyAttackSwing,
+        ImpactSfx = SfxId.HitLight,
         FrameHitboxes = new()
         {
             [1] = [new() { Offset = new Vector2(35, 0), Size = new Point(45, 40) }],
@@ -49,8 +52,8 @@ public class EnemyEntity : CombatActorBase
         }
     };
 
-    public EnemyEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, LevelDirector director)
-        : base(name, position, 48, 60, sprite, scale, 30, new(EnemySprite.AnimationIdle, EnemySprite.AnimationRun, EnemySprite.AnimationHurt, EnemySprite.AnimationFall, EnemySprite.AnimationDie, EnemySprite.AnimationGetUp))
+    public EnemyEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, AudioManager audio, LevelDirector director)
+        : base(name, position, 48, 60, sprite, scale, 30, new(EnemySprite.AnimationIdle, EnemySprite.AnimationRun, EnemySprite.AnimationHurt, EnemySprite.AnimationFall, EnemySprite.AnimationDie, EnemySprite.AnimationGetUp), audio)
     {
         Speed = 120f;
         if (Sprite is not null)
@@ -66,11 +69,17 @@ public class EnemyEntity : CombatActorBase
 
     protected override void OnDeath() => _stateController.Fire(EnemyTrigger.Die);
 
-    protected override void OnKnockdown(DamageInfo info) =>
+    protected override void OnKnockdown(DamageInfo info)
+    {
+        LastImpactSfx = info.ImpactSfx;
         _stateController.Fire(EnemyTrigger.TakeKnockdown);
+    }
 
-    protected override void OnHit(DamageInfo info) =>
+    protected override void OnHit(DamageInfo info)
+    {
+        LastImpactSfx = info.ImpactSfx;
         _stateController.Fire(EnemyTrigger.TakeDamage);
+    }
 
     protected virtual EnemyStateController CreateStateController() => new(new()
     {
@@ -81,15 +90,34 @@ public class EnemyEntity : CombatActorBase
             CurrentMove = AttackMove;
             FrameTracker.Reset();
             PlayAnimation(AttackMove.AnimationKey);
+            if (AttackMove.AttackSfx.HasValue)
+                Audio.PlaySfx(AttackMove.AttackSfx.Value);
         },
         OnAttackingExit = AttackingExit(),
-        OnHurtEntry = HurtEntry(),
+        OnHurtEntry = () =>
+        {
+            PlayAnimation(Animations.Hurt);
+            if (LastImpactSfx.HasValue)
+                Audio.PlaySfx(LastImpactSfx.Value);
+            Audio.PlaySfx(SfxId.EnemyHurt);
+        },
         OnHurtExit = HurtExit(),
-        OnKnockdownEntry = KnockdownEntry(),
+        OnKnockdownEntry = () =>
+        {
+            KnockdownPhase = KnockdownPhase.Falling;
+            PlayAnimation(Animations.Fall);
+            if (LastImpactSfx.HasValue)
+                Audio.PlaySfx(LastImpactSfx.Value);
+            Audio.PlaySfx(SfxId.Knockdown);
+        },
         OnKnockdownExit = KnockdownExit(),
-        OnDyingEntry = DyingEntry(),
+        OnDyingEntry = () =>
+        {
+            PlayAnimation(Animations.Die);
+            Audio.PlaySfx(SfxId.EnemyDeath);
+        },
         OnDyingExit = DyingExit(),
-        OnDeadEntry = DeadEntry(),
+        OnDeadEntry = () => RaiseDied(),
         OnEnteringEntry = () =>
         {
             Sprite.SetAnimation(Animations.Run);

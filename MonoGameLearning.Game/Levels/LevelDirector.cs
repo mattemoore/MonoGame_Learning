@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core;
+using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Components;
 using MonoGameLearning.Core.Rendering;
@@ -22,6 +23,7 @@ public class LevelDirector
     private readonly EntityManager _entityManager;
     private readonly Level _level;
     private readonly Entity _player;
+    private readonly AudioManager _audio;
 
     protected EnemyPool EnemyPool { get; set; }
 
@@ -34,6 +36,7 @@ public class LevelDirector
     private bool _isScrollLocked;
     private bool _waveCleared;
     private bool _waveTriggered;
+    private bool _goBellPlayed;
 
     public event Action LevelCompleted;
     public bool ShowGoPrompt => _waveCleared;
@@ -46,11 +49,12 @@ public class LevelDirector
 
     public ref readonly WorldSnapshot CurrentWorld => ref _currentSnapshot;
 
-    public LevelDirector(EntityManager entityManager, Level level, Entity player)
+    public LevelDirector(EntityManager entityManager, Level level, Entity player, AudioManager audio)
     {
         _entityManager = entityManager;
         _level = level;
         _player = player;
+        _audio = audio;
 
         _enemyBuf.Capacity = 16;
         _propBuf.Capacity = 16;
@@ -60,7 +64,7 @@ public class LevelDirector
 
     protected virtual void InitializePool()
     {
-        EnemyPool = new EnemyPool(_entityManager, this);
+        EnemyPool = new EnemyPool(_entityManager, this, _audio);
         EnemyPool.Build(_level);
     }
 
@@ -68,7 +72,7 @@ public class LevelDirector
     {
         foreach (var prop in propDefs)
         {
-            var drum = new OilDrumEntity(prop.Type, prop.Position, 1.0f, OilDrumSprite.Create());
+            var drum = new OilDrumEntity(prop.Type, prop.Position, 1.0f, OilDrumSprite.Create(), _audio);
             drum.Destroyed += OnPropDestroyed;
             _entityManager.Register(drum);
         }
@@ -126,6 +130,11 @@ public class LevelDirector
         if (_activeEnemies.Count == 0 && _isScrollLocked)
         {
             _waveCleared = true;
+            if (!_goBellPlayed && _audio is not null)
+            {
+                _audio.PlaySfx(SfxId.GoPromptBell);
+                _goBellPlayed = true;
+            }
             _isScrollLocked = false;
             _waveTriggered = false;
             WaveEndX = null;
@@ -146,6 +155,7 @@ public class LevelDirector
         _waveTriggered = true;
         _isScrollLocked = true;
         _waveCleared = false;
+        _goBellPlayed = false;
 
         WaveTriggerX = wave.TriggerX;
         WaveEndX = wave.EndX;
