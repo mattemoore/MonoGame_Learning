@@ -4,7 +4,6 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.Graphics;
-using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Interfaces;
 using MonoGameLearning.Core.Rendering;
 
