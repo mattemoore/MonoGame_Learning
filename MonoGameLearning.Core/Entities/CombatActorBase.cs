@@ -162,15 +162,53 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
         return Sprite is not null;
     }
 
-    // --- Shared state controller callbacks ---
-    protected Action AttackingExit() => () => { UnsubscribeFromAnimationEvent(); CurrentMove = null; HitboxService?.Clear(this); HitboxService?.ClearAttackDedup(this); };
-    protected Action HurtEntry() => () => PlayAnimation(Animations.Hurt);
-    protected Action HurtExit() => UnsubscribeFromAnimationEvent;
-    protected Action KnockdownEntry() => () => { KnockdownPhase = KnockdownPhase.Falling; PlayAnimation(Animations.Fall); };
-    protected Action KnockdownExit() => () => { UnsubscribeFromAnimationEvent(); KnockdownPhase = KnockdownPhase.Falling; };
-    protected Action DyingEntry() => () => PlayAnimation(Animations.Die);
-    protected Action DyingExit() => UnsubscribeFromAnimationEvent;
-    protected Action DeadEntry() => () => RaiseDied();
+    // --- Shared state controller callbacks (cached delegates — zero alloc per use) ---
+    protected Action OnAttackingExit = null!;
+    protected Action OnHurtEntry = null!;
+    protected Action OnHurtExit = null!;
+    protected Action OnKnockdownEntryAction = null!;
+    protected Action OnKnockdownExitAction = null!;
+    protected Action OnDyingEntryAction = null!;
+    protected Action OnDyingExitAction = null!;
+    protected Action OnDeadEntryAction = null!;
+
+    protected void InitSharedCallbacks()
+    {
+        OnAttackingExit = AttackingExitImpl;
+        OnHurtEntry = HurtEntryImpl;
+        OnHurtExit = UnsubscribeFromAnimationEvent;
+        OnKnockdownEntryAction = KnockdownEntryImpl;
+        OnKnockdownExitAction = KnockdownExitImpl;
+        OnDyingEntryAction = DyingEntryImpl;
+        OnDyingExitAction = UnsubscribeFromAnimationEvent;
+        OnDeadEntryAction = DeadEntryImpl;
+    }
+
+    private void AttackingExitImpl()
+    {
+        UnsubscribeFromAnimationEvent();
+        CurrentMove = null;
+        HitboxService?.Clear(this);
+        HitboxService?.ClearAttackDedup(this);
+    }
+
+    private void HurtEntryImpl() => PlayAnimation(Animations.Hurt);
+
+    private void KnockdownEntryImpl()
+    {
+        KnockdownPhase = KnockdownPhase.Falling;
+        PlayAnimation(Animations.Fall);
+    }
+
+    private void KnockdownExitImpl()
+    {
+        UnsubscribeFromAnimationEvent();
+        KnockdownPhase = KnockdownPhase.Falling;
+    }
+
+    private void DyingEntryImpl() => PlayAnimation(Animations.Die);
+
+    private void DeadEntryImpl() => RaiseDied();
 
     // --- Shared Update early-return ---
     protected bool TryHandleIncapacitatedUpdate(GameTime gameTime)

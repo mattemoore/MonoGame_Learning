@@ -14,14 +14,14 @@ class PlayerEntityTester(string name, Vector2 position, float scale)
     {
         return new PlayerStateController(new()
         {
-            OnAttackingExit = AttackingExit(),
-            OnHurtEntry = HurtEntry(),
-            OnHurtExit = HurtExit(),
-            OnKnockdownEntry = KnockdownEntry(),
-            OnKnockdownExit = KnockdownExit(),
-            OnDyingEntry = DyingEntry(),
-            OnDyingExit = DyingExit(),
-            OnDeadEntry = DeadEntry(),
+            OnAttackingExit = OnAttackingExit,
+            OnHurtEntry = OnHurtEntry,
+            OnHurtExit = OnHurtExit,
+            OnKnockdownEntry = OnKnockdownEntryAction,
+            OnKnockdownExit = OnKnockdownExitAction,
+            OnDyingEntry = OnDyingEntryAction,
+            OnDyingExit = OnDyingExitAction,
+            OnDeadEntry = OnDeadEntryAction,
         });
     }
 }

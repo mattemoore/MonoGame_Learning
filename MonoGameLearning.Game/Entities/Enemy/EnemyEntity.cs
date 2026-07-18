@@ -60,6 +60,7 @@ public class EnemyEntity : CombatActorBase
             Sprite.Color = Color.Red;
         Faction = Faction.Enemy;
         _ai = new EnemyAI(AttackRange, MinChaseDistance);
+        InitSharedCallbacks();
         _stateController = CreateStateController();
         _director = director;
     }
@@ -93,7 +94,7 @@ public class EnemyEntity : CombatActorBase
             if (AttackMove.AttackSfx.HasValue)
                 Audio.PlaySfx(AttackMove.AttackSfx.Value);
         },
-        OnAttackingExit = AttackingExit(),
+        OnAttackingExit = OnAttackingExit,
         OnHurtEntry = () =>
         {
             PlayAnimation(Animations.Hurt);
@@ -101,7 +102,7 @@ public class EnemyEntity : CombatActorBase
                 Audio.PlaySfx(LastImpactSfx.Value);
             Audio.PlaySfx(SfxId.EnemyHurt);
         },
-        OnHurtExit = HurtExit(),
+        OnHurtExit = OnHurtExit,
         OnKnockdownEntry = () =>
         {
             KnockdownPhase = KnockdownPhase.Falling;
@@ -110,14 +111,14 @@ public class EnemyEntity : CombatActorBase
                 Audio.PlaySfx(LastImpactSfx.Value);
             Audio.PlaySfx(SfxId.Knockdown);
         },
-        OnKnockdownExit = KnockdownExit(),
+        OnKnockdownExit = OnKnockdownExitAction,
         OnDyingEntry = () =>
         {
             PlayAnimation(Animations.Die);
             Audio.PlaySfx(SfxId.EnemyDeath);
         },
-        OnDyingExit = DyingExit(),
-        OnDeadEntry = () => RaiseDied(),
+        OnDyingExit = OnDyingExitAction,
+        OnDeadEntry = OnDeadEntryAction,
         OnEnteringEntry = () =>
         {
             Sprite.SetAnimation(Animations.Run);
