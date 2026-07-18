@@ -11,11 +11,14 @@ public static class SettingsService
 {
     public static AudioSettings AudioSettings { get; private set; } = AudioSettings.Default;
 
-    public static string GetSettingsPath()
-    {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        return Path.Combine(appData, "MonoGameLearning", "settings.json");
-    }
+public static string GetSettingsPath()
+{
+    var overrideDir = Environment.GetEnvironmentVariable("MGL_SETTINGS_DIR");
+    if (overrideDir is not null)
+        return Path.Combine(overrideDir, "settings.json");
+    var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+    return Path.Combine(appData, "MonoGameLearning", "settings.json");
+}
 
     public static void Apply(GraphicsDeviceManager graphics, ResolutionSetting setting)
     {
