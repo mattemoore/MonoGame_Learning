@@ -184,12 +184,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             var hitResults = _hitboxService.ResolveHits(_entityManager.All);
             foreach (var hit in hitResults)
             {
-                if (hit.Target is IDamageable damageable)
-                {
-                    damageable.TakeDamage(new DamageInfo { Amount = hit.Damage, Knockdown = hit.Knockdown, Strength = hit.Strength, ImpactSfx = hit.ImpactSfx });
-                    if (damageable.Faction == Faction.Enemy)
-                        _hudService.OnEnemyHit(damageable);
-                }
+                var damageable = hit.Target;
+                damageable.TakeDamage(new DamageInfo { Amount = hit.Damage, Knockdown = hit.Knockdown, Strength = hit.Strength, ImpactSfx = hit.ImpactSfx });
+                if (damageable.Faction == Faction.Enemy)
+                    _hudService.OnEnemyHit(damageable);
             }
 
             ResolveCollisions();
@@ -202,7 +200,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                 var movable = movables[i];
                 if (movable is IDamageable { IsAlive: false }) continue;
                 movable.MovementBounds = movementBounds;
-                Mover.ClampToBounds((Entity)movable, movable.MovementBounds);
+                Mover.ClampToBounds((IReadOnlyEntity)movable, movable.MovementBounds);
             }
         }
 

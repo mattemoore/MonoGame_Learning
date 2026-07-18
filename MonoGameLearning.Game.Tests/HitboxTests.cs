@@ -8,7 +8,7 @@ using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Game.Tests;
 
-public class TestSpatialEntity(string name, Vector2 position, int width, int height, Faction faction = default) : Entity(name, position, width, height), IDamageable, ICollisionActor
+public class TestSpatialEntity(string name, Vector2 position, int width, int height, Faction faction = default) : Entity(name, position, width, height), IDamageable, ICollisionActor, IHitboxProvider
 {
     private readonly Health _health = new(100);
     public int Id => GetHashCode();
@@ -21,6 +21,9 @@ public class TestSpatialEntity(string name, Vector2 position, int width, int hei
     public bool DeathCallbackInvoked { get; private set; }
     public bool KnockdownCallbackInvoked { get; private set; }
     public bool HitCallbackInvoked { get; private set; }
+    public HitboxService HitboxService { get; set; } = null!;
+    public MoveData CurrentMove { get; set; } = null!;
+    public FacingDirection Direction { get; set; }
 
     public void TakeDamage(DamageInfo info) => CombatService.ApplyDamage(this, info);
 
@@ -112,7 +115,6 @@ public class HitboxTests
 
         Assert.That(hits, Has.Count.EqualTo(1));
         Assert.That(hits[0].Target, Is.EqualTo(target));
-        Assert.That(hits[0].Source, Is.EqualTo(owner));
         Assert.That(hits[0].Damage, Is.EqualTo(10));
     }
 
@@ -212,8 +214,7 @@ public class HitboxTests
         Assert.That(hits, Has.Count.EqualTo(1));
         Assert.That(hits[0].Damage, Is.EqualTo(7));
 
-        if (hits[0].Target is IDamageable combatant)
-            combatant.TakeDamage(new DamageInfo { Amount = hits[0].Damage });
+        hits[0].Target.TakeDamage(new DamageInfo { Amount = hits[0].Damage });
         Assert.That(target.Health, Is.EqualTo(93));
     }
 
@@ -341,6 +342,21 @@ public class HitboxTests
         service.RegisterFrameHitboxes(player, move, 0, FacingDirection.Right);
         hits = service.ResolveHits([player, enemy]);
         Assert.That(hits, Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public void HitResult_TargetIsIDamageable()
+    {
+        var service = new HitboxService();
+        var owner = MakeActor(0, 0, faction: Faction.Player);
+        var target = MakeActor(35, 0);
+        var move = MakeTestMove();
+
+        service.RegisterFrameHitboxes(owner, move, 0, FacingDirection.Right);
+        var hits = service.ResolveHits([owner, target]);
+
+        Assert.That(hits, Has.Count.EqualTo(1));
+        Assert.That(hits[0].Target, Is.InstanceOf<IDamageable>());
     }
 
     private class TestPropForHit(string name, Vector2 position, int width, int height) : Entity(name, position, width, height), IDamageable, ICollisionActor

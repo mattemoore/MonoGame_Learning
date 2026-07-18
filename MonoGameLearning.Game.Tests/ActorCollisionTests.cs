@@ -259,4 +259,44 @@ public class ActorCollisionTests
         var expectedFrame = new RectangleF(25 - halfSize, 300 - halfSize, EntitySize, EntitySize);
         Assert.That(entity.Frame, Is.EqualTo(expectedFrame));
     }
+
+    // --- IReadOnlyEntity contract ---
+
+    private sealed class PureReadOnlyEntityStub : IReadOnlyEntity
+    {
+        public Vector2 Position { get; set; }
+        public int Width { get; }
+        public int Height { get; }
+
+        public PureReadOnlyEntityStub(Vector2 position, int width, int height)
+        {
+            Position = position;
+            Width = width;
+            Height = height;
+        }
+    }
+
+    [Test]
+    public void ClampToBounds_IReadOnlyEntityContract_PastLeftEdge_Clamps()
+    {
+        var entity = new PureReadOnlyEntityStub(new Vector2(-10, 300), 50, 50);
+        Mover.ClampToBounds(entity, TwoScreenBounds);
+        Assert.That(entity.Position.X, Is.EqualTo(25));
+    }
+
+    [Test]
+    public void ClampToBounds_IReadOnlyEntityContract_Inside_DoesNotMove()
+    {
+        var entity = new PureReadOnlyEntityStub(new Vector2(400, 300), 50, 50);
+        Mover.ClampToBounds(entity, TwoScreenBounds);
+        Assert.That(entity.Position.X, Is.EqualTo(400));
+    }
+
+    [Test]
+    public void ClampToBounds_IReadOnlyEntityContract_EmptyBounds_DoesNothing()
+    {
+        var entity = new PureReadOnlyEntityStub(new Vector2(-100, -100), 50, 50);
+        Mover.ClampToBounds(entity, default);
+        Assert.That(entity.Position, Is.EqualTo(new Vector2(-100, -100)));
+    }
 }

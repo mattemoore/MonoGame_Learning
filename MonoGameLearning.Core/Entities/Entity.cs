@@ -1,9 +1,10 @@
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
+using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Core.Entities;
 
-public abstract class Entity(string name, Vector2 position, int width, int height)
+public abstract class Entity(string name, Vector2 position, int width, int height) : IReadOnlyEntity
 {
     public Vector2 Position { get; set; } = position;
     public int Width { get; init; } = width;

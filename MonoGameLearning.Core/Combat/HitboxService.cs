@@ -32,9 +32,8 @@ public readonly record struct HitboxData
 
 public record struct HitResult
 {
-    public Entity Target { get; init; }
+    public IDamageable Target { get; init; }
     public int Damage { get; init; }
-    public Entity Source { get; init; }
     public bool Knockdown { get; init; }
     public AttackStrength Strength { get; init; }
     public SfxId? ImpactSfx { get; init; }
@@ -53,7 +52,7 @@ public class HitboxService
     }
 
     private readonly List<ActiveHitbox> _activeHitboxes = [];
-    private readonly Dictionary<Entity, HashSet<Entity>> _attackDedup = [];
+    private readonly Dictionary<Entity, HashSet<IDamageable>> _attackDedup = [];
     private readonly List<HitResult> _resultBuffer = [];
     private readonly List<RectangleF> _boundsBuffer = [];
 
@@ -82,27 +81,26 @@ public class HitboxService
 
         foreach (var active in _activeHitboxes)
         {
-            // indexed for loop to avoid heap-allocated IEnumerator<T> from IReadOnlyList<T>
             for (int i = 0; i < targets.Count; i++)
             {
                 var target = targets[i];
                 if (target == active.Owner) continue;
                 if (!active.Bounds.Intersects(target.Frame)) continue;
+                if (target is not IDamageable tgt) continue;
 
                 if (!_attackDedup.TryGetValue(active.Owner, out var ownerDedup))
                 {
                     ownerDedup = [];
                     _attackDedup[active.Owner] = ownerDedup;
                 }
-                if (!ownerDedup.Add(target)) continue;
+                if (!ownerDedup.Add(tgt)) continue;
 
-                if (active.Owner is IDamageable src && target is IDamageable tgt && src.Faction == tgt.Faction) continue;
+                if (active.Owner is IDamageable src && src.Faction == tgt.Faction) continue;
 
                 _resultBuffer.Add(new()
                 {
-                    Target = target,
+                    Target = tgt,
                     Damage = active.Damage,
-                    Source = active.Owner,
                     Knockdown = active.Knockdown,
                     Strength = active.Strength,
                     ImpactSfx = active.ImpactSfx,
@@ -113,16 +111,16 @@ public class HitboxService
         return _resultBuffer;
     }
 
-    public void Clear(Entity owner)
+    public void Clear(IHitboxProvider owner)
     {
         Debug.Assert(owner is not null, "Clear called with null owner");
         _activeHitboxes.RemoveAll(hb => hb.Owner == owner);
     }
 
-    public void ClearAttackDedup(Entity owner)
+    public void ClearAttackDedup(IHitboxProvider owner)
     {
         Debug.Assert(owner is not null, "ClearAttackDedup called with null owner");
-        _attackDedup.Remove(owner);
+        _attackDedup.Remove(owner as Entity);
     }
 
     public void ClearAll()
@@ -131,7 +129,7 @@ public class HitboxService
         _attackDedup.Clear();
     }
 
-    public IReadOnlyList<RectangleF> GetActiveHitboxBounds(Entity owner)
+    public IReadOnlyList<RectangleF> GetActiveHitboxBounds(IHitboxProvider owner)
     {
         _boundsBuffer.Clear();
         foreach (var hb in _activeHitboxes)
