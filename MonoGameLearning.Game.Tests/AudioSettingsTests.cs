@@ -8,13 +8,29 @@ public class AudioSettingsTests
     private static string GetTestPath() => SettingsService.GetSettingsPath();
 
     [SetUp]
-    public void Cleanup()
+    public void Setup()
+    {
+        CleanupFile();
+        SettingsService.LoadAudio();
+    }
+
+    [TearDown]
+    public void TearDown()
+    {
+        CleanupFile();
+    }
+
+    [OneTimeTearDown]
+    public void OneTimeTearDown()
+    {
+        CleanupFile();
+    }
+
+    private static void CleanupFile()
     {
         var path = GetTestPath();
         if (File.Exists(path))
             File.Delete(path);
-        SettingsService.LoadAudio();
-        ResolutionSettings.Save(new ResolutionSetting(1024, 768));
     }
 
     [Test]

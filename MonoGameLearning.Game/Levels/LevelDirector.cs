@@ -71,7 +71,7 @@ public class LevelDirector
     {
         foreach (var prop in propDefs)
         {
-            var drum = new OilDrumEntity(prop.Type, prop.Position, 1.0f, OilDrumSprite.Create(), _audio);
+            var drum = new OilDrumEntity(prop.Type, prop.Position, 1.0f, OilDrumSprite.Create(), _audio, anchor: prop.Anchor);
             drum.Destroyed += OnPropDestroyed;
             _entityManager.Register(drum);
         }

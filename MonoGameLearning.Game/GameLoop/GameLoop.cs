@@ -228,6 +228,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             _numBackgroundsDrawn = _backgroundRenderer.LastFrameDrawCount;
 
             var renderables = _entityManager.Renderables;
+            _entityManager.SortRenderablesByY();
             for (int i = 0; i < renderables.Count; i++)
             {
                 var renderable = renderables[i];

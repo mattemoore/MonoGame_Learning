@@ -1,9 +1,11 @@
 # Oil Drum — Decouple Collision Box From Frame
 
 ## Goal
+
 Player can walk past an oil drum at the same Y without colliding with the drum's body. Visual / hit-detection frame stays unchanged so the drum remains hittable in its full silhouette.
 
 ## Decisions
+
 - **Three anchor modes** are required (Top / Center / Bottom) so future props can sit on shelves, mid-air, or floors without per-prop math.
 - Oil drum uses **Top-anchored** collision.
 - **Collision height fraction = 0.5** of visual height (~40 px of the 79 px sprite). Tunable as a `const` on `OilDrumEntity` for fast iteration.
@@ -24,12 +26,14 @@ No changes to `Entity.cs`, `HitboxService.cs`, `EntityManager.cs`, `LevelDirecto
 ## API Additions
 
 ### `CollisionAnchor.cs`
+
 ```csharp
 namespace MonoGameLearning.Core.Entities;
 public enum CollisionAnchor { Top, Center, Bottom }
 ```
 
 ### `PropBase.cs` — additions only
+
 ```csharp
 public virtual CollisionAnchor Anchor => CollisionAnchor.Top;
 public virtual float CollisionHeightFraction => 1.0f;
@@ -52,6 +56,7 @@ private static RectangleF ComputeCollisionBounds(RectangleF frame, float heightF
 ```
 
 Replace the `Shape` body:
+
 ```csharp
 public CollisionShape2D Shape => new(new BoundingBox2D(
     new Vector2(CollisionBounds.X, CollisionBounds.Y),
@@ -59,6 +64,7 @@ public CollisionShape2D Shape => new(new BoundingBox2D(
 ```
 
 Replace `DrawDebug` to render both rectangles:
+
 ```csharp
 public void DrawDebug(DebugDrawContext context)
 {
@@ -69,6 +75,7 @@ public void DrawDebug(DebugDrawContext context)
 ```
 
 ### `OilDrumEntity.cs` — additions only
+
 ```csharp
 private const float DrumCollisionHeightFraction = 0.5f;
 public override CollisionAnchor Anchor => CollisionAnchor.Top;
@@ -80,6 +87,7 @@ public override float CollisionHeightFraction => DrumCollisionHeightFraction;
 Build a `TestProp` subclass of `PropBase` with a real `AnimatedSprite` or a test double exposing `Sprite` size; reuse the existing `Entity` test fixtures pattern (no GraphicsDevice needed — supply a stub sprite whose `Size` is set in the test).
 
 Required cases:
+
 1. `TopAnchor_CollisionBounds_TopMatchesFrameTop`
 2. `TopAnchor_CollisionBounds_HeightIsShorterThanFrame` (uses 0.5f fraction; verifies height = 50%)
 3. `CenterAnchor_CentersVerticallyWithinFrame`
@@ -89,16 +97,19 @@ Required cases:
 7. **Integration**: build a `CollisionWorld2D`, insert `OilDrumEntity` and a test actor, query pairs at Y positions *above*, *inside*, and *below* the collision band — only the inside-Y actor must report a collision. Confirms the player can walk past at floor level.
 
 ## Manual Verification
+
 1. `dotnet build` (Core + Game + Tests).
 2. `dotnet test` — all suites green, including new file.
 3. Run the game, walk up to an oil drum from the side at floor Y; the player should pass under without snagging. Whack the drum from above — it still takes damage (hitbox = visual frame).
 4. Toggle debug (`F1` or whatever the current binding is) and confirm the **yellow** shortened rect sits at the drum's top while the **antique-white** rect spans the full sprite.
 
 ## Out of Scope
+
 - Shortening AI avoidance radius (enemies will still treat the full sprite as a no-walk zone via `ActorSnapshot`).
 - Per-frame hurtboxes or state-driven collision shapes.
 - Re-running the debug-draw duplication pass already scheduled in TODO.
 
 ## Risks
+
 - If `CollisionHeightFraction = 0.5f` ends up too generous visually, raise it — keep as `const` for one-touch tuning.
 - The `ActorSnapshot` path keeps the full drum footprint for enemies. If desired later, `LevelDirector.PopulateSnapshots` can be pointed at `CollisionBounds` — leave for a follow-up.

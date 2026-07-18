@@ -179,4 +179,6 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
     {
         _invincibilityTimer = 2.5f;
     }
+
+    protected override Color GetDebugFrameColor() => IsInvincible ? Color.Yellow : Color.Blue;
 }
