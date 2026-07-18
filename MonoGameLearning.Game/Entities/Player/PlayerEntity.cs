@@ -78,6 +78,7 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
     {
         Speed = 200f;
         Faction = Faction.Player;
+        InitSharedCallbacks();
         _stateController = CreateStateController();
     }
 
@@ -112,7 +113,7 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
             if (_pendingMove.AttackSfx.HasValue)
                 Audio.PlaySfx(_pendingMove.AttackSfx.Value);
         },
-        OnAttackingExit = AttackingExit(),
+        OnAttackingExit = OnAttackingExit,
         OnHurtEntry = () =>
         {
             PlayAnimation(Animations.Hurt);
@@ -120,7 +121,7 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
                 Audio.PlaySfx(LastImpactSfx.Value);
             Audio.PlaySfx(SfxId.PlayerHurt);
         },
-        OnHurtExit = HurtExit(),
+        OnHurtExit = OnHurtExit,
         OnKnockdownEntry = () =>
         {
             KnockdownPhase = KnockdownPhase.Falling;
@@ -129,14 +130,14 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
                 Audio.PlaySfx(LastImpactSfx.Value);
             Audio.PlaySfx(SfxId.Knockdown);
         },
-        OnKnockdownExit = KnockdownExit(),
+        OnKnockdownExit = OnKnockdownExitAction,
         OnDyingEntry = () =>
         {
             PlayAnimation(Animations.Die);
             Audio.PlaySfx(SfxId.PlayerDeath);
         },
-        OnDyingExit = DyingExit(),
-        OnDeadEntry = DeadEntry(),
+        OnDyingExit = OnDyingExitAction,
+        OnDeadEntry = OnDeadEntryAction,
     });
 
     public override void Update(GameTime gameTime)

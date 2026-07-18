@@ -113,10 +113,11 @@ public class EnemyStateController
         StateMachine.Activate();
     }
 
+    private static readonly EnemyState[] AllStates = Enum.GetValues<EnemyState>();
+
     private void ConfigureStateMachine(EnemyStateEntryCallbacks callbacks)
     {
-        var allStates = (EnemyState[])Enum.GetValues(typeof(EnemyState));
-        foreach (var state in allStates)
+        foreach (var state in AllStates)
         {
             var config = StateMachine.Configure(state);
 
