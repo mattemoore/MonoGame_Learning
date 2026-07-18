@@ -5,6 +5,16 @@ namespace MonoGameLearning.Game.Tests;
 [TestFixture]
 public class ResolutionSettingsTests
 {
+    private static string _tempDir = null!;
+
+    [OneTimeSetUp]
+    public void OneTimeSetUp()
+    {
+        _tempDir = Path.Combine(Path.GetTempPath(), "MGL-Tests-Resolution", Guid.NewGuid().ToString("N"));
+        Environment.SetEnvironmentVariable("MGL_SETTINGS_DIR", _tempDir);
+        Directory.CreateDirectory(_tempDir);
+    }
+
     [SetUp]
     public void ResetToDefault() => ResolutionSettings.Save(new ResolutionSetting(1024, 768));
 
@@ -14,6 +24,8 @@ public class ResolutionSettingsTests
         var path = SettingsService.GetSettingsPath();
         if (File.Exists(path))
             File.Delete(path);
+        Environment.SetEnvironmentVariable("MGL_SETTINGS_DIR", null);
+        try { Directory.Delete(_tempDir, recursive: true); } catch { }
     }
 
     [Test]

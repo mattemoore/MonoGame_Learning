@@ -96,7 +96,38 @@ Implement a sound and music system for audio feedback.
 
 ---
 
-## [ ] Milestone 7: Gamepad Support & Input Remapping
+## [ ] Milestone 7: Items, Pickups & Weapons
+
+Add the iconic beat 'em up loot loop: defeated enemies and breakable props drop items, and the player can wield pickup weapons.
+
+- [ ] **Pickup Items**: Define a `PickupItem` entity type with subtypes (e.g., `HealthRestore`, `BonusPoints`, `ExtraLife`).
+- [ ] **Drop Table**: When an enemy dies or a `IDamageable` prop breaks, roll against a drop table to spawn a `PickupItem` at the actor's position. *(Hook exists: `CombatActorBase.Died` / `PropBase.Died` events are already raised but nothing subscribes for drops.)*
+- [ ] **Pickup Collision**: Detect player overlap with `PickupItem` and apply its effect (heal, add score, grant life), then despawn. *(Collision world currently only handles `"actors"` vs `"props"` layers — no pickup layer.)*
+- [ ] **Pickup Animation**: Spawn with a brief idle/spin animation and fade out if untouched after a timeout.
+- [ ] **Throwable Weapons**: Add `ProjectileWeapon` items (e.g., knife, bottle) that the player throws forward in the facing direction with its own hitbox/hurtbox.
+- [ ] **Melee Pickup Weapons**: Add `MeleeWeapon` items (e.g., bat, pipe, crate) the player can pick up to replace their standard attack for a limited time or until thrown/dropped.
+- [ ] **Weapon Pickup/Drop Logic**: Detect overlap with dropped weapons, attach the weapon sprite to the player's attack animation, and animate attacks with the weapon's range and damage values.
+- [ ] **Weapon Lifecycle**: Auto-drop the weapon on knockdown, on timer expiry, or on level transition.
+
+---
+
+## [ ] Milestone 8: Lives, Combos & Boss Encounters
+
+Round out core progression and introduce the set-piece boss fights that bookend each level.
+
+- [x] **Lives System**: Track `LivesRemaining` on the player (start at 3). Decrement on death and respawn at the current position. *(Already implemented: `PlayerEntity.Lives`, `GameLoop.OnPlayerDied` decrements and respawns, `ResetGame` restores lives, `PlayerBar` displays count.)* **Missing**: checkpoint-based respawn (currently respawns at camera position).
+- [ ] **Extra Life Scoring**: Grant an extra life when the player's score crosses configurable thresholds. *(Blocked on Score system — Milestone 5 still has `[ ] Score and Timer`.)*
+- [ ] **Continue Screen**: After `GameOver`, present a "Continue?" prompt with a countdown; on continue, restore health/lives and resume the current level. *(Currently `GameOver` only shows a static "Retry / Quit to Title" menu — no countdown or resume.)*
+- [ ] **Combo Counter**: Track consecutive hits landed without a long gap and display a rising combo number on the HUD.
+- [ ] **Score Multiplier**: Increase score-per-hit based on current combo tier, decaying back to baseline after the combo window expires. *(Blocked on Score system.)*
+- [ ] **Boss Enemy Type**: Introduce a `BossEntity` with a large hurtbox, distinct multi-phase state machine, telegraphed attack patterns, and a dedicated boss health bar. *(Only `EnemyEntity` exists — single-phase, hardcoded 30 HP.)*
+- [ ] **Boss Health Bar**: Reuse or extend `EnemyBar` to render a full-width bar at the bottom of the screen for boss encounters. *(Generic `EnemyBar` exists in top-left, but no dedicated boss bar layout.)*
+- [ ] **Boss Wave Trigger**: Spawn the boss as the final wave of a level (e.g., inside the final scroll-lock area) and route `LevelComplete` to fire only on boss defeat.
+- [ ] **Boss Defeat Reward**: On boss death, drop a high-value pickup (e.g., large health or bonus points) and trigger the `LevelComplete` state. *(Blocked on drop table from Milestone 7.)*
+
+---
+
+## [ ] Milestone 9: Gamepad Support & Input Remapping
 
 Add game controller support and allow players to rebind keyboard and gamepad controls at runtime.
 
@@ -106,3 +137,34 @@ Add game controller support and allow players to rebind keyboard and gamepad con
 - [ ] **Rebinding Screen**: Add a "Controls" section to the settings menu where each action can be reassigned a keyboard key or gamepad button.
 - [ ] **Persistence**: Save rebound controls to a config file and load them on startup, so rebinds survive restart.
 - [ ] **Conflict Detection**: Prevent or flag duplicate bindings when remapping (e.g., warn if two actions map to the same key).
+
+---
+
+## [ ] Milestone 10: Local Co-op Multiplayer
+
+Add drop-in couch co-op where a second player joins on a second input device and plays alongside the first on a shared screen. *(Builds on Milestone 9 gamepad support — default binding: P1 keyboard, P2 gamepad.)*
+
+- [ ] **Second Player Spawn**: Spawn a second `PlayerEntity` at level start (or drop-in mid-level) from the title/menu or via a join button.
+- [ ] **Input Device Assignment**: Map `InputManager` actions to per-player input sources (e.g., P1 keyboard, P2 gamepad) so both players can act simultaneously.
+- [ ] **Player Differentiation**: Apply distinct visual indicators (tint, name plate, or character select) so each player is identifiable on the shared screen.
+- [ ] **Shared Camera**: Adjust the camera to frame both players, clamping to level bounds and re-centering as they move apart.
+- [ ] **Friendly Fire**: Define whether players can damage each other (default off) and route hit detection accordingly.
+- [ ] **Shared Progression**: Decide how lives, score, and continues aggregate across players (shared pool vs per-player).
+- [ ] **Revive Mechanic**: Allow a live player to revive a downed teammate within a short window instead of burning a life.
+- [ ] **HUD Scaling**: Adapt the HUD to show health/lives for both players without overlap.
+
+---
+
+## [ ] Milestone 11: Online Multiplayer
+
+Extend the skeleton to support networked play between two remote players. *(Largest scope milestone — design choices for transport, netcode, and matchmaking should be locked in a plan doc before implementation.)*
+
+- [ ] **Netcode Model Selection**: Decide and document the netcode approach (lockstep vs rollback vs client-server) and its tradeoffs for a beat 'em up.
+- [ ] **Transport Layer**: Integrate a networking library (e.g., Lidgren, ENet) for reliable/unreliable channels, connection lifecycle, and NAT traversal.
+- [ ] **Lobby & Matchmaking**: Add a lobby flow (host/join by code or IP) and basic session discovery.
+- [ ] **Input Synchronization**: Send each player's `InputAction` stream to the remote peer as the authoritative game state driver.
+- [ ] **Entity Replication**: Replicate entity positions, states, and hitbox events across the wire; reconcile on receive.
+- [ ] **Latency Compensation**: Hide lag via prediction (rollback) or interpolation, with configurable buffer to smooth jitter.
+- [ ] **Desync Detection & Recovery**: Detect state divergence and resync from a checkpoint or full snapshot when divergence exceeds a threshold.
+- [ ] **Online-Adapted UI**: Show connection state, ping, player ready indicators, and disconnect/reconnect prompts.
+- [ ] **Security Considerations**: Validate inbound inputs/actions server-side or via deterministic lockstep to prevent cheating.

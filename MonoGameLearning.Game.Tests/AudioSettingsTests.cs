@@ -5,7 +5,17 @@ namespace MonoGameLearning.Game.Tests;
 [TestFixture]
 public class AudioSettingsTests
 {
+    private static string _tempDir = null!;
+
     private static string GetTestPath() => SettingsService.GetSettingsPath();
+
+    [OneTimeSetUp]
+    public void OneTimeSetUp()
+    {
+        _tempDir = Path.Combine(Path.GetTempPath(), "MGL-Tests-Audio", Guid.NewGuid().ToString("N"));
+        Environment.SetEnvironmentVariable("MGL_SETTINGS_DIR", _tempDir);
+        Directory.CreateDirectory(_tempDir);
+    }
 
     [SetUp]
     public void Setup()
@@ -24,6 +34,8 @@ public class AudioSettingsTests
     public void OneTimeTearDown()
     {
         CleanupFile();
+        Environment.SetEnvironmentVariable("MGL_SETTINGS_DIR", null);
+        try { Directory.Delete(_tempDir, recursive: true); } catch { }
     }
 
     private static void CleanupFile()
