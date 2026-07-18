@@ -10,6 +10,9 @@ namespace MonoGameLearning.Game.Entities.Props;
 
 public class OilDrumEntity : PropBase, IUpdatable
 {
+    private const float DrumCollisionHeightFraction = 0.5f;
+    public override float CollisionHeightFraction => DrumCollisionHeightFraction;
+
     private readonly OilDrumBehavior _behavior = new();
     private readonly AudioManager _audio;
 
@@ -20,8 +23,8 @@ public class OilDrumEntity : PropBase, IUpdatable
         _ => OilDrumSprite.AnimationIdle
     };
 
-    public OilDrumEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, AudioManager audio)
-        : base(name, position, sprite, scale, 6)
+    public OilDrumEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, AudioManager audio, CollisionAnchor anchor = CollisionAnchor.Top)
+        : base(name, position, sprite, scale, 6, anchor)
     {
         _audio = audio;
         Sprite.Color = Color.White;

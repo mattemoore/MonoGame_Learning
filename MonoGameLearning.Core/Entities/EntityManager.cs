@@ -45,6 +45,20 @@ public class EntityManager(CollisionWorld2D world)
     public IReadOnlyList<IUpdatable> Updatables => _updatables;
     public IReadOnlyList<IRenderable> Renderables => _renderables;
     public IReadOnlyList<IScreenRenderable> ScreenRenderables => _screenRenderables;
+
+    private static readonly RenderableYComparer _renderableYComparer = new();
+
+    private readonly struct RenderableYComparer : IComparer<IRenderable>
+    {
+        public int Compare(IRenderable x, IRenderable y)
+        {
+            if (x is not Entity ex || y is not Entity ey) return 0;
+            float diff = ex.Position.Y - ey.Position.Y;
+            return diff < 0 ? -1 : diff > 0 ? 1 : 0;
+        }
+    }
+
+    public void SortRenderablesByY() => _renderables.Sort(_renderableYComparer);
     public IReadOnlyList<ICollisionActor> ActorCollidables => _actorCollidables;
     public IReadOnlyList<ICollisionActor> PropCollidables => _propCollidables;
     public IReadOnlyList<IMoveableEntity> Movables => _movables;

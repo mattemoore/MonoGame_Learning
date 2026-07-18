@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
+using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Game.Rendering;
 
 namespace MonoGameLearning.Game.Levels;
@@ -15,9 +16,12 @@ public class Level1(int gameWidth, int gameHeight) : Level(CreateWaveDefs(), gam
 
     public override List<PropSpawnDef> Props =>
     [
-        new("OilDrum", new Vector2(700, 450)),
-        new("OilDrum", new Vector2(900, 450)),
-        new("OilDrum", new Vector2(800, 450))
+        new("OilDrum", new Vector2(200, 560), Anchor: CollisionAnchor.Bottom),
+        new("OilDrum", new Vector2(400, 560), Anchor: CollisionAnchor.Bottom),
+        new("OilDrum", new Vector2(600, 560), Anchor: CollisionAnchor.Bottom),
+        new("OilDrum", new Vector2(800, 460)),
+        new("OilDrum", new Vector2(1000, 460)),
+        new("OilDrum", new Vector2(1200, 460)),
     ];
 
     public override BackgroundRenderer CreateBackgroundRenderer(ContentManager content) =>

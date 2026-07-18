@@ -114,8 +114,7 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
 
     public virtual void DrawDebug(DebugDrawContext context)
     {
-        context.SpriteBatch.DrawRectangle(Frame, Color.AntiqueWhite);
-        context.SpriteBatch.DrawRectangle(Frame, Color.Blue);
+        context.SpriteBatch.DrawRectangle(Frame, GetDebugFrameColor());
         var text = HealthComponent.ToDisplayString();
         var size = context.Font.MeasureString(text);
         context.SpriteBatch.DrawString(context.Font, text,
@@ -150,11 +149,14 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
     protected abstract void FireDeathCompleted();
     protected virtual void FireAttackCompleted() { }
 
+    // --- Debug frame color ---
+    protected virtual Color GetDebugFrameColor() => Color.Blue;
+
     // --- Knockdown phase ---
     protected KnockdownPhase KnockdownPhase { get; set; }
 
     // --- Sprite null guard ---
-    protected bool EnsureSpriteAttached()
+    protected virtual bool EnsureSpriteAttached()
     {
         Debug.Assert(Sprite is not null, $"{GetType().Name} [{Name}] has no Sprite assigned");
         return Sprite is not null;

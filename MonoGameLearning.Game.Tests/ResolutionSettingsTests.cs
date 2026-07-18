@@ -8,6 +8,14 @@ public class ResolutionSettingsTests
     [SetUp]
     public void ResetToDefault() => ResolutionSettings.Save(new ResolutionSetting(1024, 768));
 
+    [OneTimeTearDown]
+    public void OneTimeTearDown()
+    {
+        var path = SettingsService.GetSettingsPath();
+        if (File.Exists(path))
+            File.Delete(path);
+    }
+
     [Test]
     public void Load_Default_Is1024x768()
     {

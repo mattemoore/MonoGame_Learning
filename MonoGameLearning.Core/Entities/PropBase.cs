@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
@@ -11,10 +12,29 @@ using MonoGameLearning.Core.Rendering;
 
 namespace MonoGameLearning.Core.Entities;
 
-public abstract class PropBase(string name, Vector2 position, AnimatedSprite sprite, float scale, int maxHealth) : Entity(name, position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale)), IRenderable, IDebugDrawable, ICollisionActor, IDamageable
+public abstract class PropBase(string name, Vector2 position, AnimatedSprite sprite, float scale, int maxHealth, CollisionAnchor anchor) : Entity(name, position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale)), IRenderable, IDebugDrawable, ICollisionActor, IDamageable
 {
     public int Id => GetHashCode();
-    public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
+    public CollisionAnchor Anchor { get; } = anchor;
+    public virtual float CollisionHeightFraction => 1.0f;
+    protected RectangleF CollisionBounds => ComputeCollisionBounds(Frame, CollisionHeightFraction, Anchor);
+    internal static RectangleF ComputeCollisionBounds(RectangleF frame, float heightFraction, CollisionAnchor anchor)
+    {
+        Debug.Assert(heightFraction is > 0f and <= 1f, $"CollisionHeightFraction must be in (0,1], got {heightFraction}");
+        float h = frame.Height * heightFraction;
+        float y = anchor switch
+        {
+            CollisionAnchor.Top => frame.Y,
+            CollisionAnchor.Center => frame.Y + (frame.Height - h) * 0.5f,
+            CollisionAnchor.Bottom => frame.Bottom - h,
+            _ => frame.Y,
+        };
+        return new RectangleF(frame.X, y, frame.Width, h);
+    }
+
+    public CollisionShape2D Shape => new(new BoundingBox2D(
+        new Vector2(CollisionBounds.X, CollisionBounds.Y),
+        new Vector2(CollisionBounds.Right, CollisionBounds.Bottom)));
     public event Action<Entity> Destroyed;
 
     protected readonly SpriteRenderer SpriteRenderer = new(sprite, scale);
@@ -41,8 +61,8 @@ public abstract class PropBase(string name, Vector2 position, AnimatedSprite spr
 
     public void DrawDebug(DebugDrawContext context)
     {
-        context.SpriteBatch.DrawRectangle(Frame, Color.AntiqueWhite);
         context.SpriteBatch.DrawRectangle(Frame, Color.Blue);
+        context.SpriteBatch.DrawRectangle(CollisionBounds, Color.Blue);
         var text = HealthComponent.ToDisplayString();
         var size = context.Font.MeasureString(text);
         context.SpriteBatch.DrawString(context.Font, text,
