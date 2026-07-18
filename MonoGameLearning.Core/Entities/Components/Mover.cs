@@ -3,12 +3,13 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.Graphics;
+using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Core.Entities.Components;
 
 public static class Mover
 {
-    public static void ClampToBounds(Entity entity, RectangleF movementBounds)
+    public static void ClampToBounds(IReadOnlyEntity entity, RectangleF movementBounds)
     {
         if (movementBounds.IsEmpty) return;
 
