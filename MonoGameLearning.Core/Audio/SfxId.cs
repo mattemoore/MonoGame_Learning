@@ -18,4 +18,5 @@ public enum SfxId
     MenuNavigate,
     MenuConfirm,
     GoPromptBell,
+    PickupHeal,
 }

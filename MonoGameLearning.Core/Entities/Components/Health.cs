@@ -9,6 +9,7 @@ public class Health(int maxHealth)
     public bool IsAlive => Value > 0;
 
     public void Subtract(int amount) => Value = Math.Max(0, Value - amount);
+    public void Add(int amount) => Value = Math.Min(MaxHealth, Value + amount);
     public void SetToMax() => Value = MaxHealth;
     public string ToDisplayString() => $"{Value}/{MaxHealth}";
 }

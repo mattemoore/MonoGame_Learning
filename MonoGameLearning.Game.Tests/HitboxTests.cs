@@ -32,6 +32,7 @@ public class TestSpatialEntity(string name, Vector2 position, int width, int hei
     void IDamageable.OnDeath() { DeathCallbackInvoked = true; Died?.Invoke(this, EventArgs.Empty); }
     void IDamageable.OnKnockdown(DamageInfo info) { KnockdownCallbackInvoked = true; }
     void IDamageable.OnHit(DamageInfo info) { HitCallbackInvoked = true; }
+    void IDamageable.Heal(int amount) => _health.Add(amount);
 }
 
 [TestFixture]
@@ -376,5 +377,6 @@ public class HitboxTests
         public void OnDeath() => Died?.Invoke(this, EventArgs.Empty);
         public void OnKnockdown(DamageInfo info) { }
         public void OnHit(DamageInfo info) { }
+        public void Heal(int amount) => _health.Add(amount);
     }
 }

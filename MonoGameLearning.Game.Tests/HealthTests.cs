@@ -28,4 +28,31 @@ public class HealthTests
         h.Subtract(12);
         Assert.That(h.ToDisplayString(), Is.EqualTo("6/18"));
     }
+
+    [Test]
+    public void Add_BelowMax_IncreasesValue()
+    {
+        var h = new Health(100);
+        h.Subtract(30);
+        h.Add(15);
+        Assert.That(h.Value, Is.EqualTo(85));
+    }
+
+    [Test]
+    public void Add_AboveMax_ClampsToMax()
+    {
+        var h = new Health(100);
+        h.Subtract(10);
+        h.Add(20);
+        Assert.That(h.Value, Is.EqualTo(100));
+    }
+
+    [Test]
+    public void Add_Zero_NoChange()
+    {
+        var h = new Health(100);
+        h.Subtract(30);
+        h.Add(0);
+        Assert.That(h.Value, Is.EqualTo(70));
+    }
 }

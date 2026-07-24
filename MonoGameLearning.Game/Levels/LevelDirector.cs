@@ -12,6 +12,7 @@ using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.Entities.Props;
 using MonoGameLearning.Game.AnimatedSprites;
+using MonoGameLearning.Game.Entities.Pickups;
 
 namespace MonoGameLearning.Game.Levels;
 
@@ -82,6 +83,19 @@ public class LevelDirector
         if (prop is OilDrumEntity oilDrum)
             oilDrum.Destroyed -= OnPropDestroyed;
         _entityManager.Destroy(prop);
+    }
+
+    public void SpawnPickups(List<PickupSpawnDef> pickupDefs)
+    {
+        foreach (var def in pickupDefs)
+        {
+            Entity pickup = def.Type switch
+            {
+                "Food" => new FoodPickupEntity(def.Type, def.Position, FoodPickupSprite.Texture),
+                _ => throw new ArgumentException($"Unknown pickup type: {def.Type}", nameof(pickupDefs)),
+            };
+            _entityManager.Register(pickup);
+        }
     }
 
     public void PopulateSnapshots(RectangleF walkableBounds)

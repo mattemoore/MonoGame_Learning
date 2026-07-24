@@ -121,4 +121,11 @@ public class AudioManagerTests
     {
         Assert.That(AudioManager.ComputeMusicVolume(1f, true), Is.EqualTo(0.3f).Within(1e-6f));
     }
+
+    [Test]
+    public void PlaySfx_PickupHeal_DoesNotThrow_WhenAssetMissing()
+    {
+        var mgr = new AudioManager();
+        Assert.DoesNotThrow(() => mgr.PlaySfx(SfxId.PickupHeal));
+    }
 }

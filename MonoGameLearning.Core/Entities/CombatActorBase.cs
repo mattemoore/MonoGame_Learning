@@ -96,6 +96,7 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
     void IDamageable.OnDeath() => OnDeath();
     void IDamageable.OnKnockdown(DamageInfo info) => OnKnockdown(info);
     void IDamageable.OnHit(DamageInfo info) => OnHit(info);
+    void IDamageable.Heal(int amount) => HealthComponent.Add(amount);
 
     protected virtual bool CanTakeDamage() => HealthComponent.IsAlive;
     protected virtual void OnDeath() { }

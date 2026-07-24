@@ -19,6 +19,7 @@ public class EntityManager(CollisionWorld2D world)
         _screenRenderables.Clear();
         _actorCollidables.Clear();
         _propCollidables.Clear();
+        _pickupCollidables.Clear();
         _damageables.Clear();
         _hitboxProviders.Clear();
         _movables.Clear();
@@ -35,6 +36,7 @@ public class EntityManager(CollisionWorld2D world)
     private readonly List<IScreenRenderable> _screenRenderables = [];
     private readonly List<ICollisionActor> _actorCollidables = [];
     private readonly List<ICollisionActor> _propCollidables = [];
+    private readonly List<ICollisionActor> _pickupCollidables = [];
     private readonly List<IDamageable> _damageables = [];
     private readonly List<IHitboxProvider> _hitboxProviders = [];
     private readonly List<IMoveableEntity> _movables = [];
@@ -61,6 +63,7 @@ public class EntityManager(CollisionWorld2D world)
     public void SortRenderablesByY() => _renderables.Sort(_renderableYComparer);
     public IReadOnlyList<ICollisionActor> ActorCollidables => _actorCollidables;
     public IReadOnlyList<ICollisionActor> PropCollidables => _propCollidables;
+    public IReadOnlyList<ICollisionActor> PickupCollidables => _pickupCollidables;
     public IReadOnlyList<IMoveableEntity> Movables => _movables;
     public IReadOnlyList<IDebugDrawable> DebugDrawables => _debugDrawables;
     public IReadOnlyList<IDamageable> Combatants => _combatants;
@@ -140,6 +143,11 @@ public class EntityManager(CollisionWorld2D world)
             _propCollidables.Add(prop);
             world.Insert(prop, "props");
         }
+        else if (entity is IPickup pickup && entity is ICollisionActor pickupCollidable)
+        {
+            _pickupCollidables.Add(pickupCollidable);
+            world.Insert(pickupCollidable, "pickups");
+        }
         TryAdd<IDamageable>(entity, _damageables);
         if (TryAdd<IHitboxProvider>(entity, _hitboxProviders))
             TryInjectHitboxService(entity);
@@ -159,6 +167,11 @@ public class EntityManager(CollisionWorld2D world)
         {
             _propCollidables.Remove(prop);
             world.Remove(prop);
+        }
+        else if (entity is IPickup && entity is ICollisionActor pickupCollidable)
+        {
+            _pickupCollidables.Remove(pickupCollidable);
+            world.Remove(pickupCollidable);
         }
         TryRemove<IUpdatable>(entity, _updatables);
         if (entity is IScreenRenderable screen)
