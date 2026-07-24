@@ -12,6 +12,7 @@ public abstract class Level
     public abstract int BackgroundCount { get; }
     public abstract float EndTriggerX { get; }
     public abstract List<PropSpawnDef> Props { get; }
+    public abstract List<PickupSpawnDef> Pickups { get; }
     public abstract float WalkableTopY { get; }
 
     public RectangleF MovementBounds { get; }

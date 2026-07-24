@@ -23,6 +23,7 @@ using MonoGameLearning.Game.Entities.Player;
 using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.Rendering;
 using MonoGameLearning.Game.AnimatedSprites;
+using MonoGameLearning.Game.Entities.Pickups;
 
 namespace MonoGameLearning.Game.GameLoop;
 
@@ -123,6 +124,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
         EnemySprite.Load(Content);
         OilDrumSprite.Load(Content);
+        FoodPickupSprite.Load(Content);
 
         _player.Died += OnPlayerDied;
         _hudService = new HudService(_player, _debugFont);
@@ -191,6 +193,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             }
 
             ResolveCollisions();
+            ResolvePickupOverlaps();
 
             _hudService.SetProximityTarget(_entityManager.FindNearestAliveEnemy(_player.Position));
 
@@ -284,6 +287,9 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         base.Draw(gameTime);
     }
 
+    // Separate from ResolvePickupOverlaps:
+    //   - ResolveCollisions: quad-tree MTV pushback (actor-into-prop)
+    //   - ResolvePickupOverlaps: manual AABB overlap, side-effect trigger (heal + destroy), no position correction
     private void ResolveCollisions()
     {
         _collisionWorld.RebuildDynamicLayers();
@@ -295,6 +301,25 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             if (!result.Intersects) continue;
             if (actor is Entity entity)
                 entity.Position += result.MinimumTranslationVector;
+        }
+    }
+
+    private void ResolvePickupOverlaps()
+    {
+        if (_player is not IDamageable { IsAlive: true }) return;
+
+        var playerFrame = _player.Frame;
+        var pickups = _entityManager.PickupCollidables;
+        for (int i = 0; i < pickups.Count; i++)
+        {
+            var pickup = pickups[i];
+            if (pickup is not Entity { } pickupEntity) continue;
+            if (!playerFrame.Intersects(pickupEntity.Frame)) continue;
+            if (pickup is not IPickup pickupInterface) continue;
+
+            pickupInterface.OnPickup(_player);
+            _audio.PlaySfx(SfxId.PickupHeal);
+            _entityManager.Destroy(pickupEntity);
         }
     }
 
@@ -377,6 +402,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
         InitLevelSystems();
         _levelDirector.SpawnProps(_currentLevel.Props);
+        _levelDirector.SpawnPickups(_currentLevel.Pickups);
     }
 
     private void InitLevelSystems()
@@ -398,6 +424,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         world.AddLayer("props", new Layer(propSpace));
         world.DisableCollisionBetweenLayers("props", "props");
         world.EnableCollisionBetweenLayers("actors", "props");
+        var pickupSpace = new QuadTreeSpace(bb);
+        world.AddLayer("pickups", new Layer(pickupSpace));
+        world.DisableCollisionBetweenLayers("pickups", "pickups");
+        world.EnableCollisionBetweenLayers("actors", "pickups");
         return world;
     }
 }

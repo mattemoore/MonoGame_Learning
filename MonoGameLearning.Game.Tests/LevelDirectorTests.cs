@@ -23,6 +23,7 @@ public class TestLevel(List<WaveDef> waveDefs, float endTriggerX, int gameWidth 
     public override float EndTriggerX { get; } = endTriggerX;
     public override float WalkableTopY => 0f;
     public override List<PropSpawnDef> Props => [];
+    public override List<PickupSpawnDef> Pickups => [];
     public override BackgroundRenderer CreateBackgroundRenderer(ContentManager content) => null!;
 }
 

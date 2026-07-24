@@ -69,7 +69,8 @@ public class AudioManager
             (SfxId.PropExplosion, "audio/prop_explosion"),
             (SfxId.MenuNavigate, "audio/menu_navigate"),
             (SfxId.MenuConfirm, "audio/menu_confirm"),
-            (SfxId.GoPromptBell, "audio/go_prompt_bell"));
+            (SfxId.GoPromptBell, "audio/go_prompt_bell"),
+            (SfxId.PickupHeal, "audio/pickup_heal"));
 
         LoadMusic(MusicId.TitleMenu, "audio/music_titlemenu");
         LoadMusic(MusicId.Gameplay, "audio/music_gameplay");

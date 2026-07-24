@@ -87,6 +87,9 @@ WriteWav(Path.Combine(outputDir, "enemy_hurt.wav"), 0.3f, 44100, t =>
 WriteWav(Path.Combine(outputDir, "enemy_death.wav"), 0.5f, 44100, t => Sine(t, 800 - t / 0.5f * 700) * FadeOut(t, 0.5f));
 WriteWav(Path.Combine(outputDir, "player_death.wav"), 1.0f, 44100, t => Sine(t, 600 - t / 1.0f * 550) * FadeOut(t, 1.0f));
 
+// Pickup heal — short bright chime
+WriteWav(Path.Combine(outputDir, "pickup_heal.wav"), 0.3f, 44100, t => Sine(t, 1200 - t / 0.3f * 600) * Envelope(t, 0.005f, 0.1f, 0.3f));
+
 // Menu sounds
 WriteWav(Path.Combine(outputDir, "menu_navigate.wav"), 0.03f, 44100, t => Sine(t, 1000) * Envelope(t, 0.001f, 0.01f, 0.03f));
 WriteWav(Path.Combine(outputDir, "menu_confirm.wav"), 0.1f, 44100, t =>

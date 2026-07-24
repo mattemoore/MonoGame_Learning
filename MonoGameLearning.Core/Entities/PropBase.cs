@@ -52,6 +52,7 @@ public abstract class PropBase(string name, Vector2 position, AnimatedSprite spr
     void IDamageable.OnDeath() => OnDestroyed();
     void IDamageable.OnKnockdown(DamageInfo info) { }
     void IDamageable.OnHit(DamageInfo info) { }
+    void IDamageable.Heal(int amount) { }
 
     public void Render(RenderContext context)
     {

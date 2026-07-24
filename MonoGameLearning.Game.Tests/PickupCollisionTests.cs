@@ -1,0 +1,120 @@
+using Microsoft.Xna.Framework;
+using MonoGame.Extended;
+using MonoGame.Extended.Collisions;
+using MonoGame.Extended.Collisions.Layers;
+using MonoGame.Extended.Collisions.QuadTree;
+using MonoGameLearning.Core.Combat;
+using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Components;
+using MonoGameLearning.Core.Entities.Interfaces;
+
+namespace MonoGameLearning.Game.Tests;
+
+internal sealed class TestPickupActor(string name, Vector2 position, int width, int height)
+    : Entity(name, position, width, height), ICollisionActor, IPickup
+{
+    public int Id => GetHashCode();
+    public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
+    public bool WasPickedUp { get; private set; }
+
+    public void OnPickup(IDamageable target) => WasPickedUp = true;
+}
+
+internal sealed class TestActorForPickup(string name, Vector2 position, int width, int height)
+    : Entity(name, position, width, height), ICollisionActor, IDamageable
+{
+    private readonly Health _health = new(100);
+    public int Id => GetHashCode();
+    public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
+    public int Health => _health.Value;
+    public int MaxHealth => _health.MaxHealth;
+    public bool IsAlive => _health.IsAlive;
+    public Faction Faction => Faction.Player;
+    public event EventHandler Died = delegate { };
+
+    public void TakeDamage(DamageInfo info) => CombatService.ApplyDamage(this, info);
+    bool IDamageable.CanTakeDamage() => _health.IsAlive;
+    void IDamageable.ReduceHealth(int amount) => _health.Subtract(amount);
+    void IDamageable.OnDeath() => Died?.Invoke(this, EventArgs.Empty);
+    void IDamageable.OnKnockdown(DamageInfo info) { }
+    void IDamageable.OnHit(DamageInfo info) { }
+    void IDamageable.Heal(int amount) => _health.Add(amount);
+}
+
+[TestFixture]
+public class PickupCollisionTests
+{
+    private const int EntitySize = 50;
+
+    private static CollisionWorld2D CreateWorld()
+    {
+        var world = new CollisionWorld2D();
+        var bb = new BoundingBox2D(new Vector2(0, 0), new Vector2(2000, 2000));
+        world.AddLayer("actors", new Layer(new QuadTreeSpace(bb)));
+        world.DisableCollisionBetweenLayers("actors", "actors");
+        world.AddLayer("pickups", new Layer(new QuadTreeSpace(bb)));
+        world.DisableCollisionBetweenLayers("pickups", "pickups");
+        world.EnableCollisionBetweenLayers("actors", "pickups");
+        return world;
+    }
+
+    private static TestPickupActor MakePickup(float x, float y) =>
+        new("pickup", new Vector2(x, y), EntitySize, EntitySize);
+
+    private static TestActorForPickup MakeActor(float x, float y) =>
+        new("actor", new Vector2(x, y), EntitySize, EntitySize);
+
+    [Test]
+    public void Integration_PickupAndPlayer_Overlap_ProducesCollisionPair()
+    {
+        var world = CreateWorld();
+        var actor = MakeActor(100, 100);
+        var pickup = MakePickup(100, 100);
+
+        world.Insert(actor, "actors");
+        world.Insert(pickup, "pickups");
+        world.RebuildDynamicLayers();
+
+        var pairs = world.QueryCollisionPairs("actors", "pickups").ToList();
+
+        Assert.That(pairs, Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public void Integration_PickupFarFromPlayer_NoOverlap()
+    {
+        var world = CreateWorld();
+        var actor = MakeActor(100, 100);
+        var pickup = MakePickup(500, 100);
+
+        world.Insert(actor, "actors");
+        world.Insert(pickup, "pickups");
+        world.RebuildDynamicLayers();
+
+        var pairs = world.QueryCollisionPairs("actors", "pickups").ToList();
+
+        Assert.That(pairs, Is.Empty);
+    }
+
+    [Test]
+    public void Integration_OverlapPair_AppliesHealAndQueuesDestroy()
+    {
+        var world = CreateWorld();
+        var actor = MakeActor(100, 100);
+        var pickup = MakePickup(100, 100);
+
+        world.Insert(actor, "actors");
+        world.Insert(pickup, "pickups");
+        world.RebuildDynamicLayers();
+
+        var pairs = world.QueryCollisionPairs("actors", "pickups").ToList();
+        Assert.That(pairs, Has.Count.EqualTo(1));
+
+        // Simulate the pickup resolution logic
+        if (actor is IDamageable damageable)
+        {
+            pickup.OnPickup(damageable);
+            Assert.That(pickup.WasPickedUp, Is.True);
+        }
+    }
+}

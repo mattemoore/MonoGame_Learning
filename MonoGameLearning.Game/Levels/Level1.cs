@@ -24,6 +24,11 @@ public class Level1(int gameWidth, int gameHeight) : Level(CreateWaveDefs(), gam
         new("OilDrum", new Vector2(1200, 460)),
     ];
 
+    public override List<PickupSpawnDef> Pickups =>
+    [
+        new PickupSpawnDef("Food", new Vector2(1400f, 556f)),
+    ];
+
     public override BackgroundRenderer CreateBackgroundRenderer(ContentManager content) =>
         BackgroundRenderer.Create(content, gameWidth, gameHeight, BackgroundCount);
 

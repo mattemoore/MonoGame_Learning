@@ -74,6 +74,18 @@
 /processorParam:TextureFormat=Color
 /build:images/arrow.png
 
+#begin images/food_apple.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/food_apple.png
+
 #begin images/oilcan-texture.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -198,6 +210,12 @@
 /processor:SoundEffectProcessor
 /processorParam:Quality=Best
 /build:audio/hit_metal.wav
+
+#begin audio/pickup_heal.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/pickup_heal.wav
 
 #begin audio/prop_explosion.wav
 /importer:WavImporter

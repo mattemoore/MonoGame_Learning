@@ -16,4 +16,5 @@ public interface IDamageable
     void OnDeath();
     void OnKnockdown(DamageInfo info);
     void OnHit(DamageInfo info);
+    void Heal(int amount);
 }
