@@ -100,10 +100,10 @@ Implement a sound and music system for audio feedback.
 
 Add the iconic beat 'em up loot loop: defeated enemies and breakable props drop items, and the player can wield pickup weapons.
 
-- [ ] **Pickup Items**: Define a `PickupItem` entity type with subtypes (e.g., `HealthRestore`, `BonusPoints`, `ExtraLife`).
+- [x] **Pickup Items**: Define a `PickupItem` entity type with subtypes (e.g., `HealthRestore`, `BonusPoints`, `ExtraLife`). *(Done: `PickupBase`/`IPickup`/`FoodPickupEntity` (heals 15 HP). `BonusPoints` and `ExtraLife` subtypes not yet implemented.)*
 - [ ] **Drop Table**: When an enemy dies or a `IDamageable` prop breaks, roll against a drop table to spawn a `PickupItem` at the actor's position. *(Hook exists: `CombatActorBase.Died` / `PropBase.Died` events are already raised but nothing subscribes for drops.)*
-- [ ] **Pickup Collision**: Detect player overlap with `PickupItem` and apply its effect (heal, add score, grant life), then despawn. *(Collision world currently only handles `"actors"` vs `"props"` layers — no pickup layer.)*
-- [ ] **Pickup Animation**: Spawn with a brief idle/spin animation and fade out if untouched after a timeout.
+- [x] **Pickup Collision**: Detect player overlap with `PickupItem` and apply its effect (heal, add score, grant life), then despawn. *(Implemented: `"pickups"` collision layer, `EntityManager.PickupCollidables`, overlap check in `GameLoop.ResolvePickupOverlaps`.)*
+- [ ] **Pickup Animation**: Spawn with a brief idle/spin animation and fade out if untouched after a timeout. *(Static sprite rendering done via `PickupBase.Render` + `Texture2D`. Bob/spin animation and fade-out timer not yet implemented.)*
 - [ ] **Throwable Weapons**: Add `ProjectileWeapon` items (e.g., knife, bottle) that the player throws forward in the facing direction with its own hitbox/hurtbox.
 - [ ] **Melee Pickup Weapons**: Add `MeleeWeapon` items (e.g., bat, pipe, crate) the player can pick up to replace their standard attack for a limited time or until thrown/dropped.
 - [ ] **Weapon Pickup/Drop Logic**: Detect overlap with dropped weapons, attach the weapon sprite to the player's attack animation, and animate attacks with the weapon's range and damage values.
