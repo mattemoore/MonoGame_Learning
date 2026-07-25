@@ -20,7 +20,6 @@ public class PlayerStateControllerConfig
 
 public enum PlayerState
 {
-    Dummy,
     Idling,
     Moving,
     Attacking,
@@ -32,7 +31,6 @@ public enum PlayerState
 
 public enum PlayerTrigger
 {
-    Activate,
     MoveStart,
     MoveStop,
     AttackStart,
@@ -52,13 +50,7 @@ public class PlayerStateController
 
     public PlayerStateController(PlayerStateControllerConfig config = null)
     {
-        StateMachine = new(PlayerState.Dummy);
-
-        StateMachine.Configure(PlayerState.Dummy)
-            .OnActivate(() => StateMachine.Fire(PlayerTrigger.Activate))
-            .Permit(PlayerTrigger.Activate, PlayerState.Idling)
-            .Ignore(PlayerTrigger.AttackCompleted)
-            .Ignore(PlayerTrigger.AttackStart);
+        StateMachine = new(PlayerState.Idling);
 
         StateMachine.Configure(PlayerState.Idling)
             .OnEntry(_ => config?.OnIdleEntry?.Invoke())
@@ -67,7 +59,6 @@ public class PlayerStateController
             .Permit(PlayerTrigger.TakeDamage, PlayerState.Hurt)
             .Permit(PlayerTrigger.TakeKnockdown, PlayerState.KnockedDown)
             .Permit(PlayerTrigger.Die, PlayerState.Dying)
-            .Ignore(PlayerTrigger.Activate)
             .Ignore(PlayerTrigger.AttackCompleted)
             .Ignore(PlayerTrigger.MoveStop);
 
@@ -79,7 +70,6 @@ public class PlayerStateController
             .Permit(PlayerTrigger.TakeKnockdown, PlayerState.KnockedDown)
             .Permit(PlayerTrigger.Die, PlayerState.Dying)
             .Ignore(PlayerTrigger.MoveStart)
-            .Ignore(PlayerTrigger.Activate)
             .Ignore(PlayerTrigger.AttackCompleted);
 
         StateMachine.Configure(PlayerState.Attacking)
@@ -91,8 +81,7 @@ public class PlayerStateController
             .Permit(PlayerTrigger.Die, PlayerState.Dying)
             .Ignore(PlayerTrigger.MoveStart)
             .Ignore(PlayerTrigger.MoveStop)
-            .Ignore(PlayerTrigger.AttackStart)
-            .Ignore(PlayerTrigger.Activate);
+            .Ignore(PlayerTrigger.AttackStart);
 
         StateMachine.Configure(PlayerState.Hurt)
             .OnEntry(_ => config?.OnHurtEntry?.Invoke())
@@ -104,7 +93,6 @@ public class PlayerStateController
             .Ignore(PlayerTrigger.AttackStart)
             .Ignore(PlayerTrigger.MoveStart)
             .Ignore(PlayerTrigger.MoveStop)
-            .Ignore(PlayerTrigger.Activate)
             .Ignore(PlayerTrigger.AttackCompleted);
 
         StateMachine.Configure(PlayerState.KnockedDown)
@@ -118,8 +106,7 @@ public class PlayerStateController
             .Ignore(PlayerTrigger.AttackCompleted)
             .Ignore(PlayerTrigger.MoveStart)
             .Ignore(PlayerTrigger.MoveStop)
-            .Ignore(PlayerTrigger.HurtCompleted)
-            .Ignore(PlayerTrigger.Activate);
+            .Ignore(PlayerTrigger.HurtCompleted);
 
         StateMachine.Configure(PlayerState.Dying)
             .OnEntry(_ => config?.OnDyingEntry?.Invoke())
@@ -131,7 +118,6 @@ public class PlayerStateController
             .Ignore(PlayerTrigger.AttackStart)
             .Ignore(PlayerTrigger.MoveStart)
             .Ignore(PlayerTrigger.MoveStop)
-            .Ignore(PlayerTrigger.Activate)
             .Ignore(PlayerTrigger.AttackCompleted)
             .Ignore(PlayerTrigger.TakeKnockdown)
             .Ignore(PlayerTrigger.KnockdownCompleted);
@@ -145,12 +131,11 @@ public class PlayerStateController
             .Ignore(PlayerTrigger.AttackStart)
             .Ignore(PlayerTrigger.MoveStart)
             .Ignore(PlayerTrigger.MoveStop)
-            .Ignore(PlayerTrigger.Activate)
             .Ignore(PlayerTrigger.AttackCompleted)
             .Ignore(PlayerTrigger.TakeKnockdown)
             .Ignore(PlayerTrigger.KnockdownCompleted);
 
-        StateMachine.Activate();
+        config?.OnIdleEntry?.Invoke();
     }
 
     public bool IsInState(PlayerState state) => StateMachine.IsInState(state);

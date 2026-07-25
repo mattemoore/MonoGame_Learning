@@ -30,7 +30,7 @@ The solution is structured into two main projects:
 
 * **Language**: C# (NET 10.0)
 * **Framework**: MonoGame (DesktopGL 3.8.*)
-* **Extensions**: MonoGame.Extended (5.3.1), Stateless (5.20.0)
+* **Extensions**: MonoGame.Extended (6.0.0), Stateless (5.20.0)
 
 ## Building and Running
 

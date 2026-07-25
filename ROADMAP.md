@@ -168,3 +168,9 @@ Extend the skeleton to support networked play between two remote players. *(Larg
 - [ ] **Desync Detection & Recovery**: Detect state divergence and resync from a checkpoint or full snapshot when divergence exceeds a threshold.
 - [ ] **Online-Adapted UI**: Show connection state, ping, player ready indicators, and disconnect/reconnect prompts.
 - [ ] **Security Considerations**: Validate inbound inputs/actions server-side or via deterministic lockstep to prevent cheating.
+
+---
+
+## Profile-First Investigation
+
+- [ ] **`CollisionWorld2D.QueryCollisionPairs` per-frame allocation**: Called every frame in `GameLoop.ResolveCollisions`, this method is a compiler iterator — allocates a state-machine object + `HashSet<ActorPairKey>` per call. Profile to confirm it is a real GC pause contributor before vendoring/patching MonoGame.Extended.

@@ -7,6 +7,7 @@ using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Levels;
 using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.Levels;
 

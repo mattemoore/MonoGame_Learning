@@ -14,7 +14,7 @@ namespace MonoGameLearning.Game.Entities.Enemy;
 
 public class EnemyEntity : CombatActorBase
 {
-    private readonly EnemyStateController _stateController;
+    private EnemyStateController _stateController;
     private readonly EnemyAI _ai;
     private readonly LevelDirector _director;
 
@@ -60,7 +60,6 @@ public class EnemyEntity : CombatActorBase
             Sprite.Color = Color.Red;
         Faction = Faction.Enemy;
         _ai = new EnemyAI(AttackRange, MinChaseDistance);
-        InitSharedCallbacks();
         _stateController = CreateStateController();
         _director = director;
     }
@@ -94,7 +93,7 @@ public class EnemyEntity : CombatActorBase
             if (AttackMove.AttackSfx.HasValue)
                 Audio.PlaySfx(AttackMove.AttackSfx.Value);
         },
-        OnAttackingExit = OnAttackingExit,
+        OnAttackingExit = Callbacks.OnAttackingExit,
         OnHurtEntry = () =>
         {
             PlayAnimation(Animations.Hurt);
@@ -102,7 +101,7 @@ public class EnemyEntity : CombatActorBase
                 Audio.PlaySfx(LastImpactSfx.Value);
             Audio.PlaySfx(SfxId.EnemyHurt);
         },
-        OnHurtExit = OnHurtExit,
+        OnHurtExit = Callbacks.OnHurtExit,
         OnKnockdownEntry = () =>
         {
             KnockdownPhase = KnockdownPhase.Falling;
@@ -111,14 +110,14 @@ public class EnemyEntity : CombatActorBase
                 Audio.PlaySfx(LastImpactSfx.Value);
             Audio.PlaySfx(SfxId.Knockdown);
         },
-        OnKnockdownExit = OnKnockdownExitAction,
+        OnKnockdownExit = Callbacks.OnKnockdownExit,
         OnDyingEntry = () =>
         {
             PlayAnimation(Animations.Die);
             Audio.PlaySfx(SfxId.EnemyDeath);
         },
-        OnDyingExit = OnDyingExitAction,
-        OnDeadEntry = OnDeadEntryAction,
+        OnDyingExit = Callbacks.OnDyingExit,
+        OnDeadEntry = Callbacks.OnDeadEntry,
         OnEnteringEntry = () =>
         {
             Sprite.SetAnimation(Animations.Run);
@@ -198,7 +197,7 @@ public class EnemyEntity : CombatActorBase
     public void Reset(Vector2 position, Entity target)
     {
         ResetActor(position);
-        _stateController.ResetToRoot();
+        _stateController = CreateStateController();
         _ai.Reset();
         Target = target;
         if (Sprite is not null)

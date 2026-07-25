@@ -78,7 +78,6 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
     {
         Speed = 200f;
         Faction = Faction.Player;
-        InitSharedCallbacks();
         _stateController = CreateStateController();
     }
 
@@ -113,7 +112,7 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
             if (_pendingMove.AttackSfx.HasValue)
                 Audio.PlaySfx(_pendingMove.AttackSfx.Value);
         },
-        OnAttackingExit = OnAttackingExit,
+        OnAttackingExit = Callbacks.OnAttackingExit,
         OnHurtEntry = () =>
         {
             PlayAnimation(Animations.Hurt);
@@ -121,7 +120,7 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
                 Audio.PlaySfx(LastImpactSfx.Value);
             Audio.PlaySfx(SfxId.PlayerHurt);
         },
-        OnHurtExit = OnHurtExit,
+        OnHurtExit = Callbacks.OnHurtExit,
         OnKnockdownEntry = () =>
         {
             KnockdownPhase = KnockdownPhase.Falling;
@@ -130,14 +129,14 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
                 Audio.PlaySfx(LastImpactSfx.Value);
             Audio.PlaySfx(SfxId.Knockdown);
         },
-        OnKnockdownExit = OnKnockdownExitAction,
+        OnKnockdownExit = Callbacks.OnKnockdownExit,
         OnDyingEntry = () =>
         {
             PlayAnimation(Animations.Die);
             Audio.PlaySfx(SfxId.PlayerDeath);
         },
-        OnDyingExit = OnDyingExitAction,
-        OnDeadEntry = OnDeadEntryAction,
+        OnDyingExit = Callbacks.OnDyingExit,
+        OnDeadEntry = Callbacks.OnDeadEntry,
     });
 
     public override void Update(GameTime gameTime)

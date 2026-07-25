@@ -2,7 +2,8 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using MonoGameLearning.Core.Entities;
-using MonoGameLearning.Game.Rendering;
+using MonoGameLearning.Core.Levels;
+using MonoGameLearning.Core.Rendering;
 
 namespace MonoGameLearning.Game.Levels;
 

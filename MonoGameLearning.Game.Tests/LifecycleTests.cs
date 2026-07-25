@@ -1,5 +1,5 @@
 using MonoGame.Extended;
-using MonoGameLearning.Game.GameLoop;
+using MonoGameLearning.Core.Camera;
 
 namespace MonoGameLearning.Game.Tests;
 

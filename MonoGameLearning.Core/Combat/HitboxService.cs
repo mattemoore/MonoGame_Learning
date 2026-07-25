@@ -52,7 +52,7 @@ public class HitboxService
     }
 
     private readonly List<ActiveHitbox> _activeHitboxes = [];
-    private readonly Dictionary<Entity, HashSet<IDamageable>> _attackDedup = [];
+    private readonly Dictionary<IHitboxProvider, HashSet<IDamageable>> _attackDedup = [];
     private readonly List<HitResult> _resultBuffer = [];
     private readonly List<RectangleF> _boundsBuffer = [];
 
@@ -88,10 +88,10 @@ public class HitboxService
                 if (!active.Bounds.Intersects(target.Frame)) continue;
                 if (target is not IDamageable tgt) continue;
 
-                if (!_attackDedup.TryGetValue(active.Owner, out var ownerDedup))
+                if (!_attackDedup.TryGetValue((IHitboxProvider)active.Owner, out var ownerDedup))
                 {
                     ownerDedup = [];
-                    _attackDedup[active.Owner] = ownerDedup;
+                    _attackDedup[(IHitboxProvider)active.Owner] = ownerDedup;
                 }
                 if (!ownerDedup.Add(tgt)) continue;
 
@@ -120,7 +120,7 @@ public class HitboxService
     public void ClearAttackDedup(IHitboxProvider owner)
     {
         Debug.Assert(owner is not null, "ClearAttackDedup called with null owner");
-        _attackDedup.Remove(owner as Entity);
+        _attackDedup.Remove(owner);
     }
 
     public void ClearAll()

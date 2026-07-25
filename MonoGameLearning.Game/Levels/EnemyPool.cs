@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Levels;
 using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.AnimatedSprites;
 
