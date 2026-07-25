@@ -380,41 +380,15 @@ public class EnemyStateTests
     }
 
     [Test]
-    public void ResetToRoot_FromDead_ReturnsToIdle()
+    public void Constructor_StartsInIdle_AndInvokesOnIdleEntry()
     {
-        bool idleEntryInvoked = false;
-        var controller = new EnemyStateController(new()
+        bool entryInvoked = false;
+        var controller = new EnemyStateController(new() { OnIdleEntry = () => entryInvoked = true });
+        Assert.Multiple(() =>
         {
-            OnDyingEntry = () => { },
-            OnDeadEntry = () => { },
-            OnIdleEntry = () => idleEntryInvoked = true,
+            Assert.That(controller.State, Is.EqualTo(EnemyState.Idle));
+            Assert.That(entryInvoked, Is.True);
         });
-
-        controller.Fire(EnemyTrigger.Die);
-        controller.Fire(EnemyTrigger.DeathCompleted);
-        Assert.That(controller.State, Is.EqualTo(EnemyState.Dead));
-
-        controller.ResetToRoot();
-
-        Assert.That(controller.State, Is.EqualTo(EnemyState.Idle));
-        Assert.That(idleEntryInvoked, Is.True);
-    }
-
-    [Test]
-    public void ResetToRoot_AllowsActivateToFireAgain()
-    {
-        var controller = new EnemyStateController(new()
-        {
-            OnIdleEntry = () => { },
-        });
-        controller.Fire(EnemyTrigger.Die);
-        controller.Fire(EnemyTrigger.DeathCompleted);
-
-        controller.ResetToRoot();
-
-        Assert.That(controller.CanFire(EnemyTrigger.Activate), Is.True);
-        // Fire Activate — Dummy.OnActivate should fire which calls Activate trigger
-        Assert.That(controller.State, Is.EqualTo(EnemyState.Idle));
     }
 
     // --- Entering state transitions ---

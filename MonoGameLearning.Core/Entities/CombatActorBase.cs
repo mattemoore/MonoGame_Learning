@@ -18,17 +18,40 @@ public record struct AnimationSet(string Idle, string Run, string Hurt, string F
 
 public enum KnockdownPhase { Falling, GettingUp }
 
-public abstract class CombatActorBase(string name, Vector2 position, int width, int height, AnimatedSprite sprite, float scale, int maxHealth, AnimationSet animations, AudioManager audio) : Entity(name, position, width, height), IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, IDamageable, IHitboxProvider, IMoveableEntity, IAnimated
+public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, IDamageable, IHitboxProvider, IMoveableEntity, IAnimated
 {
     public static string LayerName => "actors";
     public int Id => GetHashCode();
     public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
 
-    protected readonly SpriteRenderer SpriteRenderer = new(sprite, scale);
-    protected readonly Health HealthComponent = new(maxHealth);
+    protected readonly SpriteRenderer SpriteRenderer;
+    protected readonly Health HealthComponent;
     protected readonly AnimationFrameTracker FrameTracker = new();
-    protected readonly AnimationSet Animations = animations;
-    protected readonly AudioManager Audio = audio;
+    protected readonly AnimationSet Animations;
+    protected readonly AudioManager Audio;
+
+    public CombatActorCallbacks Callbacks { get; }
+
+    public CombatActorBase(string name, Vector2 position, int width, int height, AnimatedSprite sprite, float scale, int maxHealth, AnimationSet animations, AudioManager audio)
+        : base(name, position, width, height)
+    {
+        SpriteRenderer = new(sprite, scale);
+        HealthComponent = new(maxHealth);
+        Animations = animations;
+        Audio = audio;
+
+        Callbacks = new()
+        {
+            OnAttackingExit = AttackingExitImpl,
+            OnHurtEntry = HurtEntryImpl,
+            OnHurtExit = UnsubscribeFromAnimationEvent,
+            OnKnockdownEntry = KnockdownEntryImpl,
+            OnKnockdownExit = KnockdownExitImpl,
+            OnDyingEntry = DyingEntryImpl,
+            OnDyingExit = UnsubscribeFromAnimationEvent,
+            OnDeadEntry = DeadEntryImpl,
+        };
+    }
 
     public AnimatedSprite Sprite => SpriteRenderer?.Sprite;
     public RectangleF MovementBounds { get; set; }
@@ -164,27 +187,6 @@ public abstract class CombatActorBase(string name, Vector2 position, int width, 
     }
 
     // --- Shared state controller callbacks (cached delegates — zero alloc per use) ---
-    protected Action OnAttackingExit = null!;
-    protected Action OnHurtEntry = null!;
-    protected Action OnHurtExit = null!;
-    protected Action OnKnockdownEntryAction = null!;
-    protected Action OnKnockdownExitAction = null!;
-    protected Action OnDyingEntryAction = null!;
-    protected Action OnDyingExitAction = null!;
-    protected Action OnDeadEntryAction = null!;
-
-    protected void InitSharedCallbacks()
-    {
-        OnAttackingExit = AttackingExitImpl;
-        OnHurtEntry = HurtEntryImpl;
-        OnHurtExit = UnsubscribeFromAnimationEvent;
-        OnKnockdownEntryAction = KnockdownEntryImpl;
-        OnKnockdownExitAction = KnockdownExitImpl;
-        OnDyingEntryAction = DyingEntryImpl;
-        OnDyingExitAction = UnsubscribeFromAnimationEvent;
-        OnDeadEntryAction = DeadEntryImpl;
-    }
-
     private void AttackingExitImpl()
     {
         UnsubscribeFromAnimationEvent();

@@ -2,16 +2,12 @@ using System;
 using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
-using MonoGameLearning.Game.Entities.Player;
+using MonoGameLearning.Core.Entities;
 
-namespace MonoGameLearning.Game.GameLoop;
+namespace MonoGameLearning.Core.Camera;
 
-public class CameraController(PlayerEntity player, int gameWidth, int gameHeight, RectangleF levelBounds)
+public class CameraController(Entity player, int gameWidth, int gameHeight, RectangleF levelBounds)
 {
-    private readonly PlayerEntity _player = player;
-    private readonly int _gameWidth = gameWidth;
-    private readonly int _gameHeight = gameHeight;
-    private readonly RectangleF _levelBounds = levelBounds;
     private bool _waveClearedPending;
     private float? _holdCameraCenter;
     private float _holdPlayerX;
@@ -31,14 +27,14 @@ public class CameraController(PlayerEntity player, int gameWidth, int gameHeight
         float currentCameraCenterX,
         float minCenter,
         float maxCenter,
-        int gameWidth,
+        int width,
         float deadZoneFraction = DEAD_ZONE_FRACTION)
     {
         Debug.Assert(minCenter <= maxCenter, $"Camera clamp range is empty (min={minCenter}, max={maxCenter}).");
         Debug.Assert(deadZoneFraction is >= 0f and <= 0.5f,
             $"deadZoneFraction must be in [0, 0.5]; got {deadZoneFraction}.");
 
-        float halfWidth = gameWidth / 2f;
+        float halfWidth = width / 2f;
         float deadZoneEdge = halfWidth * (1f - 2f * deadZoneFraction);
         float targetCenter = currentCameraCenterX;
 
@@ -53,10 +49,10 @@ public class CameraController(PlayerEntity player, int gameWidth, int gameHeight
 
     public void Update(OrthographicCamera camera)
     {
-        float halfWidth = _gameWidth / 2f;
+        float halfWidth = gameWidth / 2f;
         float currentCenterX = camera.Position.X + halfWidth;
-        float fullMinCenter = _levelBounds.Left + halfWidth;
-        float fullMaxCenter = _levelBounds.Right - halfWidth;
+        float fullMinCenter = levelBounds.Left + halfWidth;
+        float fullMaxCenter = levelBounds.Right - halfWidth;
 
         float maxCenter = fullMaxCenter;
         if (WaveEndX.HasValue)
@@ -67,10 +63,10 @@ public class CameraController(PlayerEntity player, int gameWidth, int gameHeight
         if (_waveClearedPending)
         {
             _waveClearedPending = false;
-            if (_player.Position.X - currentCenterX > deadZoneEdge)
+            if (player.Position.X - currentCenterX > deadZoneEdge)
             {
                 _holdCameraCenter = currentCenterX;
-                _holdPlayerX = _player.Position.X;
+                _holdPlayerX = player.Position.X;
             }
             else
             {
@@ -78,22 +74,20 @@ public class CameraController(PlayerEntity player, int gameWidth, int gameHeight
             }
         }
 
-        float targetCenterX = ComputeTargetX(_player.Position.X, currentCenterX, fullMinCenter, maxCenter, _gameWidth);
+        float targetCenterX = ComputeTargetX(player.Position.X, currentCenterX, fullMinCenter, maxCenter, gameWidth);
 
-        // Gradually close the gap as the player moves right, so the camera
-        // only advances in response to player-initiated rightward movement.
         if (_holdCameraCenter.HasValue)
         {
-            float rightwardMove = Math.Max(0, _player.Position.X - _holdPlayerX);
+            float rightwardMove = Math.Max(0, player.Position.X - _holdPlayerX);
             float softTarget = _holdCameraCenter.Value + rightwardMove * (1f + CATCH_UP_RATE);
 
-            if (softTarget >= _player.Position.X - deadZoneEdge)
+            if (softTarget >= player.Position.X - deadZoneEdge)
                 _holdCameraCenter = null;
             else
                 targetCenterX = Math.Min(targetCenterX, softTarget);
         }
 
-        camera.LookAt(new Vector2(targetCenterX, _gameHeight / 2f));
+        camera.LookAt(new Vector2(targetCenterX, gameHeight / 2f));
     }
 
     public static RectangleF ComputeMovementBounds(float cameraLeftEdge, RectangleF baseBounds, float? rightCap)

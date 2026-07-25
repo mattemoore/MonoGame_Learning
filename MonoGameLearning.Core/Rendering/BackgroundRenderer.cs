@@ -5,9 +5,8 @@ using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Entities.Interfaces;
-using MonoGameLearning.Core.Rendering;
 
-namespace MonoGameLearning.Game.Rendering;
+namespace MonoGameLearning.Core.Rendering;
 
 public class BackgroundRenderer(List<Sprite> sprites, int gameWidth, int gameHeight) : IRenderable
 {

@@ -8,6 +8,7 @@ using MonoGameLearning.Core;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Components;
+using MonoGameLearning.Core.Levels;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.Entities.Props;

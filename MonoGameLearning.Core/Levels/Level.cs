@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Xna.Framework.Content;
 using MonoGame.Extended;
-using MonoGameLearning.Game.Rendering;
+using MonoGameLearning.Core.Rendering;
 
-namespace MonoGameLearning.Game.Levels;
+namespace MonoGameLearning.Core.Levels;
 
 public abstract class Level
 {
