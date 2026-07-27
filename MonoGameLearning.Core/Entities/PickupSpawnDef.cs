@@ -1,6 +1,5 @@
 using Microsoft.Xna.Framework;
-using MonoGameLearning.Core.Entities;
 
-namespace MonoGameLearning.Core.Levels;
+namespace MonoGameLearning.Core.Entities;
 
 public record PickupSpawnDef(string Type, Vector2 Position);

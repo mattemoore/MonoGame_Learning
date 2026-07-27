@@ -8,7 +8,6 @@ using MonoGameLearning.Core;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Components;
-using MonoGameLearning.Core.Entities.Interfaces;
 using MonoGameLearning.Core.Levels;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Game.Entities.Enemy;
@@ -83,29 +82,33 @@ public class LevelDirector
 
     protected void OnPropDestroyed(Entity prop)
     {
-        if (prop is OilDrumEntity oilDrum)
-            oilDrum.Destroyed -= OnPropDestroyed;
-        _entityManager.Destroy(prop);
-
-        if (prop is IPickupDropper dropper)
+        if (prop is PropBase p)
         {
-            var drops = dropper.CreateDrops();
-            if (drops.Count > 0)
-                SpawnPickups(drops);
+            p.Destroyed -= OnPropDestroyed;
+            foreach (var def in p.CreateDrops())
+                SpawnPickupAligned(def, p.Frame.Bottom);
         }
+
+        _entityManager.Destroy(prop);
     }
 
     public void SpawnPickups(IReadOnlyList<PickupSpawnDef> pickupDefs)
     {
         foreach (var def in pickupDefs)
-        {
-            Entity pickup = def.Type switch
-            {
-                "Food" => new FoodPickupEntity(def.Type, def.Position, FoodPickupSprite.Texture),
-                _ => throw new ArgumentException($"Unknown pickup type: {def.Type}", nameof(pickupDefs)),
-            };
-            _entityManager.Register(pickup);
-        }
+            _entityManager.Register(CreatePickup(def));
+    }
+
+    private Entity CreatePickup(PickupSpawnDef def) => def.Type switch
+    {
+        "Food" => new FoodPickupEntity(def.Type, def.Position, FoodPickupSprite.Texture),
+        _ => throw new ArgumentException($"Unknown pickup type: {def.Type}", nameof(def)),
+    };
+
+    private void SpawnPickupAligned(PickupSpawnDef def, float bottomY)
+    {
+        var pickup = CreatePickup(def);
+        pickup.Position = new Vector2(pickup.Position.X, bottomY - pickup.Height / 2f);
+        _entityManager.Register(pickup);
     }
 
     public void PopulateSnapshots(RectangleF walkableBounds)

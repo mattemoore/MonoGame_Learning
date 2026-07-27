@@ -17,10 +17,12 @@ When a `PropBase`-derived entity is destroyed, it spawns one or more pickups dec
 ## Files
 
 ### Create
+
 - `MonoGameLearning.Core/Entities/Interfaces/IPickupDropper.cs` — new interface.
 - `MonoGameLearning.Game.Tests/PropDropsOnDestroyTests.cs` — new test file.
 
 ### Modify
+
 - `MonoGameLearning.Core/Levels/PropSpawnDef.cs` — add `Drops` field (positional record change with optional last param).
 - `MonoGameLearning.Core/Entities/PropBase.cs` — add `IPickupDropper` to base interface list, add `Drops` property + `CreateDrops()` virtual method.
 - `MonoGameLearning.Game/Entities/Props/OilDrumEntity.cs` — pass `prop.Drops` through to base; no behavior override needed (default `CreateDrops()` returns `Drops`).
@@ -45,11 +47,13 @@ public interface IPickupDropper
 ## PropSpawnDef Change
 
 Current:
+
 ```csharp
 public record PropSpawnDef(string Type, Vector2 Position, CollisionAnchor Anchor = CollisionAnchor.Top);
 ```
 
 New (add `Drops` as optional last param to preserve source compatibility for existing call sites that omit it):
+
 ```csharp
 public record PropSpawnDef(
     string Type,
@@ -65,12 +69,14 @@ public record PropSpawnDef(
 Add `using MonoGameLearning.Core.Levels;` to `PropBase.cs` for `PickupSpawnDef`.
 
 Add `IPickupDropper` to base class interface list:
+
 ```csharp
 public abstract class PropBase(...) : Entity(...), IRenderable, IDebugDrawable,
     ICollisionActor, IDamageable, IPickupDropper
 ```
 
 Add a settable `Drops` property and virtual `CreateDrops()`:
+
 ```csharp
 public IReadOnlyList<PickupSpawnDef>? Drops { get; set; }
 
@@ -94,11 +100,13 @@ No changes to `TakeDamage` / `OnDestroyed` flow.
 ### SpawnProps
 
 Current signature:
+
 ```csharp
 var drum = new OilDrumEntity(prop.Type, prop.Position, 1.0f, OilDrumSprite.Create(), _audio, anchor: prop.Anchor);
 ```
 
 The constructor doesn't take `Drops`. Two options:
+
 - **(A) Add `Drops` parameter to `OilDrumEntity` constructor and pass to base.** Cleanest. Requires updating the existing test stub `OilDrumEntity` ctors (1 site in `LevelDirector`, plus test doubles if any).
 - **(B) Set `drum.Drops = prop.Drops` after construction.** Uses the settable property. Simpler diff.
 
@@ -120,6 +128,7 @@ public void SpawnProps(List<PropSpawnDef> propDefs)
 ### OnPropDestroyed
 
 Current:
+
 ```csharp
 private void OnPropDestroyed(Entity prop)
 {
@@ -130,6 +139,7 @@ private void OnPropDestroyed(Entity prop)
 ```
 
 New:
+
 ```csharp
 private void OnPropDestroyed(Entity prop)
 {
@@ -180,6 +190,7 @@ Edit `ROADMAP.md` line 104. Replace the existing "- [ ] **Drop Table**: ..." bul
 ```
 
 Implementation note for the implementer:
+
 - Use the exact bullet text above (including the backticks, the `[x]` checkbox flip, and the parenthetical implementation summary).
 - Do **not** edit any other bullets in Milestone 7 — only bullet 7.2 (the "Drop Table" bullet) changes.
 - Do **not** edit the milestone header (Milestone 7 stays `[ ]` because weapons/items/animations still have unchecked bullets).

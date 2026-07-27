@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using MonoGameLearning.Core.Levels;
 
 namespace MonoGameLearning.Core.Entities.Interfaces;
 

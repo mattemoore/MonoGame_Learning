@@ -390,8 +390,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _currentLevel = new Level1(GAME_WIDTH, GAME_HEIGHT);
         _backgroundRenderer = _currentLevel.CreateBackgroundRenderer(Content);
         _collisionWorld = CreateCollisionWorld(_currentLevel.MovementBounds);
-        _entityManager = new EntityManager(_collisionWorld);
-        _entityManager.HitboxService = _hitboxService;
+        _entityManager = new EntityManager(_collisionWorld)
+        {
+            HitboxService = _hitboxService
+        };
 
         _entityManager.Register(_player);
 
