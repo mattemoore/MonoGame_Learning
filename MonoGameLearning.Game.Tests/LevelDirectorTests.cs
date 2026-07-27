@@ -50,6 +50,11 @@ public class TestLevelDirector(EntityManager entityManager, Level level, Entity 
     {
         OnEnemyDied(enemy, EventArgs.Empty);
     }
+
+    public void SimulatePropDestroyed(Entity prop)
+    {
+        OnPropDestroyed(prop);
+    }
 }
 
 public class TestEnemyPool(EntityManager entityManager, LevelDirector director, List<Entity> spawnedEnemies)

@@ -21,7 +21,10 @@ public class Level1(int gameWidth, int gameHeight) : Level(CreateWaveDefs(), gam
         new("OilDrum", new Vector2(400, 560), Anchor: CollisionAnchor.Bottom),
         new("OilDrum", new Vector2(600, 560), Anchor: CollisionAnchor.Bottom),
         new("OilDrum", new Vector2(800, 460)),
-        new("OilDrum", new Vector2(1000, 460)),
+        new("OilDrum", new Vector2(1000, 460), Drops:
+        [
+            new PickupSpawnDef("Food", default),
+        ]),
         new("OilDrum", new Vector2(1200, 460)),
     ];
 

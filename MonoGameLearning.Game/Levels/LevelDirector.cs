@@ -74,29 +74,41 @@ public class LevelDirector
         foreach (var prop in propDefs)
         {
             var drum = new OilDrumEntity(prop.Type, prop.Position, 1.0f, OilDrumSprite.Create(), _audio, anchor: prop.Anchor);
+            drum.Drops = prop.Drops;
             drum.Destroyed += OnPropDestroyed;
             _entityManager.Register(drum);
         }
     }
 
-    private void OnPropDestroyed(Entity prop)
+    protected void OnPropDestroyed(Entity prop)
     {
-        if (prop is OilDrumEntity oilDrum)
-            oilDrum.Destroyed -= OnPropDestroyed;
+        if (prop is PropBase p)
+        {
+            p.Destroyed -= OnPropDestroyed;
+            foreach (var def in p.CreateDrops())
+                SpawnPickupAligned(def, p.Frame.Bottom);
+        }
+
         _entityManager.Destroy(prop);
     }
 
-    public void SpawnPickups(List<PickupSpawnDef> pickupDefs)
+    public void SpawnPickups(IReadOnlyList<PickupSpawnDef> pickupDefs)
     {
         foreach (var def in pickupDefs)
-        {
-            Entity pickup = def.Type switch
-            {
-                "Food" => new FoodPickupEntity(def.Type, def.Position, FoodPickupSprite.Texture),
-                _ => throw new ArgumentException($"Unknown pickup type: {def.Type}", nameof(pickupDefs)),
-            };
-            _entityManager.Register(pickup);
-        }
+            _entityManager.Register(CreatePickup(def));
+    }
+
+    private Entity CreatePickup(PickupSpawnDef def) => def.Type switch
+    {
+        "Food" => new FoodPickupEntity(def.Type, def.Position, FoodPickupSprite.Texture),
+        _ => throw new ArgumentException($"Unknown pickup type: {def.Type}", nameof(def)),
+    };
+
+    private void SpawnPickupAligned(PickupSpawnDef def, float bottomY)
+    {
+        var pickup = CreatePickup(def);
+        pickup.Position = new Vector2(pickup.Position.X, bottomY - pickup.Height / 2f);
+        _entityManager.Register(pickup);
     }
 
     public void PopulateSnapshots(RectangleF walkableBounds)

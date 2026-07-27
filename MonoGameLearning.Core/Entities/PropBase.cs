@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
@@ -12,7 +13,7 @@ using MonoGameLearning.Core.Rendering;
 
 namespace MonoGameLearning.Core.Entities;
 
-public abstract class PropBase(string name, Vector2 position, AnimatedSprite sprite, float scale, int maxHealth, CollisionAnchor anchor) : Entity(name, position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale)), IRenderable, IDebugDrawable, ICollisionActor, IDamageable
+public abstract class PropBase(string name, Vector2 position, AnimatedSprite sprite, float scale, int maxHealth, CollisionAnchor anchor) : Entity(name, position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale)), IRenderable, IDebugDrawable, ICollisionActor, IDamageable, IPickupDropper
 {
     public int Id => GetHashCode();
     public CollisionAnchor Anchor { get; } = anchor;
@@ -35,14 +36,27 @@ public abstract class PropBase(string name, Vector2 position, AnimatedSprite spr
     public CollisionShape2D Shape => new(new BoundingBox2D(
         new Vector2(CollisionBounds.X, CollisionBounds.Y),
         new Vector2(CollisionBounds.Right, CollisionBounds.Bottom)));
-    public event Action<Entity> Destroyed;
+    public event Action<Entity> Destroyed = null!;
+
+    public IReadOnlyList<PickupSpawnDef>? Drops { get; set; }
+
+    public IReadOnlyList<PickupSpawnDef> CreateDrops()
+    {
+        if (Drops is null || Drops.Count == 0)
+            return [];
+
+        var result = new PickupSpawnDef[Drops.Count];
+        for (int i = 0; i < Drops.Count; i++)
+            result[i] = Drops[i] with { Position = new Vector2(Frame.Center.X, default) };
+        return result;
+    }
 
     protected readonly SpriteRenderer SpriteRenderer = new(sprite, scale);
     protected readonly Health HealthComponent = new(maxHealth);
 
     public AnimatedSprite Sprite => SpriteRenderer.Sprite;
     public Faction Faction => Faction.Neutral;
-    public event EventHandler Died;
+    public event EventHandler Died = null!;
 
     int IDamageable.Health => HealthComponent.Value;
     int IDamageable.MaxHealth => HealthComponent.MaxHealth;
