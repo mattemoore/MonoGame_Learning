@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
@@ -7,12 +8,13 @@ using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities.Components;
 using MonoGameLearning.Core.Entities.Interfaces;
+using MonoGameLearning.Core.Levels;
 using MonoGameLearning.Core.Rendering;
 
 
 namespace MonoGameLearning.Core.Entities;
 
-public abstract class PropBase(string name, Vector2 position, AnimatedSprite sprite, float scale, int maxHealth, CollisionAnchor anchor) : Entity(name, position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale)), IRenderable, IDebugDrawable, ICollisionActor, IDamageable
+public abstract class PropBase(string name, Vector2 position, AnimatedSprite sprite, float scale, int maxHealth, CollisionAnchor anchor) : Entity(name, position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale)), IRenderable, IDebugDrawable, ICollisionActor, IDamageable, IPickupDropper
 {
     public int Id => GetHashCode();
     public CollisionAnchor Anchor { get; } = anchor;
@@ -36,6 +38,10 @@ public abstract class PropBase(string name, Vector2 position, AnimatedSprite spr
         new Vector2(CollisionBounds.X, CollisionBounds.Y),
         new Vector2(CollisionBounds.Right, CollisionBounds.Bottom)));
     public event Action<Entity> Destroyed;
+
+    public IReadOnlyList<PickupSpawnDef>? Drops { get; set; }
+
+    public virtual IReadOnlyList<PickupSpawnDef> CreateDrops() => Drops ?? [];
 
     protected readonly SpriteRenderer SpriteRenderer = new(sprite, scale);
     protected readonly Health HealthComponent = new(maxHealth);

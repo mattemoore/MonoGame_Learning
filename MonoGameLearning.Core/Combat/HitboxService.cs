@@ -30,7 +30,7 @@ public readonly record struct HitboxData
     }
 }
 
-public record struct HitResult
+public readonly record struct HitResult
 {
     public IDamageable Target { get; init; }
     public int Damage { get; init; }

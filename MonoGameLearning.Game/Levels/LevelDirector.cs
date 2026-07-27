@@ -8,6 +8,7 @@ using MonoGameLearning.Core;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Components;
+using MonoGameLearning.Core.Entities.Interfaces;
 using MonoGameLearning.Core.Levels;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Game.Entities.Enemy;
@@ -74,19 +75,27 @@ public class LevelDirector
         foreach (var prop in propDefs)
         {
             var drum = new OilDrumEntity(prop.Type, prop.Position, 1.0f, OilDrumSprite.Create(), _audio, anchor: prop.Anchor);
+            drum.Drops = prop.Drops;
             drum.Destroyed += OnPropDestroyed;
             _entityManager.Register(drum);
         }
     }
 
-    private void OnPropDestroyed(Entity prop)
+    protected void OnPropDestroyed(Entity prop)
     {
         if (prop is OilDrumEntity oilDrum)
             oilDrum.Destroyed -= OnPropDestroyed;
         _entityManager.Destroy(prop);
+
+        if (prop is IPickupDropper dropper)
+        {
+            var drops = dropper.CreateDrops();
+            if (drops.Count > 0)
+                SpawnPickups(drops);
+        }
     }
 
-    public void SpawnPickups(List<PickupSpawnDef> pickupDefs)
+    public void SpawnPickups(IReadOnlyList<PickupSpawnDef> pickupDefs)
     {
         foreach (var def in pickupDefs)
         {
