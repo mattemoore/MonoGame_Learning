@@ -13,10 +13,27 @@ using MonoGameLearning.Core.Rendering;
 
 namespace MonoGameLearning.Core.Entities;
 
-public abstract class PropBase(string name, Vector2 position, AnimatedSprite sprite, float scale, int maxHealth, CollisionAnchor anchor) : Entity(name, position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale)), IRenderable, IDebugDrawable, ICollisionActor, IDamageable, IPickupDropper
+public abstract class PropBase : Entity, IRenderable, IDebugDrawable, ICollisionActor, IDamageable, IPickupDropper
 {
+    protected PropBase(string name, Vector2 position, AnimatedSprite sprite, float scale, int maxHealth, CollisionAnchor anchor)
+        : base(name, position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale))
+    {
+        Anchor = anchor;
+        SpriteRenderer = new(sprite, scale);
+        HealthComponent = new(maxHealth);
+    }
+
+    // Sprite-less overload for test doubles — SpriteRenderer gets null! sprite (Render/DrawDebug already guard).
+    protected PropBase(string name, Vector2 position, int width, int height, int maxHealth, CollisionAnchor anchor)
+        : base(name, position, width, height)
+    {
+        Anchor = anchor;
+        SpriteRenderer = new(null!, 1f);
+        HealthComponent = new(maxHealth);
+    }
+
     public int Id => GetHashCode();
-    public CollisionAnchor Anchor { get; } = anchor;
+    public CollisionAnchor Anchor { get; }
     public virtual float CollisionHeightFraction => 1.0f;
     protected RectangleF CollisionBounds => ComputeCollisionBounds(Frame, CollisionHeightFraction, Anchor);
     internal static RectangleF ComputeCollisionBounds(RectangleF frame, float heightFraction, CollisionAnchor anchor)
@@ -36,23 +53,14 @@ public abstract class PropBase(string name, Vector2 position, AnimatedSprite spr
     public CollisionShape2D Shape => new(new BoundingBox2D(
         new Vector2(CollisionBounds.X, CollisionBounds.Y),
         new Vector2(CollisionBounds.Right, CollisionBounds.Bottom)));
-    public event Action<Entity> Destroyed = null!;
+    public event Action<PropBase> Destroyed = null!;
 
     public IReadOnlyList<PickupSpawnDef>? Drops { get; set; }
 
-    public IReadOnlyList<PickupSpawnDef> CreateDrops()
-    {
-        if (Drops is null || Drops.Count == 0)
-            return [];
+    public IReadOnlyList<PickupSpawnDef> CreateDrops() => Drops ?? [];
 
-        var result = new PickupSpawnDef[Drops.Count];
-        for (int i = 0; i < Drops.Count; i++)
-            result[i] = Drops[i] with { Position = new Vector2(Frame.Center.X, default) };
-        return result;
-    }
-
-    protected readonly SpriteRenderer SpriteRenderer = new(sprite, scale);
-    protected readonly Health HealthComponent = new(maxHealth);
+    protected readonly SpriteRenderer SpriteRenderer;
+    protected readonly Health HealthComponent;
 
     public AnimatedSprite Sprite => SpriteRenderer.Sprite;
     public Faction Faction => Faction.Neutral;

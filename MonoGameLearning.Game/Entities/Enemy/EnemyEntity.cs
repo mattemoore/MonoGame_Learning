@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGame.Extended.Graphics;
@@ -6,13 +7,14 @@ using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Components;
+using MonoGameLearning.Core.Entities.Interfaces;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.AnimatedSprites;
 
 namespace MonoGameLearning.Game.Entities.Enemy;
 
-public class EnemyEntity : CombatActorBase
+public class EnemyEntity : CombatActorBase, IPickupDropper
 {
     private EnemyStateController _stateController;
     private readonly EnemyAI _ai;
@@ -35,6 +37,8 @@ public class EnemyEntity : CombatActorBase
     }
 
     public Entity Target { get; set; }
+    public IReadOnlyList<PickupSpawnDef> Drops { get; set; }
+    public IReadOnlyList<PickupSpawnDef> CreateDrops() => Drops ?? [];
     public float AttackRange { get; set; } = 70f;
     public float MinChaseDistance { get; set; } = 60f;
 
@@ -204,6 +208,7 @@ public class EnemyEntity : CombatActorBase
             Sprite.Color = Color.Red;
         _spawnWalkTargetX = 0f;
         _spawnWalkDirection = Vector2.Zero;
+        Drops = null;
     }
 
     public override void DrawDebug(DebugDrawContext context)

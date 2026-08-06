@@ -7,11 +7,23 @@ using MonoGameLearning.Core.Rendering;
 
 namespace MonoGameLearning.Core.Entities;
 
-public abstract class PickupBase(string name, Vector2 position, Texture2D texture)
-    : Entity(name, position, texture.Width, texture.Height), IRenderable, IDebugDrawable, ICollisionActor, IPickup
+public abstract class PickupBase : Entity, IRenderable, IDebugDrawable, ICollisionActor, IPickup
 {
+    private const int DefaultTextureSize = 32;
+
+    // Texture-based ctor — derives size from the texture (may be null in headless tests).
+    protected PickupBase(string name, Vector2 position, Texture2D? texture)
+        : this(name, position, texture?.Width ?? DefaultTextureSize, texture?.Height ?? DefaultTextureSize, texture) { }
+
+    // Size-bearing overload for test doubles without a GraphicsDevice — Texture may be null (Render guards).
+    protected PickupBase(string name, Vector2 position, int width, int height, Texture2D? texture)
+        : base(name, position, width, height)
+    {
+        Texture = texture;
+    }
+
     public int Id => GetHashCode();
-    protected Texture2D Texture { get; } = texture;
+    protected Texture2D? Texture { get; }
 
     public CollisionShape2D Shape => new(new BoundingBox2D(
         new Vector2(Frame.X, Frame.Y),
@@ -19,6 +31,7 @@ public abstract class PickupBase(string name, Vector2 position, Texture2D textur
 
     public void Render(RenderContext context)
     {
+        if (Texture is null) return;
         context.SpriteBatch.Draw(Texture, Position, null, Color.White,
             0f, new Vector2(Texture.Width / 2f, Texture.Height / 2f), 1f, SpriteEffects.None, 0f);
     }
