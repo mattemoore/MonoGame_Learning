@@ -51,7 +51,7 @@ public class TestLevelDirector(EntityManager entityManager, Level level, Entity 
         OnEnemyDied(enemy, EventArgs.Empty);
     }
 
-    public void SimulatePropDestroyed(Entity prop)
+    public void SimulatePropDestroyed(PropBase prop)
     {
         OnPropDestroyed(prop);
     }

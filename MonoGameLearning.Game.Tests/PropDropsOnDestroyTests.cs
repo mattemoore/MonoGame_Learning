@@ -3,26 +3,17 @@ using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
+using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
-using MonoGameLearning.Core.Entities.Interfaces;
 using MonoGameLearning.Core.Levels;
 
 namespace MonoGameLearning.Game.Tests;
 
 internal sealed class StubPropDropperEntity(string name, Vector2 position, int width, int height)
-    : Entity(name, position, width, height), IPickupDropper, ICollisionActor
+    : PropBase(name, position, width, height, maxHealth: 1, CollisionAnchor.Top)
 {
-    public int Id => GetHashCode();
-    public IReadOnlyList<PickupSpawnDef>? Drops { get; set; }
-    public IReadOnlyList<PickupSpawnDef> CreateDrops() => Drops ?? [];
-
-    public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
-
-    public event Action<Entity>? Destroyed;
-    public void FireDestroyed()
-    {
-        Destroyed?.Invoke(this);
-    }
+    public override void TakeDamage(DamageInfo info) => OnDestroyed();
+    public void FireDestroyed() => OnDestroyed();
 }
 
 [TestFixture]

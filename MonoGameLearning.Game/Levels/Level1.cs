@@ -45,7 +45,10 @@ public class Level1(int gameWidth, int gameHeight) : Level(CreateWaveDefs(), gam
         ]),
         new WaveDef(TriggerX: 1600f, EndX: 2000f, Enemies:
         [
-            new EnemySpawnDef("Grunt", SpawnSide.Left, SpawnVertical.Top),
+            new EnemySpawnDef("Grunt", SpawnSide.Left, SpawnVertical.Top, Drops:
+            [
+                new PickupSpawnDef("Food", default),
+            ]),
             new EnemySpawnDef("Grunt", SpawnSide.Left, SpawnVertical.Bottom),
         ])
     ];

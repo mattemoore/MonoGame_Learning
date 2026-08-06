@@ -8,6 +8,7 @@ using MonoGameLearning.Core;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Components;
+using MonoGameLearning.Core.Entities.Interfaces;
 using MonoGameLearning.Core.Levels;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Game.Entities.Enemy;
@@ -80,15 +81,10 @@ public class LevelDirector
         }
     }
 
-    protected void OnPropDestroyed(Entity prop)
+    protected void OnPropDestroyed(PropBase prop)
     {
-        if (prop is PropBase p)
-        {
-            p.Destroyed -= OnPropDestroyed;
-            foreach (var def in p.CreateDrops())
-                SpawnPickupAligned(def, p.Frame.Bottom);
-        }
-
+        prop.Destroyed -= OnPropDestroyed;
+        SpawnDrops(prop);
         _entityManager.Destroy(prop);
     }
 
@@ -104,11 +100,14 @@ public class LevelDirector
         _ => throw new ArgumentException($"Unknown pickup type: {def.Type}", nameof(def)),
     };
 
-    private void SpawnPickupAligned(PickupSpawnDef def, float bottomY)
+    private void SpawnDrops<T>(T source) where T : Entity, IPickupDropper
     {
-        var pickup = CreatePickup(def);
-        pickup.Position = new Vector2(pickup.Position.X, bottomY - pickup.Height / 2f);
-        _entityManager.Register(pickup);
+        foreach (var def in source.CreateDrops())
+        {
+            var pickup = CreatePickup(def);
+            pickup.Position = new Vector2(source.Frame.Center.X, source.Frame.Bottom - pickup.Height / 2f);
+            _entityManager.Register(pickup);
+        }
     }
 
     public void PopulateSnapshots(RectangleF walkableBounds)
@@ -208,6 +207,7 @@ public class LevelDirector
             };
 
             var enemy = EnemyPool.Rent(def.Type, pos, _player);
+            enemy.Drops = def.Drops;   // after Rent — Rent→Reset clears Drops
             // FormatterServices-created test enemies have null Sprite — guard to avoid NPE.
             if (enemy.Sprite is not null)
             {
@@ -308,6 +308,7 @@ public class LevelDirector
         if (sender is not EnemyEntity enemy) return;
         enemy.Died -= OnEnemyDied;
         _activeEnemies.Remove(enemy);
+        SpawnDrops(enemy);   // before Return — position is still real
         EnemyPool.Return(enemy);
     }
 }
