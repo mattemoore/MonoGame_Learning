@@ -4,6 +4,6 @@ namespace MonoGameLearning.Core.Animation;
 
 public interface IAnimated
 {
-    AnimatedSprite Sprite { get; }
+    AnimatedSprite? Sprite { get; }
     void ResetAnimationFrameIndex();
 }

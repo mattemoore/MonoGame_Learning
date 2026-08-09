@@ -10,14 +10,14 @@ namespace MonoGameLearning.Core;
 
 public class GameCore : Game
 {
-    internal static GameCore s_instance;
+    internal static GameCore s_instance = null!;
     public static GameCore Instance => s_instance;
-    public static GraphicsDeviceManager Graphics { get; private set; }
-    public static new GraphicsDevice GraphicsDevice { get; private set; }
-    public static SpriteBatch SpriteBatch { get; private set; }
-    public static new ContentManager Content { get; private set; }
-    public static OrthographicCamera Camera { get; private set; }
-    public static BoxingViewportAdapter ViewportAdapter { get; private set; }
+    public static GraphicsDeviceManager Graphics { get; private set; } = null!;
+    public static new GraphicsDevice GraphicsDevice { get; private set; } = null!;
+    public static SpriteBatch SpriteBatch { get; private set; } = null!;
+    public static new ContentManager Content { get; private set; } = null!;
+    public static OrthographicCamera Camera { get; private set; } = null!;
+    public static BoxingViewportAdapter ViewportAdapter { get; private set; } = null!;
 
 
     public GumUiService Gum { get; }

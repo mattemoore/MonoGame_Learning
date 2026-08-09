@@ -20,8 +20,8 @@ public class TestSpatialEntity(string name, Vector2 position, int width, int hei
     public bool DeathCallbackInvoked { get; private set; }
     public bool KnockdownCallbackInvoked { get; private set; }
     public bool HitCallbackInvoked { get; private set; }
-    public HitboxService HitboxService { get; set; } = null!;
-    public MoveData CurrentMove { get; set; } = null!;
+    public HitboxService? HitboxService { get; set; }
+    public MoveData? CurrentMove { get; set; }
     public FacingDirection Direction { get; set; }
 
     public void TakeDamage(DamageInfo info) => CombatService.ApplyDamage(this, info);

@@ -10,19 +10,19 @@ namespace MonoGameLearning.Core.UI;
 
 public sealed class EnemyBar : UiBase
 {
-    private IDamageable _hitTarget;
-    private IDamageable _proximityTarget;
-    private IDamageable _displayTarget;
+    private IDamageable? _hitTarget;
+    private IDamageable? _proximityTarget;
+    private IDamageable? _displayTarget;
     private float _lingerTimer;
     private float _deathLingerTimer;
     private bool _visible;
     private bool _isDeathLinger;
 
     public bool IsVisible => _visible;
-    public IDamageable DisplayTarget => _displayTarget;
+    public IDamageable? DisplayTarget => _displayTarget;
     public bool IsDeathLinger => _isDeathLinger;
 
-    public void SetProximityTarget(IDamageable target) => _proximityTarget = target;
+    public void SetProximityTarget(IDamageable? target) => _proximityTarget = target;
 
     private readonly SpriteFont _font;
 

@@ -30,7 +30,7 @@ public enum InputMode
 
 public class InputService
 {
-    public event Action<InputAction> ActionTriggered;
+    public event Action<InputAction>? ActionTriggered;
     public Vector2 MovementDirection { get; private set; }
     public InputMode Mode { get; set; } = InputMode.Gameplay;
 

@@ -11,7 +11,7 @@ namespace MonoGameLearning.Core.Entities;
 
 public class EntityService(CollisionWorld2D world)
 {
-    public HitboxService HitboxService { get; set; }
+    public HitboxService? HitboxService { get; set; }
     public void Clear()
     {
         _all.Clear();
@@ -49,7 +49,7 @@ public class EntityService(CollisionWorld2D world)
 
     private readonly struct RenderableYComparer : IComparer<IRenderable>
     {
-        public int Compare(IRenderable x, IRenderable y)
+        public int Compare(IRenderable? x, IRenderable? y)
         {
             if (x is not Entity ex || y is not Entity ey) return 0;
             float diff = ex.Position.Y - ey.Position.Y;
@@ -88,9 +88,9 @@ public class EntityService(CollisionWorld2D world)
         _pendingDestroy.Clear();
     }
 
-    public IDamageable FindNearestAliveEnemy(Vector2 origin)
+    public IDamageable? FindNearestAliveEnemy(Vector2 origin)
     {
-        IDamageable nearest = null;
+        IDamageable? nearest = null;
         float nearestDist = float.MaxValue;
         for (int i = 0; i < _all.Count; i++)
         {

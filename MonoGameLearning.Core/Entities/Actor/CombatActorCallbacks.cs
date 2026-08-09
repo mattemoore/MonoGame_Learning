@@ -4,12 +4,12 @@ namespace MonoGameLearning.Core.Entities.Actor;
 
 public sealed class CombatActorCallbacks
 {
-    public Action OnAttackingExit { get; init; }
-    public Action OnHurtEntry { get; init; }
-    public Action OnHurtExit { get; init; }
-    public Action OnKnockdownEntry { get; init; }
-    public Action OnKnockdownExit { get; init; }
-    public Action OnDyingEntry { get; init; }
-    public Action OnDyingExit { get; init; }
-    public Action OnDeadEntry { get; init; }
+    public required Action OnAttackingExit { get; init; }
+    public required Action OnHurtEntry { get; init; }
+    public required Action OnHurtExit { get; init; }
+    public required Action OnKnockdownEntry { get; init; }
+    public required Action OnKnockdownExit { get; init; }
+    public required Action OnDyingEntry { get; init; }
+    public required Action OnDyingExit { get; init; }
+    public required Action OnDeadEntry { get; init; }
 }

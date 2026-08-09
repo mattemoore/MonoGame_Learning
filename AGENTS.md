@@ -68,11 +68,11 @@ dotnet test
 * **Conciseness**: Responses and suggestions should include code that is as concise and terse as possible.
 * **Modern C#**: Always use the latest C# features (e.g., primary constructors, collection expressions, raw string literals) to ensure the codebase remains modern and idiomatic.
 * **Solution Simplification**: Before proposing a solution, ALWAYS include a consideration step to see if the proposed architecture or implementation can be further simplified, refactored, or streamlined. When creating plans, prioritize simplicity — actively seek out and suggest simplifying constraints that reduce code surface area, remove unnecessary abstractions, or collapse parallel structures. Every plan should explicitly consider what can be removed or constrained, not just what needs to be built.
-* **Build Verification**: Always run `dotnet build` to ensure the project compiles successfully after any code modifications.
+* **Build Verification**: Always run `dotnet build --warnaserror` to ensure the project compiles successfully and produces zero warnings after any code modifications.
 * **Testing**: Always run `dotnet test` to execute unit tests after making any changes to verify no regressions were introduced.
 * **Mandatory Pre-Completion Checklist**: Before marking any implementation task as complete, the following steps MUST be performed in order:
   1. Write unit/integration tests covering all new or modified logic.
-  2. Run `dotnet build` to verify compilation.
+  2. Run `dotnet build --warnaserror` to verify compilation with zero warnings.
   3. Run `dotnet test` to verify all tests pass with no regressions.
   4. If any step fails, fix the issue before proceeding.
 * **Preventing Game-Breaking Bugs (Test Requirement)**: Always write new unit/integration tests when modifying logic — this is **not optional**. Focus tests on critical gameplay failure modes such as:

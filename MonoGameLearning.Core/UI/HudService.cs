@@ -11,7 +11,7 @@ public class HudService
     public UiBase RootWidget => _root;
 
     public bool IsEnemyBarVisible => _enemyBar.IsVisible;
-    public IDamageable EnemyBarTarget => _enemyBar.DisplayTarget;
+    public IDamageable? EnemyBarTarget => _enemyBar.DisplayTarget;
     public bool IsDeathLinger => _enemyBar.IsDeathLinger;
 
     public HudService(IHudPlayerData player, SpriteFont font)
@@ -23,7 +23,7 @@ public class HudService
 
     public void OnEnemyHit(IDamageable enemy) => _enemyBar.OnHit(enemy);
 
-    public void SetProximityTarget(IDamageable target) => _enemyBar.SetProximityTarget(target);
+    public void SetProximityTarget(IDamageable? target) => _enemyBar.SetProximityTarget(target);
 
     public void ClearTargetState() => _enemyBar.Reset();
 }

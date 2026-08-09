@@ -5,8 +5,8 @@ namespace MonoGameLearning.Core.Combat;
 
 public class MoveData
 {
-    public string Name { get; init; }
-    public string AnimationKey { get; init; }
+    public string? Name { get; init; }
+    public required string AnimationKey { get; init; }
     public int Damage { get; init; }
     public bool Knockdown { get; init; }
     public AttackStrength Strength { get; init; }
