@@ -3,7 +3,7 @@ using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
-using MonoGameLearning.Core.Entities.Interfaces;
+using MonoGameLearning.Core.Entities.Prop;
 using MonoGameLearning.Game.AnimatedSprites;
 
 namespace MonoGameLearning.Game.Entities.Props;
@@ -14,7 +14,7 @@ public class OilDrumEntity : PropBase, IUpdatable
     public override float CollisionHeightFraction => DrumCollisionHeightFraction;
 
     private readonly OilDrumBehavior _behavior = new();
-    private readonly AudioManager _audio;
+    private readonly AudioService _audio;
 
     private string SelectAnimation() => HealthComponent.Value switch
     {
@@ -23,7 +23,7 @@ public class OilDrumEntity : PropBase, IUpdatable
         _ => OilDrumSprite.AnimationIdle
     };
 
-    public OilDrumEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, AudioManager audio, CollisionAnchor anchor = CollisionAnchor.Top)
+    public OilDrumEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, AudioService audio, CollisionAnchor anchor = CollisionAnchor.Top)
         : base(name, position, sprite, scale, 6, anchor)
     {
         _audio = audio;

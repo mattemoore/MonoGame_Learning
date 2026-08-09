@@ -5,6 +5,8 @@ using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Pickup;
+using MonoGameLearning.Core.Entities.Prop;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Core.Levels;
 using MonoGameLearning.Game.Entities.Enemy;
@@ -28,7 +30,7 @@ public class TestLevel(List<WaveDef> waveDefs, float endTriggerX, int gameWidth 
 }
 
 #pragma warning disable CS9107 // Captured by base class — needed for InitializePool() called from base ctor
-public class TestLevelDirector(EntityManager entityManager, Level level, Entity player)
+public class TestLevelDirector(EntityService entityManager, Level level, Entity player)
     : LevelDirector(entityManager, level, player, null!)
 #pragma warning restore CS9107
 {
@@ -57,7 +59,7 @@ public class TestLevelDirector(EntityManager entityManager, Level level, Entity 
     }
 }
 
-public class TestEnemyPool(EntityManager entityManager, LevelDirector director, List<Entity> spawnedEnemies)
+public class TestEnemyPool(EntityService entityManager, LevelDirector director, List<Entity> spawnedEnemies)
     : EnemyPool(entityManager, director, null!, (type, i) => new TestEnemyEntity($"test_enemy_{i}", Vector2.Zero))
 {
     public override EnemyEntity Rent(string type, Vector2 position, Entity target)
@@ -72,7 +74,7 @@ public class TestEnemyPool(EntityManager entityManager, LevelDirector director, 
 public class LevelDirectorTests
 {
     private static readonly RectangleF Bounds = new(0, 0, 2000, 600);
-    private EntityManager _entityManager;
+    private EntityService _entityManager;
     private TestLevel _level;
     private Entity _player;
     private TestLevelDirector _director;
@@ -92,7 +94,7 @@ public class LevelDirectorTests
     [SetUp]
     public void Setup()
     {
-        _entityManager = new EntityManager(CreateTestWorld());
+        _entityManager = new EntityService(CreateTestWorld());
         _player = new TestPlayerEntity("player", Vector2.Zero);
         _level = new TestLevel(
         [

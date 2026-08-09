@@ -24,16 +24,16 @@ public class EnemyPool
         EnemySprite.AnimationGetUp,
     ];
 
-    protected readonly EntityManager EntityManager;
+    protected readonly EntityService EntityService;
     private readonly LevelDirector _director;
-    private readonly AudioManager _audio;
+    private readonly AudioService _audio;
     private readonly Func<string, int, EnemyEntity> _factory;
     protected readonly Dictionary<string, Stack<EnemyEntity>> Free = [];
     protected readonly Dictionary<EnemyEntity, string> EntityType = [];
 
-    public EnemyPool(EntityManager entityManager, LevelDirector director, AudioManager audio, Func<string, int, EnemyEntity> factory = null)
+    public EnemyPool(EntityService entityManager, LevelDirector director, AudioService audio, Func<string, int, EnemyEntity> factory = null)
     {
-        EntityManager = entityManager;
+        EntityService = entityManager;
         _director = director;
         _audio = audio;
         _factory = factory ?? DefaultFactory;
@@ -72,7 +72,7 @@ public class EnemyPool
 
         var enemy = stack.Pop();
         OnRentEnemy(enemy, position, target);
-        EntityManager.Register(enemy);
+        EntityService.Register(enemy);
         return enemy;
     }
 
@@ -83,7 +83,7 @@ public class EnemyPool
 
     public void Return(EnemyEntity enemy)
     {
-        EntityManager.Destroy(enemy);
+        EntityService.Destroy(enemy);
 
         if (enemy.HitboxService is not null)
         {

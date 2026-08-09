@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Pickup;
 
 namespace MonoGameLearning.Core.Levels;
 

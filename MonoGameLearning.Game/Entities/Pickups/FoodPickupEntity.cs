@@ -1,7 +1,8 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
-using MonoGameLearning.Core.Entities.Interfaces;
+using MonoGameLearning.Core.Entities.Pickup;
 
 namespace MonoGameLearning.Game.Entities.Pickups;
 

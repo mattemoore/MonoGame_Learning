@@ -17,7 +17,7 @@ namespace MonoGameLearning.Game.Tests;
 public class EnemyPoolTests
 {
     private static readonly RectangleF Bounds = new(0, 0, 2000, 600);
-    private EntityManager _entityManager;
+    private EntityService _entityManager;
     private Entity _player;
     private Level _level;
 
@@ -34,7 +34,7 @@ public class EnemyPoolTests
     [SetUp]
     public void Setup()
     {
-        _entityManager = new EntityManager(CreateTestWorld());
+        _entityManager = new EntityService(CreateTestWorld());
         _player = new EntityStub("player", Vector2.Zero, 10, 10);
 
         _level = new TestLevel(
@@ -119,7 +119,7 @@ public class EnemyPoolTests
         return new TestEnemyEntity($"test_enemy_{_mockCounter}", Vector2.Zero);
     }
 
-    private class TestEnemyPool(EntityManager entityManager, LevelDirector director, AudioManager audio)
+    private class TestEnemyPool(EntityService entityManager, LevelDirector director, AudioService audio)
         : EnemyPool(entityManager, director, audio, (type, index) =>
         {
             _mockCounter++;
@@ -133,7 +133,7 @@ public class EnemyPoolTests
     {
     }
 
-    private class DirectorStub(EntityManager entityManager, Level level, Entity player)
+    private class DirectorStub(EntityService entityManager, Level level, Entity player)
         : LevelDirector(entityManager, level, player, null!)
     {
         protected override void InitializePool()

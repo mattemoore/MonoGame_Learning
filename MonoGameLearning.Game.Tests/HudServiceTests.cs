@@ -5,7 +5,6 @@ using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
-using MonoGameLearning.Core.Entities.Interfaces;
 using MonoGameLearning.Core.UI;
 
 namespace MonoGameLearning.Game.Tests;
@@ -207,7 +206,7 @@ public class HudServiceTests
         world.AddLayer("actors", new Layer(new QuadTreeSpace(bb)));
         world.AddLayer("props", new Layer(new QuadTreeSpace(bb)));
         world.EnableCollisionBetweenLayers("actors", "props");
-        var mgr = new EntityManager(world);
+        var mgr = new EntityService(world);
         mgr.Register(_hud.RootWidget);
 
         Assert.That(mgr.ScreenRenderables, Does.Contain(_hud.RootWidget));

@@ -1,7 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
-using MonoGameLearning.Core.Entities.Components;
+using MonoGameLearning.Core.AI;
 
 namespace MonoGameLearning.Game.Tests;
 

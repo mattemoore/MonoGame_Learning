@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGame.Extended.Graphics;
+using MonoGameLearning.Core.AI;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
-using MonoGameLearning.Core.Entities.Components;
-using MonoGameLearning.Core.Entities.Interfaces;
+using MonoGameLearning.Core.Entities.Actor;
+using MonoGameLearning.Core.Entities.Pickup;
+using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.AnimatedSprites;
@@ -56,7 +58,7 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
         }
     };
 
-    public EnemyEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, AudioManager audio, LevelDirector director)
+    public EnemyEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, AudioService audio, LevelDirector director)
         : base(name, position, 48, 60, sprite, scale, 30, new(EnemySprite.AnimationIdle, EnemySprite.AnimationRun, EnemySprite.AnimationHurt, EnemySprite.AnimationFall, EnemySprite.AnimationDie, EnemySprite.AnimationGetUp), audio)
     {
         Speed = 120f;

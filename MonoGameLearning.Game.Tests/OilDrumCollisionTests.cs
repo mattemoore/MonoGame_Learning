@@ -4,6 +4,7 @@ using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Prop;
 
 internal class DrumTestActor(string name, Vector2 position, int width, int height)
     : Entity(name, position, width, height), ICollisionActor

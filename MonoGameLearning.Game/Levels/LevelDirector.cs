@@ -5,11 +5,13 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGameLearning.Core;
+using MonoGameLearning.Core.AI;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Entities;
-using MonoGameLearning.Core.Entities.Components;
-using MonoGameLearning.Core.Entities.Interfaces;
+using MonoGameLearning.Core.Entities.Pickup;
+using MonoGameLearning.Core.Entities.Prop;
 using MonoGameLearning.Core.Levels;
+using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.Entities.Props;
@@ -22,10 +24,10 @@ namespace MonoGameLearning.Game.Levels;
 
 public class LevelDirector
 {
-    private readonly EntityManager _entityManager;
+    private readonly EntityService _entityManager;
     private readonly Level _level;
     private readonly Entity _player;
-    private readonly AudioManager _audio;
+    private readonly AudioService _audio;
 
     protected EnemyPool EnemyPool { get; set; }
 
@@ -51,7 +53,7 @@ public class LevelDirector
 
     public ref readonly WorldSnapshot CurrentWorld => ref _currentSnapshot;
 
-    public LevelDirector(EntityManager entityManager, Level level, Entity player, AudioManager audio)
+    public LevelDirector(EntityService entityManager, Level level, Entity player, AudioService audio)
     {
         _entityManager = entityManager;
         _level = level;

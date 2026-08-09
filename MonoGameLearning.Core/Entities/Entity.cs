@@ -1,6 +1,5 @@
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
-using MonoGameLearning.Core.Entities.Interfaces;
 
 namespace MonoGameLearning.Core.Entities;
 

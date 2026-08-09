@@ -5,6 +5,8 @@ using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Pickup;
+using MonoGameLearning.Core.Entities.Prop;
 using MonoGameLearning.Core.Levels;
 
 namespace MonoGameLearning.Game.Tests;
@@ -94,7 +96,7 @@ public class PropDropsOnDestroyTests
     public void OnPropDestroyed_WithoutDrops_DoesNotSpawn()
     {
         var world = CreateTestWorld();
-        var mgr = new EntityManager(world);
+        var mgr = new EntityService(world);
         var player = new TestPlayerEntity("player", Vector2.Zero);
         var level = CreateTestLevel();
         var director = new TestLevelDirector(mgr, level, player);
@@ -117,7 +119,7 @@ public class PropDropsOnDestroyTests
     public void OnPropDestroyed_WithEmptyDropsList_DoesNotSpawn()
     {
         var world = CreateTestWorld();
-        var mgr = new EntityManager(world);
+        var mgr = new EntityService(world);
         var player = new TestPlayerEntity("player", Vector2.Zero);
         var level = CreateTestLevel();
         var director = new TestLevelDirector(mgr, level, player);

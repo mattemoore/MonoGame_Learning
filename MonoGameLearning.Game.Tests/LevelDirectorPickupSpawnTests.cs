@@ -4,6 +4,7 @@ using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Pickup;
 using MonoGameLearning.Core.Levels;
 
 namespace MonoGameLearning.Game.Tests;
@@ -38,7 +39,7 @@ public class LevelDirectorPickupSpawnTests
     public void SpawnPickups_Stub_RegistersInEntityManager()
     {
         var world = CreateTestWorld();
-        var mgr = new EntityManager(world);
+        var mgr = new EntityService(world);
         var player = new TestPlayerEntity("player", Vector2.Zero);
         var level = CreateTestLevel();
         var pickup = new StubPickupEntity("Food", new Vector2(500, 300), 32, 32);
@@ -53,7 +54,7 @@ public class LevelDirectorPickupSpawnTests
     public void SpawnPickups_UnknownType_Throws()
     {
         var world = CreateTestWorld();
-        var mgr = new EntityManager(world);
+        var mgr = new EntityService(world);
         var player = new TestPlayerEntity("player", Vector2.Zero);
         var level = CreateTestLevel();
         var director = new TestLevelDirector(mgr, level, player);

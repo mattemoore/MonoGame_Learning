@@ -3,6 +3,7 @@ using System.Diagnostics;
 using Microsoft.Xna.Framework.Content;
 using MonoGame.Extended;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Pickup;
 using MonoGameLearning.Core.Rendering;
 
 namespace MonoGameLearning.Core.Levels;
