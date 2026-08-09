@@ -53,15 +53,15 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         };
     }
 
-    public AnimatedSprite Sprite => SpriteRenderer?.Sprite;
+    public AnimatedSprite? Sprite => SpriteRenderer?.Sprite;
     public RectangleF MovementBounds { get; set; }
     public Vector2 MovementDirection { get; set; }
     public float Speed { get; set; }
-    public HitboxService HitboxService { get; set; }
-    public MoveData CurrentMove { get; set; }
+    public HitboxService? HitboxService { get; set; }
+    public MoveData? CurrentMove { get; set; }
     public FacingDirection Direction { get; set; } = FacingDirection.Right;
     public Faction Faction { get; protected set; }
-    public event EventHandler Died;
+    public event EventHandler? Died;
     protected SfxId? LastImpactSfx { get; set; }
 
     int IDamageable.Health => HealthComponent.Value;
@@ -107,7 +107,8 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         {
             if (KnockdownPhase == KnockdownPhase.Falling)
             {
-                Sprite.SetAnimation(Animations.GetUp);
+                Debug.Assert(Sprite is not null, $"{GetType().Name} [{Name}] animation event fired with no Sprite");
+                Sprite!.SetAnimation(Animations.GetUp);
                 KnockdownPhase = KnockdownPhase.GettingUp;
                 SubscribeToAnimationEvent();
             }
