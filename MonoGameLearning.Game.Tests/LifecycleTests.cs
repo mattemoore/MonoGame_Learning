@@ -13,7 +13,7 @@ public class CameraTargetXTests
     private static readonly RectangleF LevelBounds = new(0, 0, 1600, 900);
 
     private static float TargetX(float playerX, float currentCameraCenterX, float? maxCenter = null)
-        => CameraController.ComputeTargetX(playerX, currentCameraCenterX, MinCenter, maxCenter ?? FullMaxCenter, GameWidth);
+        => CameraService.ComputeTargetX(playerX, currentCameraCenterX, MinCenter, maxCenter ?? FullMaxCenter, GameWidth);
 
     private static float CappedMaxCenter(float? waveEndX)
     {
@@ -68,8 +68,8 @@ public class CameraTargetXTests
     [Test]
     public void LevelWidthEqualsGameWidth_ClampsToCenter()
     {
-        float minResult = CameraController.ComputeTargetX(0, 0, 400, 400, GameWidth);
-        float maxResult = CameraController.ComputeTargetX(800, 800, 400, 400, GameWidth);
+        float minResult = CameraService.ComputeTargetX(0, 0, 400, 400, GameWidth);
+        float maxResult = CameraService.ComputeTargetX(800, 800, 400, 400, GameWidth);
         Assert.That(minResult, Is.EqualTo(400));
         Assert.That(maxResult, Is.EqualTo(400));
     }
@@ -211,7 +211,7 @@ public class CameraTargetXTests
     public void MovementBounds_CameraLeftLeftOfBounds_ReturnsBoundsUnchanged()
     {
         var baseBounds = new RectangleF(400, 0, 2000, 600);
-        var result = CameraController.ComputeMovementBounds(0, baseBounds, null);
+        var result = CameraService.ComputeMovementBounds(0, baseBounds, null);
         Assert.That(result.X, Is.EqualTo(400));
         Assert.That(result.Width, Is.EqualTo(2000));
     }
@@ -220,7 +220,7 @@ public class CameraTargetXTests
     public void MovementBounds_CameraLeftRightOfBoundsLeft_ReturnsShrunkBounds()
     {
         var baseBounds = new RectangleF(200, 0, 1200, 600);
-        var result = CameraController.ComputeMovementBounds(600, baseBounds, null);
+        var result = CameraService.ComputeMovementBounds(600, baseBounds, null);
         Assert.That(result.X, Is.EqualTo(600));
         Assert.That(result.Width, Is.EqualTo(800));
     }
@@ -229,7 +229,7 @@ public class CameraTargetXTests
     public void MovementBounds_CameraLeftEqualsBoundsLeft_ReturnsBoundsUnchanged()
     {
         var baseBounds = new RectangleF(200, 0, 1200, 600);
-        var result = CameraController.ComputeMovementBounds(200, baseBounds, null);
+        var result = CameraService.ComputeMovementBounds(200, baseBounds, null);
         Assert.That(result.X, Is.EqualTo(200));
         Assert.That(result.Width, Is.EqualTo(1200));
     }
@@ -238,7 +238,7 @@ public class CameraTargetXTests
     public void MovementBounds_RightCapTighterThanBounds_ShrinksRightSide()
     {
         var baseBounds = new RectangleF(0, 0, 2000, 600);
-        var result = CameraController.ComputeMovementBounds(0, baseBounds, 1200f);
+        var result = CameraService.ComputeMovementBounds(0, baseBounds, 1200f);
         Assert.That(result.X, Is.EqualTo(0));
         Assert.That(result.Width, Is.EqualTo(1200));
     }
@@ -247,7 +247,7 @@ public class CameraTargetXTests
     public void MovementBounds_RightCapLooserThanBounds_UsesBaseBoundsRight()
     {
         var baseBounds = new RectangleF(0, 0, 1000, 600);
-        var result = CameraController.ComputeMovementBounds(0, baseBounds, 2000f);
+        var result = CameraService.ComputeMovementBounds(0, baseBounds, 2000f);
         Assert.That(result.X, Is.EqualTo(0));
         Assert.That(result.Width, Is.EqualTo(1000));
     }

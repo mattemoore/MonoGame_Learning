@@ -4,6 +4,7 @@ using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Pickup;
 using MonoGameLearning.Core.Levels;
 using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.Entities.Pickups;
@@ -25,10 +26,10 @@ public class EnemyDropsOnDeathTests
         return world;
     }
 
-    private static (TestLevelDirector Director, EntityManager Manager, Entity Player) Setup(List<EnemySpawnDef> enemies)
+    private static (TestLevelDirector Director, EntityService Manager, Entity Player) Setup(List<EnemySpawnDef> enemies)
     {
         var world = CreateTestWorld();
-        var mgr = new EntityManager(world);
+        var mgr = new EntityService(world);
         var player = new TestPlayerEntity("player", Vector2.Zero);
         var level = new TestLevel(
         [

@@ -3,12 +3,11 @@ using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
-using MonoGameLearning.Core.Entities.Components;
-using MonoGameLearning.Core.Entities.Interfaces;
+using MonoGameLearning.Core.Movement;
 
 namespace MonoGameLearning.Game.Tests;
 
-public class TestSpatialEntity(string name, Vector2 position, int width, int height, Faction faction = default) : Entity(name, position, width, height), IDamageable, ICollisionActor, IHitboxProvider
+public class TestSpatialEntity(string name, Vector2 position, int width, int height, Faction faction = default) : Entity(name, position, width, height), IDamageable, IDamageResponse, ICollisionActor, IHitboxProvider
 {
     private readonly Health _health = new(100);
     public int Id => GetHashCode();
@@ -27,11 +26,12 @@ public class TestSpatialEntity(string name, Vector2 position, int width, int hei
 
     public void TakeDamage(DamageInfo info) => CombatService.ApplyDamage(this, info);
 
-    bool IDamageable.CanTakeDamage() => _health.IsAlive;
-    void IDamageable.ReduceHealth(int amount) => _health.Subtract(amount);
-    void IDamageable.OnDeath() { DeathCallbackInvoked = true; Died?.Invoke(this, EventArgs.Empty); }
-    void IDamageable.OnKnockdown(DamageInfo info) { KnockdownCallbackInvoked = true; }
-    void IDamageable.OnHit(DamageInfo info) { HitCallbackInvoked = true; }
+    bool IDamageResponse.IsAlive => _health.IsAlive;
+    bool IDamageResponse.CanTakeDamage() => _health.IsAlive;
+    void IDamageResponse.ReduceHealth(int amount) => _health.Subtract(amount);
+    void IDamageResponse.OnDeath() { DeathCallbackInvoked = true; Died?.Invoke(this, EventArgs.Empty); }
+    void IDamageResponse.OnKnockdown(DamageInfo info) { KnockdownCallbackInvoked = true; }
+    void IDamageResponse.OnHit(DamageInfo info) { HitCallbackInvoked = true; }
     void IDamageable.Heal(int amount) => _health.Add(amount);
 }
 
@@ -360,7 +360,7 @@ public class HitboxTests
         Assert.That(hits[0].Target, Is.InstanceOf<IDamageable>());
     }
 
-    private class TestPropForHit(string name, Vector2 position, int width, int height) : Entity(name, position, width, height), IDamageable, ICollisionActor
+    private class TestPropForHit(string name, Vector2 position, int width, int height) : Entity(name, position, width, height), IDamageable, IDamageResponse, ICollisionActor
     {
         private readonly Health _health = new(100);
         public int Id => GetHashCode();

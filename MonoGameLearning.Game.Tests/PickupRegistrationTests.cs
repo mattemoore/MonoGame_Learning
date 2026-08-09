@@ -3,15 +3,17 @@ using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
+using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
-using MonoGameLearning.Core.Entities.Interfaces;
+using MonoGameLearning.Core.Entities.Pickup;
 
 namespace MonoGameLearning.Game.Tests;
 
 internal sealed class StubPickupEntity(string name, Vector2 position, int width, int height)
-    : Entity(name, position, width, height), ICollisionActor, IPickup
+    : Entity(name, position, width, height), ICollisionActor, ICollisionLayer, IPickup
 {
     public int Id => GetHashCode();
+    public string LayerName => "pickups";
     public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
     public void OnPickup(IDamageable target) { }
 }
@@ -34,7 +36,7 @@ public class PickupRegistrationTests
     [Test]
     public void PickupEntity_RegisteredInPickupCollidables()
     {
-        var mgr = new EntityManager(CreateTestWorld());
+        var mgr = new EntityService(CreateTestWorld());
         var pickup = new StubPickupEntity("p", Vector2.Zero, 32, 32);
 
         mgr.Register(pickup);
@@ -45,22 +47,22 @@ public class PickupRegistrationTests
     [Test]
     public void PickupEntity_NotInActorOrPropCollidables()
     {
-        var mgr = new EntityManager(CreateTestWorld());
+        var mgr = new EntityService(CreateTestWorld());
         var pickup = new StubPickupEntity("p", Vector2.Zero, 32, 32);
 
         mgr.Register(pickup);
 
         Assert.Multiple(() =>
         {
-            Assert.That(mgr.ActorCollidables, Is.Empty);
-            Assert.That(mgr.PropCollidables, Is.Empty);
+            Assert.That(mgr.GetCollidables("actors"), Is.Empty);
+            Assert.That(mgr.GetCollidables("props"), Is.Empty);
         });
     }
 
     [Test]
     public void Clear_RemovesFromPickupCollidables()
     {
-        var mgr = new EntityManager(CreateTestWorld());
+        var mgr = new EntityService(CreateTestWorld());
         var pickup = new StubPickupEntity("p", Vector2.Zero, 32, 32);
         mgr.Register(pickup);
 
@@ -72,7 +74,7 @@ public class PickupRegistrationTests
     [Test]
     public void Destroy_RemovesFromPickupCollidables()
     {
-        var mgr = new EntityManager(CreateTestWorld());
+        var mgr = new EntityService(CreateTestWorld());
         var pickup = new StubPickupEntity("p", Vector2.Zero, 32, 32);
         mgr.Register(pickup);
 
@@ -85,7 +87,7 @@ public class PickupRegistrationTests
     [Test]
     public void PickupEntity_RegisteredInAll()
     {
-        var mgr = new EntityManager(CreateTestWorld());
+        var mgr = new EntityService(CreateTestWorld());
         var pickup = new StubPickupEntity("p", Vector2.Zero, 32, 32);
 
         mgr.Register(pickup);

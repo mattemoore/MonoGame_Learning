@@ -4,7 +4,6 @@ using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
 using MonoGameLearning.Core.Entities;
-using MonoGameLearning.Core.Entities.Interfaces;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Core.UI;
 using MonoGameLearning.Game.Entities.GoIndicator;
@@ -61,7 +60,7 @@ public class GoIndicatorTests
     [Test]
     public void UiBase_EntityManager_RegistersInUpdatables()
     {
-        var mgr = new EntityManager(CreateTestWorld());
+        var mgr = new EntityService(CreateTestWorld());
         var entity = new TestUiEntity("test");
 
         mgr.Register(entity);
@@ -72,7 +71,7 @@ public class GoIndicatorTests
     [Test]
     public void UiBase_EntityManager_RegistersInScreenRenderables()
     {
-        var mgr = new EntityManager(CreateTestWorld());
+        var mgr = new EntityService(CreateTestWorld());
         var entity = new TestUiEntity("test");
 
         mgr.Register(entity);
@@ -84,7 +83,7 @@ public class GoIndicatorTests
     [Test]
     public void UiBase_EntityManager_RegistersInDebugDrawables()
     {
-        var mgr = new EntityManager(CreateTestWorld());
+        var mgr = new EntityService(CreateTestWorld());
         var entity = new TestUiEntity("test");
 
         mgr.Register(entity);
@@ -95,7 +94,7 @@ public class GoIndicatorTests
     [Test]
     public void UiBase_EntityManager_Clear_RemovesFromAllLists()
     {
-        var mgr = new EntityManager(CreateTestWorld());
+        var mgr = new EntityService(CreateTestWorld());
         var entity = new TestUiEntity("test");
         mgr.Register(entity);
 

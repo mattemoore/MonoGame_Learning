@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Pickup;
+using MonoGameLearning.Core.Entities.Prop;
 
 namespace MonoGameLearning.Core.Levels;
 

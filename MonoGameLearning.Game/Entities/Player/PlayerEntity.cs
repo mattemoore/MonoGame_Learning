@@ -4,7 +4,8 @@ using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
-using MonoGameLearning.Core.Entities.Components;
+using MonoGameLearning.Core.Entities.Actor;
+using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Core.UI;
 using MonoGameLearning.Game.AnimatedSprites;
 
@@ -73,7 +74,7 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
     protected override void FireDeathCompleted() => _stateController.Fire(PlayerTrigger.DeathCompleted);
     protected override void FireAttackCompleted() => _stateController.Fire(PlayerTrigger.AttackCompleted);
 
-    public PlayerEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, AudioManager audio)
+    public PlayerEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, AudioService audio)
         : base(name, position, 48, 60, sprite, scale, 100, new(PlayerSprite.AnimationIdle, PlayerSprite.AnimationRun, PlayerSprite.AnimationHurt, PlayerSprite.AnimationFall, PlayerSprite.AnimationDie, PlayerSprite.AnimationGetUp), audio)
     {
         Speed = 200f;

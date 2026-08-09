@@ -13,10 +13,10 @@ using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Camera;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
-using MonoGameLearning.Core.Entities.Components;
-using MonoGameLearning.Core.Entities.Interfaces;
+using MonoGameLearning.Core.Entities.Pickup;
 using MonoGameLearning.Core.Input;
 using MonoGameLearning.Core.Levels;
+using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Core.Settings;
 using MonoGameLearning.Core.UI;
@@ -37,34 +37,34 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     public const bool IS_FULL_SCREEN = false;
     private PlayerEntity _player;
     private Level _currentLevel;
-    private EntityManager _entityManager;
-    private InputManager _input;
+    private EntityService _entityManager;
+    private InputService _input;
     private int _numBackgroundsDrawn, _numEntitiesDrawn;
 
-    private GameStateController _gameState;
-    private CameraController _cameraController;
-    private MenuManager _menuManager;
+    private GameStateService _gameState;
+    private CameraService _cameraController;
+    private MenuService _menuManager;
     private HitboxService _hitboxService;
     private SpriteFont _debugFont;
     private LevelDirector _levelDirector;
     private BackgroundRenderer _backgroundRenderer;
     private CollisionWorld2D _collisionWorld;
     private Dictionary<InputAction, Action> _actionHandlers;
-    private AudioManager _audio;
+    private AudioService _audio;
     private GoIndicatorEntity _goIndicator;
     private HudService _hudService;
 
     protected override void Initialize()
     {
-        _input = new InputManager();
+        _input = new InputService();
         _input.ActionTriggered += OnActionTriggered;
-        _audio = new AudioManager();
+        _audio = new AudioService();
         SettingsService.LoadAudio();
         _audio.SfxVolume = SettingsService.AudioSettings.SfxVolume;
         _audio.MusicVolume = SettingsService.AudioSettings.MusicVolume;
         _hitboxService = new();
 
-        _gameState = new GameStateController();
+        _gameState = new GameStateService();
         _gameState.StateMachine.OnTransitioned(t =>
         {
             _menuManager.OnGameStateChanged(t.Source);
@@ -95,7 +95,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                 _audio.SetPaused(false);
         });
 
-        _menuManager = new MenuManager(_gameState, Exit, Gum, _audio.PlaySfx, () => SettingsService.AudioSettings, settings =>
+        _menuManager = new MenuService(_gameState, Exit, Gum, _audio.PlaySfx, () => SettingsService.AudioSettings, settings =>
         {
             SettingsService.SaveAudio(settings);
             _audio.SfxVolume = settings.SfxVolume;
@@ -171,7 +171,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             _cameraController.Update(Camera);
             _player.MovementDirection = _input.MovementDirection;
 
-            var movementBounds = CameraController.ComputeMovementBounds(
+            var movementBounds = CameraService.ComputeMovementBounds(
                 Camera.Position.X,
                 _currentLevel.MovementBounds,
                 _levelDirector.WaveEndX);
@@ -390,7 +390,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _currentLevel = new Level1(GAME_WIDTH, GAME_HEIGHT);
         _backgroundRenderer = _currentLevel.CreateBackgroundRenderer(Content);
         _collisionWorld = CreateCollisionWorld(_currentLevel.MovementBounds);
-        _entityManager = new EntityManager(_collisionWorld)
+        _entityManager = new EntityService(_collisionWorld)
         {
             HitboxService = _hitboxService
         };
@@ -410,7 +410,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
     private void InitLevelSystems()
     {
-        _cameraController = new CameraController(_player, GAME_WIDTH, GAME_HEIGHT, _currentLevel.MovementBounds);
+        _cameraController = new CameraService(_player, GAME_WIDTH, GAME_HEIGHT, _currentLevel.MovementBounds);
 
         _levelDirector = new LevelDirector(_entityManager, _currentLevel, _player, _audio);
         _levelDirector.LevelCompleted += () => _gameState.Fire(GameTrigger.CompleteLevel);

@@ -1,5 +1,5 @@
 using Microsoft.Xna.Framework.Graphics;
-using MonoGameLearning.Core.Entities.Interfaces;
+using MonoGameLearning.Core.Combat;
 
 namespace MonoGameLearning.Core.UI;
 

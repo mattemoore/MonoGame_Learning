@@ -5,8 +5,7 @@ using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
-using MonoGameLearning.Core.Entities.Components;
-using MonoGameLearning.Core.Entities.Interfaces;
+using MonoGameLearning.Core.Entities.Pickup;
 
 namespace MonoGameLearning.Game.Tests;
 
@@ -21,7 +20,7 @@ internal sealed class TestPickupActor(string name, Vector2 position, int width, 
 }
 
 internal sealed class TestActorForPickup(string name, Vector2 position, int width, int height)
-    : Entity(name, position, width, height), ICollisionActor, IDamageable
+    : Entity(name, position, width, height), ICollisionActor, IDamageable, IDamageResponse
 {
     private readonly Health _health = new(100);
     public int Id => GetHashCode();
@@ -33,11 +32,12 @@ internal sealed class TestActorForPickup(string name, Vector2 position, int widt
     public event EventHandler Died = delegate { };
 
     public void TakeDamage(DamageInfo info) => CombatService.ApplyDamage(this, info);
-    bool IDamageable.CanTakeDamage() => _health.IsAlive;
-    void IDamageable.ReduceHealth(int amount) => _health.Subtract(amount);
-    void IDamageable.OnDeath() => Died?.Invoke(this, EventArgs.Empty);
-    void IDamageable.OnKnockdown(DamageInfo info) { }
-    void IDamageable.OnHit(DamageInfo info) { }
+    bool IDamageResponse.IsAlive => _health.IsAlive;
+    bool IDamageResponse.CanTakeDamage() => _health.IsAlive;
+    void IDamageResponse.ReduceHealth(int amount) => _health.Subtract(amount);
+    void IDamageResponse.OnDeath() => Died?.Invoke(this, EventArgs.Empty);
+    void IDamageResponse.OnKnockdown(DamageInfo info) { }
+    void IDamageResponse.OnHit(DamageInfo info) { }
     void IDamageable.Heal(int amount) => _health.Add(amount);
 }
 

@@ -1,10 +1,9 @@
 using MonoGameLearning.Core.Combat;
-using MonoGameLearning.Core.Entities.Interfaces;
 using MonoGameLearning.Game.Entities.Pickups;
 
 namespace MonoGameLearning.Game.Tests;
 
-internal sealed class HealTrackerEntity : IDamageable
+internal sealed class HealTrackerEntity : IDamageable, IDamageResponse
 {
     private int _health;
     private readonly int _maxHealth;
@@ -23,11 +22,12 @@ internal sealed class HealTrackerEntity : IDamageable
     public int LastHealAmount { get; private set; }
 
     public void TakeDamage(Core.Combat.DamageInfo info) { }
-    bool IDamageable.CanTakeDamage() => IsAlive;
-    void IDamageable.ReduceHealth(int amount) => _health = Math.Max(0, _health - amount);
-    void IDamageable.OnDeath() => Died?.Invoke(this, EventArgs.Empty);
-    void IDamageable.OnKnockdown(Core.Combat.DamageInfo info) { }
-    void IDamageable.OnHit(Core.Combat.DamageInfo info) { }
+    bool IDamageResponse.IsAlive => IsAlive;
+    bool IDamageResponse.CanTakeDamage() => IsAlive;
+    void IDamageResponse.ReduceHealth(int amount) => _health = Math.Max(0, _health - amount);
+    void IDamageResponse.OnDeath() => Died?.Invoke(this, EventArgs.Empty);
+    void IDamageResponse.OnKnockdown(Core.Combat.DamageInfo info) { }
+    void IDamageResponse.OnHit(Core.Combat.DamageInfo info) { }
     void IDamageable.Heal(int amount) { if (!IsAlive) return; LastHealAmount = amount; _health = Math.Min(_maxHealth, _health + amount); }
 }
 
@@ -40,7 +40,7 @@ public class FoodPickupEntityTests
     public void OnPickup_HealsPlayerByHealAmount()
     {
         var target = new HealTrackerEntity(100);
-        ((IDamageable)target).ReduceHealth(50);
+        ((IDamageResponse)target).ReduceHealth(50);
         ApplyHeal(target);
 
         Assert.That(target.Health, Is.EqualTo(65));
@@ -60,7 +60,7 @@ public class FoodPickupEntityTests
     public void OnPickup_DoesNotExceedMaxHealth()
     {
         var target = new HealTrackerEntity(100);
-        ((IDamageable)target).ReduceHealth(10);
+        ((IDamageResponse)target).ReduceHealth(10);
         ApplyHeal(target);
 
         Assert.That(target.Health, Is.EqualTo(100));
@@ -70,7 +70,7 @@ public class FoodPickupEntityTests
     public void OnPickup_DeadTarget_NoHeal()
     {
         var target = new HealTrackerEntity(100);
-        ((IDamageable)target).ReduceHealth(100);
+        ((IDamageResponse)target).ReduceHealth(100);
         Assert.That(target.IsAlive, Is.False);
 
         ApplyHeal(target);

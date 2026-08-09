@@ -20,7 +20,7 @@ public class GameCore : Game
     public static BoxingViewportAdapter ViewportAdapter { get; private set; }
 
 
-    public GumManager Gum { get; }
+    public GumUiService Gum { get; }
 
     public bool IsDebug { get; set; }
     public FramesPerSecondCounter FPSCounter { get; } = new();
@@ -45,7 +45,7 @@ public class GameCore : Game
             HardwareModeSwitch = false
         };
 
-        Gum = new GumManager();
+        Gum = new GumUiService();
 
         Window.Title = title;
         Window.AllowUserResizing = true;

@@ -193,7 +193,7 @@ Item 1 needs no new tests — the 6 existing `PropDropsOnDestroyTests` cover the
 
 **`TODO.md`:** remove follow-up items 1, 3, 4. Keep item 2 (rename), renumbered to 1, text unchanged (still gated on weapon drops).
 
-**`ROADMAP.md`** (Milestone 7, "Prop Drops" bullet, line ~104): replace the trailing `**Enemy drops remain `[ ]`** — separate work, blocked on enemy death-event drop hookup.` with:
+**`ROADMAP.md`** (Milestone 7, "Prop Drops" bullet, line ~104): replace the trailing `**Enemy drops remain`[ ]`** — separate work, blocked on enemy death-event drop hookup.` with:
 
 ```markdown
 **Enemy drops `[x]`**: `EnemySpawnDef.Drops` wired through `LevelDirector.SpawnWave` → `OnEnemyDied` (spawns before pool return) through the shared aligned-drop path; `EnemyEntity` implements `IPickupDropper`; `Reset` clears `Drops` per rental. One Level1 wave-2 Grunt drops Food.

@@ -5,10 +5,10 @@ namespace MonoGameLearning.Game.Tests
     [TestFixture]
     public class GameStateTests
     {
-        private GameStateController _controller;
+        private GameStateService _controller;
 
         [SetUp]
-        public void Setup() => _controller = new GameStateController();
+        public void Setup() => _controller = new GameStateService();
 
         [Test]
         public void InitialState_ShouldBeTitleScreen() =>
