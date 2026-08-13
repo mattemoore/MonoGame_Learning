@@ -7,9 +7,11 @@ namespace MonoGameLearning.Game.Tests;
 class TestEnemyEntity(string name, Vector2 position, LevelDirector? director = null)
     : EnemyEntity(name, position, 1f, null!, null!, director!)
 {
+    public EnemyStateController? StateController { get; private set; }
+
     protected override EnemyStateController CreateStateController()
     {
-        return new EnemyStateController(new()
+        StateController = new EnemyStateController(new()
         {
             OnAttackingExit = Callbacks.OnAttackingExit,
             OnHurtEntry = Callbacks.OnHurtEntry,
@@ -20,5 +22,6 @@ class TestEnemyEntity(string name, Vector2 position, LevelDirector? director = n
             OnDyingExit = Callbacks.OnDyingExit,
             OnDeadEntry = Callbacks.OnDeadEntry,
         });
+        return StateController;
     }
 }

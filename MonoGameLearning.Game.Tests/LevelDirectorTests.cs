@@ -4,6 +4,7 @@ using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
+using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Pickup;
 using MonoGameLearning.Core.Entities.Prop;
@@ -42,15 +43,9 @@ public class TestLevelDirector(EntityService entityManager, Level level, Entity 
         EnemyPool.Build(level);
     }
 
-    protected override void OnEnemyDied(object sender, EventArgs e)
-    {
-        if (sender is not EnemyEntity enemy) return;
-        base.OnEnemyDied(sender, e);
-    }
-
     public void SimulateEnemyDied(EnemyEntity enemy)
     {
-        OnEnemyDied(enemy, EventArgs.Empty);
+        OnEnemyDied(enemy);
     }
 
     public void SimulatePropDestroyed(PropBase prop)
@@ -413,6 +408,38 @@ public class LevelDirectorTests
         _director.Update(new GameTime());
 
         Assert.That(_entityManager.All.Count(e => e is EnemyEntity), Is.EqualTo(2));
+    }
+
+    [Test]
+    public void DiedEvent_FiresTypedHandler_RemovesEnemy()
+    {
+        _player.Position = new Vector2(300, 0);
+        _director.Update(new GameTime());
+
+        var enemy = (TestEnemyEntity)_director.SpawnedEnemies[0];
+        enemy.TakeDamage(new DamageInfo { Amount = 9999 });
+        enemy.StateController!.Fire(EnemyTrigger.DeathCompleted);
+        _entityManager.ProcessPending();
+
+        Assert.That(_director.ActiveEnemyCount, Is.EqualTo(1));
+        Assert.That(_entityManager.All.Count(e => e is EnemyEntity), Is.EqualTo(1));
+    }
+
+    [Test]
+    public void DiedEvent_UnsubscribesAfterDeath_SecondDeathTriggerIsNoOp()
+    {
+        _player.Position = new Vector2(300, 0);
+        _director.Update(new GameTime());
+
+        var enemy = (TestEnemyEntity)_director.SpawnedEnemies[0];
+        enemy.TakeDamage(new DamageInfo { Amount = 9999 });
+        enemy.StateController!.Fire(EnemyTrigger.DeathCompleted);
+        _entityManager.ProcessPending();
+
+        Assert.DoesNotThrow(() => enemy.TakeDamage(new DamageInfo { Amount = 9999 }));
+        Assert.DoesNotThrow(() => enemy.StateController!.Fire(EnemyTrigger.DeathCompleted));
+        Assert.That(_director.ActiveEnemyCount, Is.EqualTo(1));
+        Assert.That(_entityManager.All.Count(e => e is EnemyEntity), Is.EqualTo(1));
     }
 
     [Test]

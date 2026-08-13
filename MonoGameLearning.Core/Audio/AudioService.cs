@@ -30,8 +30,7 @@ public class AudioService
             _sfxVolume = Math.Clamp(value, 0f, 1f);
             foreach (var instances in _sfxInstances.Values)
                 for (int i = 0; i < instances.Length; i++)
-                    if (instances[i] is not null)
-                        instances[i].Volume = _sfxVolume;
+                    instances[i]?.Volume = _sfxVolume;
         }
     }
 

@@ -9,7 +9,7 @@ namespace MonoGameLearning.Core.Movement;
 
 public static class Mover
 {
-    public static void ClampToBounds(IReadOnlyEntity entity, RectangleF movementBounds)
+    public static void ClampToBounds(ISpatial entity, RectangleF movementBounds)
     {
         if (movementBounds.IsEmpty) return;
 

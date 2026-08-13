@@ -6,6 +6,7 @@ using MonoGame.Extended.Collisions.QuadTree;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Actor;
+using MonoGameLearning.Core.Entities.Prop;
 using MonoGameLearning.Core.Rendering;
 
 namespace MonoGameLearning.Game.Tests;
@@ -36,6 +37,12 @@ internal sealed class GenericCollidableEntity(string name, Vector2 position, int
     public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
     public void Update(GameTime gameTime) { }
     public void Render(RenderContext context) { }
+}
+
+internal sealed class TestPropEntity(string name, Vector2 position)
+    : PropBase(name, position, 40, 40, 100, CollisionAnchor.Center)
+{
+    public override void TakeDamage(DamageInfo info) { }
 }
 
 [TestFixture]
@@ -405,5 +412,59 @@ public class EntityServiceRegistrationTests
         var alive = new StubCombatActor("alive", new Vector2(200, 0), 50, 50, Faction.Enemy);
         mgr.Register(alive);
         Assert.That(mgr.FindNearestAliveEnemy(Vector2.Zero), Is.SameAs(alive));
+    }
+
+    [Test]
+    public void SortRenderablesByY_OrdersByVerticalPosition()
+    {
+        var mgr = new EntityService(CreateTestWorld());
+        var low = new GenericCollidableEntity("low", new Vector2(50, 300), 10, 10);
+        var high = new GenericCollidableEntity("high", new Vector2(50, 100), 10, 10);
+        mgr.Register(low);
+        mgr.Register(high);
+
+        mgr.SortRenderablesByY();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(mgr.Renderables[0], Is.SameAs(high));
+            Assert.That(mgr.Renderables[1], Is.SameAs(low));
+        });
+    }
+
+    [Test]
+    public void Register_AddsPropToPropsList()
+    {
+        var mgr = new EntityService(CreateTestWorld());
+        var prop = new TestPropEntity("prop", Vector2.Zero);
+
+        mgr.Register(prop);
+
+        Assert.That(mgr.Props, Does.Contain(prop));
+    }
+
+    [Test]
+    public void Destroy_RemovesPropFromPropsList()
+    {
+        var mgr = new EntityService(CreateTestWorld());
+        var prop = new TestPropEntity("prop", Vector2.Zero);
+        mgr.Register(prop);
+
+        mgr.Destroy(prop);
+        mgr.ProcessPending();
+
+        Assert.That(mgr.Props, Does.Not.Contain(prop));
+    }
+
+    [Test]
+    public void Clear_RemovesPropFromPropsList()
+    {
+        var mgr = new EntityService(CreateTestWorld());
+        var prop = new TestPropEntity("prop", Vector2.Zero);
+        mgr.Register(prop);
+
+        mgr.Clear();
+
+        Assert.That(mgr.Props, Does.Not.Contain(prop));
     }
 }

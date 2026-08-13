@@ -18,7 +18,7 @@ public record struct AnimationSet(string Idle, string Run, string Hurt, string F
 
 public enum KnockdownPhase { Falling, GettingUp }
 
-public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, ICollisionLayer, IDamageable, IDamageResponse, IHitboxProvider, IMoveableEntity, IAnimated
+public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, ICollisionLayer, IDamageable, IDamageResponse, IHitboxProvider, IMoveable, IAnimated
 {
     public string LayerName => "actors";
     public int Id => GetHashCode();
@@ -162,7 +162,7 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         if (CurrentMove is not null && FrameTracker.TryGetNewFrame(out var newFrameIndex))
         {
             HitboxService?.Clear(this);
-            HitboxService?.RegisterFrameHitboxes(this, CurrentMove, newFrameIndex, Direction);
+            HitboxService?.RegisterFrameHitboxes(this, Faction, CurrentMove, newFrameIndex, Direction);
         }
     }
 

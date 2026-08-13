@@ -13,6 +13,7 @@ Six distinct type-check smells across `Core` and `Game`. Each item is independen
 **Location:** `MonoGameLearning.Core/Entities/EntityService.cs:50-58`; `MonoGameLearning.Game/GameLoop/GameLoop.cs:237,303`
 **Problem:** `RenderableYComparer` receives `IRenderable` then downcasts `x is not Entity ex` to read `.Position.Y`. `GameLoop` repeats this: `((Entity)renderable).Frame` for culling and `actor is Entity entity` to apply MTV. `IRenderable` lacks `Position`/`Frame`, so consumers must downcast to the concrete `Entity`.
 **Change:** Add `Position` (and `Frame`) to the render/shared abstraction so sorting, culling, and collision-pushback operate on the interface without downcasting.
+
 - Decide the exact surface during implementation: either add `Position`/`Frame` to `IRenderable`, or introduce a shared base interface (e.g. `IPositionedEntity`) that both `IRenderable` and the collision actor expose.
 - Update `RenderableYComparer` to use the interface member (delete the `is not Entity` branch / the `return 0` fallback).
 - Update `GameLoop.Draw` culling and `GameLoop.ResolveCollisions` to remove the casts.
@@ -22,6 +23,7 @@ Six distinct type-check smells across `Core` and `Game`. Each item is independen
 **Location:** `MonoGameLearning.Core/Entities/EntityService.cs:110-142`
 **Problem:** `AddToTypedLists`/`TryAdd<T>` probe each `Entity` with runtime `is T` against many interfaces; `IDamageable` is added to both `_damageables` and `_combatants` (lines 136/141).
 **Change:** Replace the implicit runtime probe with an explicit capability surface. Prefer the smallest change:
+
 - Remove the `_combatants` duplicate (keep `_damageables`) and update `Combatants` consumer to use `_damageables`, OR make `_combatants` hold only `IDamageable`s that are live combatants (decide with consumer semantics).
 - Optionally: have `Entity` expose readiness/capability flags instead of the registry sniffing. **Do not** invent a component framework — this is a reduction.
 
@@ -30,6 +32,7 @@ Six distinct type-check smells across `Core` and `Game`. Each item is independen
 **Location:** `MonoGameLearning.Game/Levels/LevelDirector.cs:126-130`
 **Problem:** `PopulateSnapshots` scans `_entityManager.All` and pattern-matches `all[i] is PropBase prop` every frame to build the AI prop snapshot.
 **Change:** Maintain a dedicated prop list instead of re-scanning/filtering `All` by type.
+
 - Add `IReadOnlyList<PropBase> Props` (or a buffered prop-snapshot list) to `EntityService` populated at registration, matching how props are registered alongside other entities.
 - Update `LevelDirector.PopulateSnapshots` to iterate that list (drop the `is PropBase` scan).
 
@@ -38,6 +41,7 @@ Six distinct type-check smells across `Core` and `Game`. Each item is independen
 **Location:** `MonoGameLearning.Game/Levels/LevelDirector.cs:308-310` (and `:86`)
 **Problem:** `OnEnemyDied(object sender, EventArgs e)` does `if (sender is not EnemyEntity enemy) return;` to recover the entity; `OnPropDestroyed` uses a `PropBase` parameter/event already.
 **Change:** Use a typed event (`event Action<EnemyEntity>`) so handlers receive the entity without a runtime check.
+
 - Verify the `Died` event declaration and all subscribers; update to a typed `Action<EnemyEntity>`.
 - Note: `PropBase.Destroyed` is currently `Action<PropBase>` already (see existing plan `1785173487970` for the `Destroyed` typing direction — keep consistent).
 
@@ -46,6 +50,7 @@ Six distinct type-check smells across `Core` and `Game`. Each item is independen
 **Location:** `MonoGameLearning.Core/Combat/HitboxService.cs:60-67`
 **Problem:** `ActiveHitbox.Owner` stored as `Entity`, then unchecked `(IHitboxProvider)active.Owner` (lines 60,63) and type-check `active.Owner is IDamageable src` (line 67).
 **Change:** Store the needed capability at registration instead of casting at resolution.
+
 - Capture `Owner` as `IHitboxProvider` (plus `Faction`/`IDamageable?`) on the `ActiveHitbox` struct at `RegisterFrameHitboxes` time.
 - Remove the `(IHitboxProvider)` cast and the runtime `is IDamageable` check in `ResolveHits`.
 
@@ -54,6 +59,7 @@ Six distinct type-check smells across `Core` and `Game`. Each item is independen
 **Location:** `MonoGameLearning.Core/UI/EnemyBar.cs:112`
 **Problem:** `_displayTarget is Entity entity ? entity.Name : "?"` — HUD holds `IDamageable` but reaches into concrete `Entity` for a label.
 **Change:** Surface the label without downcasting.
+
 - Add `Name`/`DisplayName` to `IDamageable`, or pass the label through `OnHit`/`SetProximityTarget`.
 - Prefer the additive `IDamageable` member only if `Name` is universally meaningful for damageables; otherwise pass the label in at the call site.
 

@@ -111,7 +111,7 @@ public class HitboxTests
         var target = MakeActor(35, 0);
         var move = MakeTestMove();
 
-        service.RegisterFrameHitboxes(owner, move, 0, FacingDirection.Right);
+        service.RegisterFrameHitboxes(owner, owner.Faction, move, 0, FacingDirection.Right);
         var hits = service.ResolveHits([owner, target]);
 
         Assert.That(hits, Has.Count.EqualTo(1));
@@ -127,7 +127,7 @@ public class HitboxTests
         var target = MakeActor(200, 0);
         var move = MakeTestMove();
 
-        service.RegisterFrameHitboxes(owner, move, 0, FacingDirection.Right);
+        service.RegisterFrameHitboxes(owner, owner.Faction, move, 0, FacingDirection.Right);
         var hits = service.ResolveHits([owner, target]);
 
         Assert.That(hits, Is.Empty);
@@ -140,7 +140,7 @@ public class HitboxTests
         var owner = MakeActor(0, 0);
         var move = MakeTestMove();
 
-        service.RegisterFrameHitboxes(owner, move, 0, FacingDirection.Right);
+        service.RegisterFrameHitboxes(owner, owner.Faction, move, 0, FacingDirection.Right);
         var hits = service.ResolveHits([owner]);
 
         Assert.That(hits, Is.Empty);
@@ -154,8 +154,8 @@ public class HitboxTests
         var target = MakeActor(35, 0);
         var move = MakeTestMove();
 
-        service.RegisterFrameHitboxes(owner, move, 0, FacingDirection.Right);
-        service.RegisterFrameHitboxes(owner, move, 0, FacingDirection.Right);
+        service.RegisterFrameHitboxes(owner, owner.Faction, move, 0, FacingDirection.Right);
+        service.RegisterFrameHitboxes(owner, owner.Faction, move, 0, FacingDirection.Right);
         var hits = service.ResolveHits([owner, target]);
 
         Assert.That(hits, Has.Count.EqualTo(1));
@@ -169,7 +169,7 @@ public class HitboxTests
         var target = MakeActor(35, 0);
         var move = MakeTestMove();
 
-        service.RegisterFrameHitboxes(owner, move, 0, FacingDirection.Right);
+        service.RegisterFrameHitboxes(owner, owner.Faction, move, 0, FacingDirection.Right);
         service.ResolveHits([owner, target]);
         service.Clear(owner);
 
@@ -186,7 +186,7 @@ public class HitboxTests
         var target2 = MakeActor(200, 0);
         var move = MakeTestMove();
 
-        service.RegisterFrameHitboxes(owner, move, 0, FacingDirection.Right);
+        service.RegisterFrameHitboxes(owner, owner.Faction, move, 0, FacingDirection.Right);
         var hits = service.ResolveHits([owner, target1, target2]);
 
         Assert.That(hits, Has.Count.EqualTo(1));
@@ -209,7 +209,7 @@ public class HitboxTests
         var target = MakeActor(35, 0);
         var move = MakeTestMove(damage: 7);
 
-        service.RegisterFrameHitboxes(owner, move, 0, FacingDirection.Right);
+        service.RegisterFrameHitboxes(owner, owner.Faction, move, 0, FacingDirection.Right);
         var hits = service.ResolveHits([owner, target]);
 
         Assert.That(hits, Has.Count.EqualTo(1));
@@ -227,7 +227,7 @@ public class HitboxTests
         var target = MakeActor(35, 0, faction: Faction.Player);
         var move = MakeTestMove();
 
-        service.RegisterFrameHitboxes(owner, move, 0, FacingDirection.Right);
+        service.RegisterFrameHitboxes(owner, owner.Faction, move, 0, FacingDirection.Right);
         var hits = service.ResolveHits([owner, target]);
 
         Assert.That(hits, Is.Empty);
@@ -241,7 +241,7 @@ public class HitboxTests
         var target = MakeActor(35, 0, faction: Faction.Enemy);
         var move = MakeTestMove();
 
-        service.RegisterFrameHitboxes(owner, move, 0, FacingDirection.Right);
+        service.RegisterFrameHitboxes(owner, owner.Faction, move, 0, FacingDirection.Right);
         var hits = service.ResolveHits([owner, target]);
 
         Assert.That(hits, Has.Count.EqualTo(1));
@@ -255,7 +255,7 @@ public class HitboxTests
         var prop = new TestPropForHit("prop", new Vector2(35, 0), 50, 50);
         var move = MakeTestMove();
 
-        service.RegisterFrameHitboxes(owner, move, 0, FacingDirection.Right);
+        service.RegisterFrameHitboxes(owner, owner.Faction, move, 0, FacingDirection.Right);
         var hits = service.ResolveHits([owner, prop]);
 
         Assert.That(hits, Has.Count.EqualTo(1));
@@ -272,7 +272,7 @@ public class HitboxTests
 
         // Frame 1 of the attack
         service.Clear(player);
-        service.RegisterFrameHitboxes(player, move, 0, FacingDirection.Right);
+        service.RegisterFrameHitboxes(player, player.Faction, move, 0, FacingDirection.Right);
         var hits = service.ResolveHits([player, enemy]);
 
         Assert.That(hits, Has.Count.EqualTo(1));
@@ -280,7 +280,7 @@ public class HitboxTests
 
         // Frame 2 of the same attack — same (owner, target) pair should be blocked
         service.Clear(player);
-        service.RegisterFrameHitboxes(player, move, 0, FacingDirection.Right);
+        service.RegisterFrameHitboxes(player, player.Faction, move, 0, FacingDirection.Right);
         hits = service.ResolveHits([player, enemy]);
 
         Assert.That(hits, Has.Count.EqualTo(0));
@@ -295,7 +295,7 @@ public class HitboxTests
         var enemy2 = MakeActor(35, 40, faction: Faction.Enemy);
         var move = MakeTestMove();
 
-        service.RegisterFrameHitboxes(player, move, 0, FacingDirection.Right);
+        service.RegisterFrameHitboxes(player, player.Faction, move, 0, FacingDirection.Right);
         var hits = service.ResolveHits([player, enemy1, enemy2]);
 
         Assert.That(hits, Has.Count.EqualTo(2));
@@ -311,12 +311,12 @@ public class HitboxTests
         var move = MakeTestMove();
 
         // Player1 hits enemy
-        service.RegisterFrameHitboxes(player1, move, 0, FacingDirection.Right);
+        service.RegisterFrameHitboxes(player1, player1.Faction, move, 0, FacingDirection.Right);
         var hits = service.ResolveHits([player1, enemy]);
         Assert.That(hits, Has.Count.EqualTo(1));
 
         // Player2 also hits enemy (different owner, same target)
-        service.RegisterFrameHitboxes(player2, move, 0, FacingDirection.Right);
+        service.RegisterFrameHitboxes(player2, player2.Faction, move, 0, FacingDirection.Right);
         hits = service.ResolveHits([player2, enemy]);
         Assert.That(hits, Has.Count.EqualTo(1));
     }
@@ -331,7 +331,7 @@ public class HitboxTests
 
         // Frame 1 — hits
         service.Clear(player);
-        service.RegisterFrameHitboxes(player, move, 0, FacingDirection.Right);
+        service.RegisterFrameHitboxes(player, player.Faction, move, 0, FacingDirection.Right);
         var hits = service.ResolveHits([player, enemy]);
         Assert.That(hits, Has.Count.EqualTo(1));
 
@@ -340,7 +340,7 @@ public class HitboxTests
 
         // Frame 2 — should hit again because it's a "new" attack
         service.Clear(player);
-        service.RegisterFrameHitboxes(player, move, 0, FacingDirection.Right);
+        service.RegisterFrameHitboxes(player, player.Faction, move, 0, FacingDirection.Right);
         hits = service.ResolveHits([player, enemy]);
         Assert.That(hits, Has.Count.EqualTo(1));
     }
@@ -353,7 +353,7 @@ public class HitboxTests
         var target = MakeActor(35, 0);
         var move = MakeTestMove();
 
-        service.RegisterFrameHitboxes(owner, move, 0, FacingDirection.Right);
+        service.RegisterFrameHitboxes(owner, owner.Faction, move, 0, FacingDirection.Right);
         var hits = service.ResolveHits([owner, target]);
 
         Assert.That(hits, Has.Count.EqualTo(1));

@@ -122,11 +122,11 @@ public class LevelDirector
         }
 
         _propBuf.Clear();
-        var all = _entityManager.All;
-        for (int i = 0; i < all.Count; i++)
+        var props = _entityManager.Props;
+        for (int i = 0; i < props.Count; i++)
         {
-            if (all[i] is PropBase prop)
-                _propBuf.Add(new ActorSnapshot(prop.Position, prop.Width * 0.5f, prop.Height * 0.5f));
+            var prop = props[i];
+            _propBuf.Add(new ActorSnapshot(prop.Position, prop.Width * 0.5f, prop.Height * 0.5f));
         }
 
         _currentSnapshot = new WorldSnapshot(
@@ -225,7 +225,7 @@ public class LevelDirector
                 enemy.SetSpawnWalkData(walkDir, targetX);
             }
 
-            enemy.Died += OnEnemyDied;
+            enemy.Died += OnDiedHandler;
             _activeEnemies.Add(enemy);
         }
     }
@@ -305,10 +305,15 @@ public class LevelDirector
         }
     }
 
-    protected virtual void OnEnemyDied(object sender, EventArgs e)
+    private void OnDiedHandler(object sender, EventArgs e)
     {
-        if (sender is not EnemyEntity enemy) return;
-        enemy.Died -= OnEnemyDied;
+        if (sender is EnemyEntity enemy)
+            OnEnemyDied(enemy);
+    }
+
+    protected virtual void OnEnemyDied(EnemyEntity enemy)
+    {
+        enemy.Died -= OnDiedHandler;
         _activeEnemies.Remove(enemy);
         SpawnDrops(enemy);   // before Return — position is still real
         EnemyPool.Return(enemy);

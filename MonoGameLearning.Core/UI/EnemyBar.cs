@@ -3,7 +3,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGameLearning.Core.Combat;
-using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Rendering;
 
 namespace MonoGameLearning.Core.UI;
@@ -109,7 +108,7 @@ public sealed class EnemyBar : UiBase
         sb.FillRectangle(mugshotRect, Color.DarkGray);
         sb.DrawRectangle(mugshotRect, Color.White, 1f);
 
-        string label = _displayTarget is Entity entity ? entity.Name : "?";
+        string label = _displayTarget.Name;
         Vector2 labelSize = _font.MeasureString(label);
         sb.DrawString(_font, label,
             new Vector2(left + mugSize + 6f, top + mugSize / 2f - labelSize.Y / 2f),

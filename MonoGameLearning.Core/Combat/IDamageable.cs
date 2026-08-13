@@ -4,6 +4,7 @@ namespace MonoGameLearning.Core.Combat;
 
 public interface IDamageable
 {
+    string Name { get; }
     Faction Faction { get; }
     int Health { get; }
     int MaxHealth { get; }

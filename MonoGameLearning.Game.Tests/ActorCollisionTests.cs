@@ -7,7 +7,7 @@ using MonoGameLearning.Core.Movement;
 namespace MonoGameLearning.Game.Tests;
 
 public class TestActorEntity(string name, Vector2 position, int width, int height)
-    : Entity(name, position, width, height), ICollisionActor, IMoveableEntity
+    : Entity(name, position, width, height), ICollisionActor, IMoveable
 {
     public int Id => GetHashCode();
     public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
@@ -17,7 +17,7 @@ public class TestActorEntity(string name, Vector2 position, int width, int heigh
 }
 
 public class CollisionPushEntity(string name, Vector2 position, int width, int height)
-    : Entity(name, position, width, height), ICollisionActor, IMoveableEntity
+    : Entity(name, position, width, height), ICollisionActor, IMoveable
 {
     public int Id => GetHashCode();
     public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
@@ -259,15 +259,15 @@ public class ActorCollisionTests
         Assert.That(entity.Frame, Is.EqualTo(expectedFrame));
     }
 
-    // --- IReadOnlyEntity contract ---
+    // --- ISpatial contract ---
 
-    private sealed class PureReadOnlyEntityStub : IReadOnlyEntity
+    private sealed class PureSpatialStub : ISpatial
     {
         public Vector2 Position { get; set; }
         public int Width { get; }
         public int Height { get; }
 
-        public PureReadOnlyEntityStub(Vector2 position, int width, int height)
+        public PureSpatialStub(Vector2 position, int width, int height)
         {
             Position = position;
             Width = width;
@@ -276,25 +276,25 @@ public class ActorCollisionTests
     }
 
     [Test]
-    public void ClampToBounds_IReadOnlyEntityContract_PastLeftEdge_Clamps()
+    public void ClampToBounds_ISpatialContract_PastLeftEdge_Clamps()
     {
-        var entity = new PureReadOnlyEntityStub(new Vector2(-10, 300), 50, 50);
+        var entity = new PureSpatialStub(new Vector2(-10, 300), 50, 50);
         Mover.ClampToBounds(entity, TwoScreenBounds);
         Assert.That(entity.Position.X, Is.EqualTo(25));
     }
 
     [Test]
-    public void ClampToBounds_IReadOnlyEntityContract_Inside_DoesNotMove()
+    public void ClampToBounds_ISpatialContract_Inside_DoesNotMove()
     {
-        var entity = new PureReadOnlyEntityStub(new Vector2(400, 300), 50, 50);
+        var entity = new PureSpatialStub(new Vector2(400, 300), 50, 50);
         Mover.ClampToBounds(entity, TwoScreenBounds);
         Assert.That(entity.Position.X, Is.EqualTo(400));
     }
 
     [Test]
-    public void ClampToBounds_IReadOnlyEntityContract_EmptyBounds_DoesNothing()
+    public void ClampToBounds_ISpatialContract_EmptyBounds_DoesNothing()
     {
-        var entity = new PureReadOnlyEntityStub(new Vector2(-100, -100), 50, 50);
+        var entity = new PureSpatialStub(new Vector2(-100, -100), 50, 50);
         Mover.ClampToBounds(entity, default);
         Assert.That(entity.Position, Is.EqualTo(new Vector2(-100, -100)));
     }
