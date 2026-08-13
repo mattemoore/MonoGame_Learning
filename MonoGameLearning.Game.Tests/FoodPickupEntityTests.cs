@@ -14,6 +14,7 @@ internal sealed class HealTrackerEntity : IDamageable, IDamageResponse
         _health = maxHealth;
     }
 
+    public string Name => "HealTracker";
     public int Health => _health;
     public int MaxHealth => _maxHealth;
     public bool IsAlive => _health > 0;

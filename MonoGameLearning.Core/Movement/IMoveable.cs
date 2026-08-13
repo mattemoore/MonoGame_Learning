@@ -3,7 +3,7 @@ using MonoGame.Extended;
 
 namespace MonoGameLearning.Core.Movement;
 
-public interface IMoveableEntity
+public interface IMoveable
 {
     Vector2 MovementDirection { get; set; }
     float Speed { get; }

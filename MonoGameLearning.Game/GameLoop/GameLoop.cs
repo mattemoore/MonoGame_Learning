@@ -204,7 +204,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                 var movable = movables[i];
                 if (movable is IDamageable { IsAlive: false }) continue;
                 movable.MovementBounds = movementBounds;
-                Mover.ClampToBounds((IReadOnlyEntity)movable, movable.MovementBounds);
+                Mover.ClampToBounds((ISpatial)movable, movable.MovementBounds);
             }
         }
 
@@ -234,7 +234,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             for (int i = 0; i < renderables.Count; i++)
             {
                 var renderable = renderables[i];
-                if (cameraBounds.Intersects(((Entity)renderable).Frame))
+                if (cameraBounds.Intersects(renderable.Frame))
                 {
                     renderable.Render(renderCtx);
                     _numEntitiesDrawn++;
@@ -300,8 +300,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             var actor = pair.First;
             var result = pair.FirstResult;
             if (!result.Intersects) continue;
-            if (actor is Entity entity)
-                entity.Position += result.MinimumTranslationVector;
+            Debug.Assert(actor is ISpatial,
+                "Actor in the \"actors\" layer is not positionable — pushback cannot be applied.");
+            var positionable = (ISpatial)actor;
+            positionable.Position += result.MinimumTranslationVector;
         }
     }
 

@@ -100,6 +100,7 @@ dotnet test
   * **Profile allocations** — Run with `DOTNET_gcServer=1` and monitor GC pause times during development. Flag any unexpected per-frame allocations in code review.
 * **Ask Questions When Coding**: Before implementing any design or architecture change, pause to ask the user clarifying questions. Do not silently implement ambiguous or multi-interpretation requests. If a requirement, edge case, or design decision is underspecified, present concrete options and ask for direction. This applies to test strategy, abstraction boundaries, naming, file placement, and any choice that would be costly to reverse.
 * **No Nested Classes**: Do not create nested classes (private or otherwise). Every type (class, struct, record, enum) must be declared in its own file at namespace level. This keeps the type graph explicit, testable, and navigable.
+* **Interface Naming — No `Entity` Suffix**: Name interfaces for the capability, not the host type. Capability interfaces use adjective/participial names (`IUpdatable`, `IRenderable`, `IDamageable`, `ISpatial`, `IMoveable`) and never carry an `Entity` suffix, because a capability is orthogonal to host type (`BackgroundRenderer` implements `IRenderable` without being an `Entity`). Object-noun interfaces (`IHitboxProvider`, `IPickup`, `ICollisionLayer`) are for things you obtain or traverse, and are also named without a host-type suffix.
 
 ## MonoGame.Extended Pitfalls
 

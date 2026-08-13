@@ -9,6 +9,7 @@ namespace MonoGameLearning.Core.Rendering;
 
 public class BackgroundRenderer(List<Sprite> sprites, int gameWidth, int gameHeight) : IRenderable
 {
+    public RectangleF Frame => new(0, 0, gameWidth * sprites.Count, gameHeight);
     public int LastFrameDrawCount { get; private set; }
 
     public void Render(RenderContext context)

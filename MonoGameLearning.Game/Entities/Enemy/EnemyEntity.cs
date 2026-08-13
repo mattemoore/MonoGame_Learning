@@ -62,8 +62,7 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
         : base(name, position, 48, 60, sprite, scale, 30, new(EnemySprite.AnimationIdle, EnemySprite.AnimationRun, EnemySprite.AnimationHurt, EnemySprite.AnimationFall, EnemySprite.AnimationDie, EnemySprite.AnimationGetUp), audio)
     {
         Speed = 120f;
-        if (Sprite is not null)
-            Sprite.Color = Color.Red;
+        Sprite?.Color = Color.Red;
         Faction = Faction.Enemy;
         _ai = new EnemyAI(AttackRange, MinChaseDistance);
         _stateController = CreateStateController();
@@ -139,8 +138,7 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
     {
         _spawnWalkDirection = direction;
         _spawnWalkTargetX = targetX;
-        if (_stateController is not null)
-            _stateController.Fire(EnemyTrigger.StartEntering);
+        _stateController?.Fire(EnemyTrigger.StartEntering);
     }
 
     public override void Update(GameTime gameTime)
@@ -206,8 +204,7 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
         _stateController = CreateStateController();
         _ai.Reset();
         Target = target;
-        if (Sprite is not null)
-            Sprite.Color = Color.Red;
+        Sprite?.Color = Color.Red;
         _spawnWalkTargetX = 0f;
         _spawnWalkDirection = Vector2.Zero;
         Drops = null;

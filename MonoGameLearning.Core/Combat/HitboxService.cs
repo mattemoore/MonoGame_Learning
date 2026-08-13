@@ -12,7 +12,8 @@ public class HitboxService
 {
     private readonly record struct ActiveHitbox
     {
-        public Entity Owner { get; init; }
+        public IHitboxProvider Owner { get; init; }
+        public Faction OwnerFaction { get; init; }
         public RectangleF Bounds { get; init; }
         public int Damage { get; init; }
         public bool Knockdown { get; init; }
@@ -25,16 +26,21 @@ public class HitboxService
     private readonly List<HitResult> _resultBuffer = [];
     private readonly List<RectangleF> _boundsBuffer = [];
 
-    public void RegisterFrameHitboxes(Entity owner, MoveData move, int frameIndex, FacingDirection facing)
+    public void RegisterFrameHitboxes(Entity owner, Faction ownerFaction, MoveData move, int frameIndex, FacingDirection facing)
     {
         if (!move.FrameHitboxes.TryGetValue(frameIndex, out var hitboxDefs))
             return;
+
+        Debug.Assert(owner is IHitboxProvider,
+            $"{owner.GetType().Name} \"{owner.Name}\" registered hitboxes but is not an IHitboxProvider");
+        var provider = (IHitboxProvider)owner;
 
         foreach (var hb in hitboxDefs)
         {
             _activeHitboxes.Add(new()
             {
-                Owner = owner,
+                Owner = provider,
+                OwnerFaction = ownerFaction,
                 Bounds = hb.CreateRectangle(owner.Position, facing),
                 Damage = move.Damage,
                 Knockdown = move.Knockdown,
@@ -53,18 +59,18 @@ public class HitboxService
             for (int i = 0; i < targets.Count; i++)
             {
                 var target = targets[i];
-                if (target == active.Owner) continue;
+                if (ReferenceEquals(target, active.Owner)) continue;
                 if (!active.Bounds.Intersects(target.Frame)) continue;
                 if (target is not IDamageable tgt) continue;
 
-                if (!_attackDedup.TryGetValue((IHitboxProvider)active.Owner, out var ownerDedup))
+                if (!_attackDedup.TryGetValue(active.Owner, out var ownerDedup))
                 {
                     ownerDedup = [];
-                    _attackDedup[(IHitboxProvider)active.Owner] = ownerDedup;
+                    _attackDedup[active.Owner] = ownerDedup;
                 }
                 if (!ownerDedup.Add(tgt)) continue;
 
-                if (active.Owner is IDamageable src && src.Faction == tgt.Faction) continue;
+                if (active.OwnerFaction == tgt.Faction) continue;
 
                 _resultBuffer.Add(new()
                 {

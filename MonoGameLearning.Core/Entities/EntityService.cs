@@ -4,6 +4,7 @@ using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended.Collisions;
 using MonoGameLearning.Core.Combat;
+using MonoGameLearning.Core.Entities.Prop;
 using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Core.Rendering;
 
@@ -23,7 +24,7 @@ public class EntityService(CollisionWorld2D world)
         _hitboxProviders.Clear();
         _movables.Clear();
         _debugDrawables.Clear();
-        _combatants.Clear();
+        _props.Clear();
         _pendingDestroy.Clear();
     }
 
@@ -36,9 +37,9 @@ public class EntityService(CollisionWorld2D world)
     private readonly Dictionary<string, List<ICollisionActor>> _collidablesByLayer = [];
     private readonly List<IDamageable> _damageables = [];
     private readonly List<IHitboxProvider> _hitboxProviders = [];
-    private readonly List<IMoveableEntity> _movables = [];
+    private readonly List<IMoveable> _movables = [];
     private readonly List<IDebugDrawable> _debugDrawables = [];
-    private readonly List<IDamageable> _combatants = [];
+    private readonly List<PropBase> _props = [];
 
     public IReadOnlyList<Entity> All => _all;
     public IReadOnlyList<IUpdatable> Updatables => _updatables;
@@ -51,8 +52,8 @@ public class EntityService(CollisionWorld2D world)
     {
         public int Compare(IRenderable? x, IRenderable? y)
         {
-            if (x is not Entity ex || y is not Entity ey) return 0;
-            float diff = ex.Position.Y - ey.Position.Y;
+            if (x is null || y is null) return 0;
+            float diff = x.Frame.Center.Y - y.Frame.Center.Y;
             return diff < 0 ? -1 : diff > 0 ? 1 : 0;
         }
     }
@@ -62,9 +63,9 @@ public class EntityService(CollisionWorld2D world)
         _collidablesByLayer.TryGetValue(layer, out var list) ? list : [];
     public IReadOnlyList<ICollisionActor> PickupCollidables =>
         _collidablesByLayer.TryGetValue("pickups", out var list) ? list : [];
-    public IReadOnlyList<IMoveableEntity> Movables => _movables;
+    public IReadOnlyList<IMoveable> Movables => _movables;
     public IReadOnlyList<IDebugDrawable> DebugDrawables => _debugDrawables;
-    public IReadOnlyList<IDamageable> Combatants => _combatants;
+    public IReadOnlyList<PropBase> Props => _props;
     public IReadOnlyList<IHitboxProvider> HitboxProviders => _hitboxProviders;
 
     public void Register(Entity entity)
@@ -136,9 +137,10 @@ public class EntityService(CollisionWorld2D world)
         TryAdd<IDamageable>(entity, _damageables);
         if (TryAdd<IHitboxProvider>(entity, _hitboxProviders))
             TryInjectHitboxService(entity);
-        TryAdd<IMoveableEntity>(entity, _movables);
+        TryAdd<IMoveable>(entity, _movables);
         TryAdd<IDebugDrawable>(entity, _debugDrawables);
-        TryAdd<IDamageable>(entity, _combatants);
+        if (entity is PropBase prop)
+            _props.Add(prop);
     }
 
     private void AddToCollidables(ICollisionActor c, string layer)
@@ -164,9 +166,10 @@ public class EntityService(CollisionWorld2D world)
             TryRemove<IRenderable>(entity, _renderables);
         TryRemove<IDamageable>(entity, _damageables);
         TryRemove<IHitboxProvider>(entity, _hitboxProviders);
-        TryRemove<IMoveableEntity>(entity, _movables);
+        TryRemove<IMoveable>(entity, _movables);
         TryRemove<IDebugDrawable>(entity, _debugDrawables);
-        TryRemove<IDamageable>(entity, _combatants);
+        if (entity is PropBase prop)
+            _props.Remove(prop);
     }
 
     private void TryInjectHitboxService(Entity entity)
