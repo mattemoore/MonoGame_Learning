@@ -74,7 +74,12 @@
 /processorParam:TextureFormat=Color
 /build:images/arrow.png
 
-#begin images/food_apple.png
+#begin images/bat.json
+/importer:TexturePackerJsonImporter
+/processor:TexturePackerProcessor
+/build:images/bat.json
+
+#begin images/bat-texture.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -84,7 +89,31 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:images/food_apple.png
+/build:images/bat-texture.png
+
+#begin images/bat-pickup.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/bat-pickup.png
+
+#begin images/apple-pickup.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/apple-pickup.png
 
 #begin images/oilcan-texture.png
 /importer:TextureImporter

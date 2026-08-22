@@ -104,10 +104,10 @@ Add the iconic beat 'em up loot loop: defeated enemies and breakable props drop 
 - [x] **Prop Drops**: When an `IDamageable` prop is destroyed, spawn any pickups declared on its `PropSpawnDef.Drops`. *(Implemented: `IPickupDropper` interface on `PropBase`, `PropSpawnDef.Drops` field, `LevelDirector.OnPropDestroyed` pipes drops through `SpawnPickups`. `Level1` declares one `OilDrumEntity` at x=1000 drops a `Food` pickup on destroy.)* **Enemy drops `[x]`**: `EnemySpawnDef.Drops` wired through `LevelDirector.SpawnWave` → `OnEnemyDied` (spawns before pool return) through the shared aligned-drop path; `EnemyEntity` implements `IPickupDropper`; `Reset` clears `Drops` per rental. One Level1 wave-2 Grunt drops Food.
 - [x] **Pickup Collision**: Detect player overlap with `PickupItem` and apply its effect (heal, add score, grant life), then despawn. *(Implemented: `"pickups"` collision layer, `EntityManager.PickupCollidables`, overlap check in `GameLoop.ResolvePickupOverlaps`.)*
 - [ ] **Pickup Animation**: Spawn with a brief idle/spin animation and fade out if untouched after a timeout. *(Static sprite rendering done via `PickupBase.Render` + `Texture2D`. Bob/spin animation and fade-out timer not yet implemented.)*
-- [ ] **Throwable Weapons**: Add `ProjectileWeapon` items (e.g., knife, bottle) that the player throws forward in the facing direction with its own hitbox/hurtbox.
-- [ ] **Melee Pickup Weapons**: Add `MeleeWeapon` items (e.g., bat, pipe, crate) the player can pick up to replace their standard attack for a limited time or until thrown/dropped.
-- [ ] **Weapon Pickup/Drop Logic**: Detect overlap with dropped weapons, attach the weapon sprite to the player's attack animation, and animate attacks with the weapon's range and damage values.
-- [ ] **Weapon Lifecycle**: Auto-drop the weapon on knockdown, on timer expiry, or on level transition.
+- [x] **Throwable Weapons**: Add `ProjectileWeapon` items (e.g., knife, bottle) that the player throws forward in the facing direction with its own hitbox/hurtbox.
+- [x] **Melee Pickup Weapons**: Add `MeleeWeapon` items (e.g., bat, pipe, crate) the player can pick up to replace their standard attack for a limited time or until thrown/dropped. *(Done for the bat: `MeleeWeaponDef`/`BatWeapon` swap `Attack1Move`/`AttackMove` with a longer `SwingMove`; `WeaponPickupEntity` + armed-at-spawn enemies. Pipe/crate variants and re-drop deferred.)*
+- [x] **Weapon Pickup/Drop Logic**: Detect overlap with dropped weapons, attach the weapon sprite to the player's attack animation, and animate attacks with the weapon's range and damage values. *(Done: pickup overlap → equip; weapon rendered as an overlay anchored to the holder, swing reuses `attack1` anim.)*
+- [x] **Weapon Lifecycle**: Auto-drop the weapon on knockdown, on timer expiry, or on level transition. *(Drop on knockdown/death/reset implemented; timer-expiry and level-transition drops deferred.)*
 
 ---
 
@@ -168,6 +168,23 @@ Extend the skeleton to support networked play between two remote players. *(Larg
 - [ ] **Desync Detection & Recovery**: Detect state divergence and resync from a checkpoint or full snapshot when divergence exceeds a threshold.
 - [ ] **Online-Adapted UI**: Show connection state, ping, player ready indicators, and disconnect/reconnect prompts.
 - [ ] **Security Considerations**: Validate inbound inputs/actions server-side or via deterministic lockstep to prevent cheating.
+
+---
+
+## [ ] Milestone 12: Double Dragon Graphics & Basic Combat Moves
+
+Replace placeholder art with assets styled after *Double Dragon* and implement the core punch/kick move set.
+
+- [ ] **Double Dragon Sprite Source**: Acquire and catalogue Double Dragon character sprites (player, enemy, boss) from a public-art/ripping source that is legally safe to use for this learning project, and document the source and any licensing notes.
+- [ ] **Sprite Atlas Build**: Assemble the ripped frames into MonoGame texture atlases per character/state (idle, walk, punch, kick, hurt, knockdown, walk/death) with an `.atlas` definition matching `Content` pipeline conventions.
+- [ ] **Character Re-skin**: Replace the current placeholder `PlayerSprite` and `EnemySprite` frames with the Double Dragon sprite set, preserving existing state machine timing and animation event wiring.
+- [ ] **Environment/Backgrounds**: Replace placeholder background/level art with Double Dragon stage art (building facade, street, interior) cut to the game's scrollable bounds so seams and scroll-locks stay intact.
+- [ ] **Prop & Pickup Art**: Swap placeholder prop (oil drum, crate, garbage can) and pickup (food, weapon) textures for Double Dragon equivalents where reasonable.
+- [ ] **HUD & UI Pass**: Tone in the Double Dragon art style for health bars, lives counter, title screen, and "GO" prompt so the presentation is cohesive.
+- [ ] **Basic Punch Move**: Implement a fast, short-range `Attack1Move` punch with a small hitbox, light damage, and brief hitstun, using the punch animation frames. *(Extends existing combat engine from Milestone 2.)*
+- [ ] **Basic Kick Move**: Implement a second attack input mapped to a kick with longer reach and slightly longer recovery than the punch, using the kick frames; give the two moves distinct hitboxes, damage, and knockback values.
+- [ ] **Basic Punch/Kick Combos**: Chain a light punch-punch-kick combo sequence; allow canceling into it and out of knockdown/vs it interrupts, keeping the existing animation-event cleanup patterns (`SubscribeToAnimationEvent`/`UnsubscribeFromAnimationEvent`).
+- [ ] **Move Tuning Data**: Move per-move properties (recovery, damage, knockback, hitstun, hitbox offsets) into a tunable `MeleeWeaponDef`-style definition so punch/kick values can be balanced without code edits.
 
 ---
 

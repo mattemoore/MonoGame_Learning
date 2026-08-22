@@ -3,7 +3,6 @@ using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
-using MonoGameLearning.Core.Entities;
 
 namespace MonoGameLearning.Game.Tests;
 

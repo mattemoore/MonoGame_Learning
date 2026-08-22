@@ -3,7 +3,6 @@ using Microsoft.Xna.Framework;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Combat;
-using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Actor;
 using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Core.UI;
@@ -25,7 +24,7 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
     int IHudPlayerData.Health => HealthComponent.Value;
     int IHudPlayerData.MaxHealth => HealthComponent.MaxHealth;
 
-    public readonly MoveData Attack1Move = new()
+    private readonly MoveData _attack1Move = new()
     {
         AnimationKey = PlayerSprite.AnimationAttack1,
         Damage = 5,
@@ -38,6 +37,8 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
             [2] = [new() { Offset = new Vector2(35, 0), Size = new Point(45, 40) }],
         }
     };
+
+    public MoveData Attack1Move => EquippedWeapon?.SwingMove ?? _attack1Move;
     public readonly MoveData Attack2Move = new()
     {
         AnimationKey = PlayerSprite.AnimationAttack2,
@@ -69,6 +70,7 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
     protected override bool IsInKnockedDownState => _stateController.State == PlayerState.KnockedDown;
     protected override bool IsInHurtState => _stateController.State == PlayerState.Hurt;
     protected override bool IsInDyingState => _stateController.State == PlayerState.Dying;
+    protected override bool IsInAttackingState => _stateController.State == PlayerState.Attacking;
     protected override void FireKnockdownCompleted() => _stateController.Fire(PlayerTrigger.KnockdownCompleted);
     protected override void FireHurtCompleted() => _stateController.Fire(PlayerTrigger.HurtCompleted);
     protected override void FireDeathCompleted() => _stateController.Fire(PlayerTrigger.DeathCompleted);
@@ -125,6 +127,7 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
         OnKnockdownEntry = () =>
         {
             KnockdownPhase = KnockdownPhase.Falling;
+            UnequipWeapon();
             PlayAnimation(Animations.Fall);
             if (LastImpactSfx.HasValue)
                 Audio.PlaySfx(LastImpactSfx.Value);
@@ -133,6 +136,7 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
         OnKnockdownExit = Callbacks.OnKnockdownExit,
         OnDyingEntry = () =>
         {
+            UnequipWeapon();
             PlayAnimation(Animations.Die);
             Audio.PlaySfx(SfxId.PlayerDeath);
         },

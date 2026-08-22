@@ -3,9 +3,9 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace MonoGameLearning.Game.AnimatedSprites;
 
-public static class FoodPickupSprite
+public static class BatPickupSprite
 {
-    private const string AssetPath = "images/apple-pickup";
+    private const string AssetPath = "images/bat-pickup";
     private static Texture2D _texture;
     private static bool _loaded;
 

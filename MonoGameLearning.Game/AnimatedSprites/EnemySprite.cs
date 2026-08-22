@@ -43,6 +43,9 @@ public static class EnemySprite
         return sprite;
     }
 
+    // TODO: The prefix/loop/frame-count DefineAnimation helper is duplicated in every animated
+    // sprite class (PlayerSprite, EnemySprite, BatSprite, OilDrumSprite). Consider extracting a
+    // shared sprite-sheet builder helper (see TODO.md item 3).
     private static void DefineAnimation(string animationName, string prefix, int frameCount, bool isLooping)
     {
         _spriteSheet.DefineAnimation(animationName, builder =>

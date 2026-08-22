@@ -13,6 +13,7 @@ class TestEnemyEntity(string name, Vector2 position, LevelDirector? director = n
     {
         StateController = new EnemyStateController(new()
         {
+            OnAttackingEntry = () => CurrentMove = AttackMove,
             OnAttackingExit = Callbacks.OnAttackingExit,
             OnHurtEntry = Callbacks.OnHurtEntry,
             OnHurtExit = Callbacks.OnHurtExit,

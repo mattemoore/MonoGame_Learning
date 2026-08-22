@@ -23,6 +23,7 @@ The solution is structured into two main projects:
   * **`GameLoop`**: Inherits from `GameCore`. Implements the specific game logic (`Update`, `Draw`), manages entities (like the player), and handles the main application lifecycle.
   * **`Program.cs`**: The entry point, using C# top-level statements to bootstrap `GameLoop`.
   * **`Entities`**: Game-specific entities, such as `PlayerEntity`.
+*   **`Weapons`**: Static melee weapon defs (e.g., `BatWeapon`) built from `Core.Combat.MeleeWeaponDef` that swap `Attack1Move`/`AttackMove` while armed. Swing rendering uses a 4-frame `bat-texture.png`/`bat.json` atlas via `AnimatedSprites.BatSprite`, positioned per `attack` frame via `SwingAnchors`/`CarryAnchor`; hitboxes fire at swing apex (frames 2–3) only. The swing is frame-stepped (see the `SetFrame()`/`TextureRegion` pitfall below) so it stays in sync with the player's attack animation. `AnimatedSprites.BatPickupSprite` owns the separate static `bat-pickup.png` texture used by `WeaponPickupEntity` for the dropped-pickup icon (same pattern as `FoodPickupSprite`/`apple-pickup.png`).
   * **`Sprites`**: Sprite management and animation logic (e.g., `PlayerSprite`).
   * **`Content`**: Contains game assets (images, fonts, etc.) processed by the MonoGame Content Pipeline (`.mgcb`).
 
@@ -111,3 +112,16 @@ dotnet test
 * **Event subscriptions must happen AFTER `SetAnimation()`**, not once at construction time. Subscribing to `Sprite.Controller.OnAnimationEvent` in the constructor subscribes to the *initial* controller, which becomes orphaned after the first `SetAnimation()` call. Events from the new controller (including `AnimationCompleted`) will never fire.
 * **Always subscribe/unsubscribe in pairs** around `SetAnimation()` calls for non-looping animations that need completion detection. See `PlayerEntity.SubscribeToAnimationEvent()` / `UnsubscribeFromAnimationEvent()` for the pattern.
 * The affected entry/exit callbacks are: `OnAttackingEntry/Exit`, `OnHurtEntry/Exit`, `OnDyingEntry/Exit` — any state that plays a non-looping animation requiring a completion trigger.
+
+### `AnimationController.SetFrame()` does not update `AnimatedSprite.TextureRegion`
+
+`AnimationController.SetFrame(index)` only changes the controller's internal frame index — it does **not** refresh `AnimatedSprite.TextureRegion`. That refresh only happens inside `AnimatedSprite.Update()` when the frame advances on its own (time-driven playback). Consequence:
+
+* Driving frames manually via `SetFrame()` without calling `Sprite.Update()` leaves the sprite stuck on the first frame's texture region — the frame *index* is correct (so anchor/hitbox math works), but the *drawn texture* never changes. See `CombatActorBase.RenderWeaponOverlay` for the weapon swing.
+* The fix is to sync the region yourself, mirroring what `AnimatedSprite.SetAnimation()` does internally:
+  ```csharp
+  sprite.Controller.SetFrame(frame);
+  if (weapon.Sheet is not null)
+      sprite.TextureRegion = weapon.Sheet.TextureAtlas[sprite.Controller.CurrentFrame];
+  ```
+* All other sprites in the codebase (player, enemy, oil drum) are time-driven via `Sprite.Update(gameTime)`, so they never hit this. The weapon overlay is the only frame-stepped sprite.
