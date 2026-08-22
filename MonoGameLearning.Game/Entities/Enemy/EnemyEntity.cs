@@ -29,6 +29,7 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
     protected override bool IsInKnockedDownState => _stateController.State == EnemyState.KnockedDown;
     protected override bool IsInHurtState => _stateController.State == EnemyState.Hurt;
     protected override bool IsInDyingState => _stateController.State == EnemyState.Dying;
+    protected override bool IsInAttackingState => _stateController.State == EnemyState.Attacking;
     protected override void FireKnockdownCompleted() => _stateController.Fire(EnemyTrigger.KnockdownCompleted);
     protected override void FireHurtCompleted() => _stateController.Fire(EnemyTrigger.HurtCompleted);
     protected override void FireDeathCompleted() => _stateController.Fire(EnemyTrigger.DeathCompleted);
@@ -44,7 +45,7 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
     public float AttackRange { get; set; } = 70f;
     public float MinChaseDistance { get; set; } = 60f;
 
-    public readonly MoveData AttackMove = new()
+    private readonly MoveData _attackMove = new()
     {
         AnimationKey = EnemySprite.AnimationAttack1,
         Damage = 5,
@@ -57,6 +58,8 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
             [2] = [new() { Offset = new Vector2(35, 0), Size = new Point(45, 40) }],
         }
     };
+
+    public MoveData AttackMove => EquippedWeapon?.SwingMove ?? _attackMove;
 
     public EnemyEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, AudioService audio, LevelDirector director)
         : base(name, position, 48, 60, sprite, scale, 30, new(EnemySprite.AnimationIdle, EnemySprite.AnimationRun, EnemySprite.AnimationHurt, EnemySprite.AnimationFall, EnemySprite.AnimationDie, EnemySprite.AnimationGetUp), audio)
@@ -110,6 +113,7 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
         OnKnockdownEntry = () =>
         {
             KnockdownPhase = KnockdownPhase.Falling;
+            UnequipWeapon();
             PlayAnimation(Animations.Fall);
             if (LastImpactSfx.HasValue)
                 Audio.PlaySfx(LastImpactSfx.Value);
@@ -118,6 +122,7 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
         OnKnockdownExit = Callbacks.OnKnockdownExit,
         OnDyingEntry = () =>
         {
+            UnequipWeapon();
             PlayAnimation(Animations.Die);
             Audio.PlaySfx(SfxId.EnemyDeath);
         },

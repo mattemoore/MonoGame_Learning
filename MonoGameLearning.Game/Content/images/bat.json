@@ -1,0 +1,29 @@
+{
+	"textures": [
+		{
+			"filename": "bat-texture.png",
+			"format": "RGBA8888",
+			"size": {"w":48,"h":40},
+			"frames": {
+				"bat-00":{
+					"frame": {"x":0,"y":0,"w":12,"h":40}
+				},
+				"bat-01":{
+					"frame": {"x":12,"y":0,"w":12,"h":40}
+				},
+				"bat-02":{
+					"frame": {"x":24,"y":0,"w":12,"h":40}
+				},
+				"bat-03":{
+					"frame": {"x":36,"y":0,"w":12,"h":40}
+				}
+			}
+		}
+	],
+
+	"meta": {
+		"app": "https://www.codeandweb.com/texturepacker",
+		"dataformat": "monogame-extended",
+		"version": "1.2"
+	}
+}

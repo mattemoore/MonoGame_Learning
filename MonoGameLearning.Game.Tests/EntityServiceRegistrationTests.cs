@@ -25,6 +25,7 @@ internal sealed class StubCombatActor : CombatActorBase
     protected override bool IsInKnockedDownState => false;
     protected override bool IsInHurtState => false;
     protected override bool IsInDyingState => false;
+    protected override bool IsInAttackingState => false;
     protected override void FireKnockdownCompleted() { }
     protected override void FireHurtCompleted() { }
     protected override void FireDeathCompleted() { }

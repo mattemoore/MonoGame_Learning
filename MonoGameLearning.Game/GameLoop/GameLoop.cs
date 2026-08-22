@@ -24,7 +24,7 @@ using MonoGameLearning.Game.Entities.GoIndicator;
 using MonoGameLearning.Game.Entities.Player;
 using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.AnimatedSprites;
-using MonoGameLearning.Game.Entities.Pickups;
+using MonoGameLearning.Game.Weapons;
 
 namespace MonoGameLearning.Game.GameLoop;
 
@@ -126,6 +126,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         EnemySprite.Load(Content);
         OilDrumSprite.Load(Content);
         FoodPickupSprite.Load(Content);
+        BatWeapon.Load(Content);
 
         _player.Died += OnPlayerDied;
         _hudService = new HudService(_player, _debugFont);

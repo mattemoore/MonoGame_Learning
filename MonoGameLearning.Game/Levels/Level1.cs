@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
-using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Pickup;
 using MonoGameLearning.Core.Entities.Prop;
 using MonoGameLearning.Core.Levels;
@@ -32,6 +31,7 @@ public class Level1(int gameWidth, int gameHeight) : Level(CreateWaveDefs(), gam
 
     public override List<PickupSpawnDef> Pickups =>
     [
+        new PickupSpawnDef("Bat", new Vector2(350f, 556f)),
         new PickupSpawnDef("Food", new Vector2(1400f, 556f)),
     ];
 
@@ -51,7 +51,7 @@ public class Level1(int gameWidth, int gameHeight) : Level(CreateWaveDefs(), gam
             [
                 new PickupSpawnDef("Food", default),
             ]),
-            new EnemySpawnDef("Grunt", SpawnSide.Left, SpawnVertical.Bottom),
+            new EnemySpawnDef("Grunt", SpawnSide.Left, SpawnVertical.Bottom, Weapon: "Bat"),
         ])
     ];
 }

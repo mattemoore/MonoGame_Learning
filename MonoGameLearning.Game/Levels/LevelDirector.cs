@@ -15,6 +15,7 @@ using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.Entities.Props;
+using MonoGameLearning.Game.Weapons;
 using MonoGameLearning.Game.AnimatedSprites;
 using MonoGameLearning.Game.Entities.Pickups;
 
@@ -99,6 +100,7 @@ public class LevelDirector
     private Entity CreatePickup(PickupSpawnDef def) => def.Type switch
     {
         "Food" => new FoodPickupEntity(def.Type, def.Position, FoodPickupSprite.Texture),
+        "Bat" => new WeaponPickupEntity(def.Type, def.Position, BatWeapon.Bat),
         _ => throw new ArgumentException($"Unknown pickup type: {def.Type}", nameof(def)),
     };
 
@@ -210,6 +212,8 @@ public class LevelDirector
 
             var enemy = EnemyPool.Rent(def.Type, pos, _player);
             enemy.Drops = def.Drops;   // after Rent — Rent→Reset clears Drops
+            if (def.Weapon is not null)
+                enemy.EquipWeapon(BatWeapon.Get(def.Weapon));
             // FormatterServices-created test enemies have null Sprite — guard to avoid NPE.
             if (enemy.Sprite is not null)
             {

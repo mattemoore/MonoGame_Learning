@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
-using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Movement;
 
 namespace MonoGameLearning.Core.Combat;

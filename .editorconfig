@@ -1,0 +1,15 @@
+root = true
+
+[*.cs]
+# Unused usings (AGENTS.md: Conciseness / Simplification)
+dotnet_diagnostic.IDE0005.severity = warning
+# Unused private members (AGENTS.md: Simplification)
+dotnet_diagnostic.IDE0051.severity = warning
+# Private fields never assigned (AGENTS.md: Simplification)
+dotnet_diagnostic.IDE0052.severity = warning
+# Declared-but-unused local variables (AGENTS.md: Simplification)
+dotnet_diagnostic.CS0168.severity = warning
+# Prefer collection expressions — Modern C# convention
+dotnet_diagnostic.IDE0300.severity = suggestion
+# Prefer TryGetValue over ContainsKey+indexer (AGENTS.md: GC Optimization hot paths)
+dotnet_diagnostic.CA1854.severity = suggestion

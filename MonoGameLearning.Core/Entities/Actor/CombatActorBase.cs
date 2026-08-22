@@ -53,6 +53,8 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         };
     }
 
+    // TODO: Null-guard idioms are dispersed and inconsistent across this class (if-is-null return,
+    // ?. call, Debug.Assert + !, EnsureSpriteAttached). Consolidate to one boundary guard — see TODO.md item 1.
     public AnimatedSprite? Sprite => SpriteRenderer?.Sprite;
     public RectangleF MovementBounds { get; set; }
     public Vector2 MovementDirection { get; set; }
@@ -63,6 +65,20 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     public Faction Faction { get; protected set; }
     public event EventHandler? Died;
     protected SfxId? LastImpactSfx { get; set; }
+    public MeleeWeaponDef? EquippedWeapon { get; private set; }
+    protected AnimatedSprite? WeaponSprite { get; private set; }
+
+    public void EquipWeapon(MeleeWeaponDef weapon)
+    {
+        EquippedWeapon = weapon;
+        WeaponSprite = weapon.CreateSprite();
+    }
+
+    public void UnequipWeapon()
+    {
+        EquippedWeapon = null;
+        WeaponSprite = null;
+    }
 
     int IDamageable.Health => HealthComponent.Value;
     int IDamageable.MaxHealth => HealthComponent.MaxHealth;
@@ -137,7 +153,53 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     {
         if (Sprite is null) return;
         context.SpriteBatch.Draw(Sprite, Position, 0f, new Vector2(SpriteRenderer.Scale));
+        RenderWeaponOverlay(context);
     }
+
+    private void RenderWeaponOverlay(RenderContext context)
+    {
+        var weapon = EquippedWeapon;
+        if (weapon is null) return;
+        if (WeaponSprite is null)
+        {
+            Debug.WriteLine($"{GetType().Name} [{Name}] armed with '{weapon.Name}' but no weapon sprite — Sheet not loaded?");
+            return;
+        }
+
+        var (anchor, frame) = ResolveWeaponAnchorAndFrame(weapon, IsInAttackingState, FrameTracker.FrameIndex);
+        var effect = WeaponFacingEffect(Direction);
+        WeaponSprite.Effect = effect;
+        WeaponSprite.Controller.SetFrame(frame);
+        // SetFrame only updates the controller's internal frame index — it never refreshes
+        // AnimatedSprite.TextureRegion. See AGENTS.md "MonoGame.Extended Pitfalls".
+        if (weapon.Sheet is not null)
+            WeaponSprite.TextureRegion = weapon.Sheet.TextureAtlas[WeaponSprite.Controller.CurrentFrame];
+
+        var anchorOffset = ApplyWeaponFacing(anchor, Direction);
+        var region = WeaponSprite.TextureRegion;
+        var origin = new Vector2(region.Width / 2f, region.Height / 2f);
+        var scale = new Vector2(SpriteRenderer.Scale);
+        context.SpriteBatch.Draw(region,
+            new Vector2(Position.X + anchorOffset.X * SpriteRenderer.Scale, Position.Y + anchorOffset.Y * SpriteRenderer.Scale),
+            Color.White, 0f, origin, scale, effect, 0f);
+    }
+
+    internal static (Vector2 anchor, int frame) ResolveWeaponAnchorAndFrame(
+        MeleeWeaponDef weapon, bool isAttacking, int frameIndex)
+    {
+        if (isAttacking && weapon.SwingAnchors.Length > 0)
+        {
+            int frame = Math.Clamp(frameIndex, 0, weapon.SwingAnchors.Length - 1);
+            return (weapon.SwingAnchors[frame], frame);
+        }
+        return (weapon.CarryAnchor, 0);
+    }
+
+    internal static Vector2 ApplyWeaponFacing(Vector2 anchor, FacingDirection direction) =>
+        direction == FacingDirection.Left ? new Vector2(-anchor.X, anchor.Y) : anchor;
+
+    internal static SpriteEffects WeaponFacingEffect(FacingDirection direction) =>
+        direction == FacingDirection.Left ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
 
     public virtual void DrawDebug(DebugDrawContext context)
     {
@@ -149,8 +211,19 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
 
         if (HitboxService is not null)
         {
-            foreach (var bounds in HitboxService.GetActiveHitboxBounds(this))
-                context.SpriteBatch.DrawRectangle(bounds, Color.Red);
+            foreach (var actorBounds in HitboxService.GetActiveHitboxBounds(this))
+                context.SpriteBatch.DrawRectangle(actorBounds, Color.Red);
+        }
+
+        if (EquippedWeapon is not null)
+        {
+            var (anchor, frame) = ResolveWeaponAnchorAndFrame(EquippedWeapon, IsInAttackingState, FrameTracker.FrameIndex);
+            var anchorScreen = Position + ApplyWeaponFacing(anchor, Direction);
+            context.SpriteBatch.DrawRectangle(new RectangleF(anchorScreen.X - 2, anchorScreen.Y - 2, 4, 4), Color.Orange);
+            var name = $"{EquippedWeapon.Name} f{frame}";
+            var nameSize = context.Font.MeasureString(name);
+            context.SpriteBatch.DrawString(context.Font, name,
+                new Vector2(anchorScreen.X - nameSize.X / 2, anchorScreen.Y - nameSize.Y - 2), Color.White);
         }
     }
 
@@ -171,6 +244,7 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     protected abstract bool IsInKnockedDownState { get; }
     protected abstract bool IsInHurtState { get; }
     protected abstract bool IsInDyingState { get; }
+    protected abstract bool IsInAttackingState { get; }
     protected abstract void FireKnockdownCompleted();
     protected abstract void FireHurtCompleted();
     protected abstract void FireDeathCompleted();
@@ -203,6 +277,7 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     private void KnockdownEntryImpl()
     {
         KnockdownPhase = KnockdownPhase.Falling;
+        UnequipWeapon();
         PlayAnimation(Animations.Fall);
     }
 
@@ -212,7 +287,11 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         KnockdownPhase = KnockdownPhase.Falling;
     }
 
-    private void DyingEntryImpl() => PlayAnimation(Animations.Die);
+    private void DyingEntryImpl()
+    {
+        UnequipWeapon();
+        PlayAnimation(Animations.Die);
+    }
 
     private void DeadEntryImpl() => RaiseDied();
 
@@ -232,6 +311,7 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         HealthComponent.SetToMax();
         MovementDirection = Vector2.Zero;
         Direction = FacingDirection.Right;
+        UnequipWeapon();
         if (Sprite is not null)
         {
             Sprite.Effect = SpriteEffects.None;
