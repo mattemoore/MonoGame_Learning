@@ -8,8 +8,6 @@ namespace MonoGameLearning.Game.Tests;
 class PlayerEntityTester(string name, Vector2 position, float scale)
     : PlayerEntity(name, position, scale, null!, null!)
 {
-    protected override bool EnsureSpriteAttached() => true;
-
     protected override PlayerStateController CreateStateController()
     {
         return new PlayerStateController(new()

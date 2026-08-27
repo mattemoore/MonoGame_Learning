@@ -214,13 +214,13 @@ public class LevelDirector
             enemy.Drops = def.Drops;   // after Rent — Rent→Reset clears Drops
             if (def.Weapon is not null)
                 enemy.EquipWeapon(BatWeapon.Get(def.Weapon));
-            // FormatterServices-created test enemies have null Sprite — guard to avoid NPE.
-            if (enemy.Sprite is not null)
+            // SpriteRenderer without an attached sprite (test enemies) → skip visual setup.
+            if (enemy.SpriteRenderer.Sprite is not null)
             {
                 enemy.Direction = initialFacing;
-                enemy.Sprite.Effect = initialFacing == FacingDirection.Left
+                enemy.SpriteRenderer.SetEffect(initialFacing == FacingDirection.Left
                     ? SpriteEffects.FlipHorizontally
-                    : SpriteEffects.None;
+                    : SpriteEffects.None);
 
                 Vector2 walkDir = initialFacing == FacingDirection.Left ? new Vector2(-1, 0) : new Vector2(1, 0);
                 float targetX = initialFacing == FacingDirection.Left

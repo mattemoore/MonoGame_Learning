@@ -2,8 +2,8 @@ using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
-using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Rendering;
 
 namespace MonoGameLearning.Core.Movement;
 
@@ -22,16 +22,16 @@ public static class Mover
         );
     }
 
-    public static FacingDirection UpdateFacingDirection(AnimatedSprite sprite, Vector2 direction, FacingDirection currentFacing)
+    public static FacingDirection UpdateFacingDirection(SpriteRenderer spriteRenderer, Vector2 direction, FacingDirection currentFacing)
     {
         if (direction.X < 0 && currentFacing != FacingDirection.Left)
         {
-            sprite.Effect = SpriteEffects.FlipHorizontally;
+            spriteRenderer.SetEffect(SpriteEffects.FlipHorizontally);
             return FacingDirection.Left;
         }
         else if (direction.X > 0 && currentFacing != FacingDirection.Right)
         {
-            sprite.Effect = SpriteEffects.None;
+            spriteRenderer.SetEffect(SpriteEffects.None);
             return FacingDirection.Right;
         }
         return currentFacing;
