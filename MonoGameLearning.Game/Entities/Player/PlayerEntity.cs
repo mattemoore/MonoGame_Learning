@@ -105,8 +105,8 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
 
     protected virtual PlayerStateController CreateStateController() => new(new()
     {
-        OnIdleEntry = () => Sprite.SetAnimation(Animations.Idle),
-        OnMovingEntry = () => Sprite.SetAnimation(Animations.Run),
+        OnIdleEntry = () => SpriteRenderer.SetAnimation(Animations.Idle),
+        OnMovingEntry = () => SpriteRenderer.SetAnimation(Animations.Run),
         OnAttackingEntry = () =>
         {
             CurrentMove = _pendingMove;
@@ -146,8 +146,6 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
 
     public override void Update(GameTime gameTime)
     {
-        if (!EnsureSpriteAttached()) return;
-
         if (_invincibilityTimer > 0)
             _invincibilityTimer = Math.Max(0, _invincibilityTimer - (float)gameTime.ElapsedGameTime.TotalSeconds);
 
@@ -161,7 +159,7 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
         {
             Vector2 movementDirectionNoDiagonal = Mover.PreventDiagonal(MovementDirection);
             _stateController.Fire(PlayerTrigger.MoveStart);
-            Direction = Mover.UpdateFacingDirection(Sprite, movementDirectionNoDiagonal, Direction);
+            Direction = Mover.UpdateFacingDirection(SpriteRenderer, movementDirectionNoDiagonal, Direction);
             if (_stateController.IsInState(PlayerState.Moving))
                 Move(movementDirectionNoDiagonal, (float)gameTime.ElapsedGameTime.TotalSeconds);
         }

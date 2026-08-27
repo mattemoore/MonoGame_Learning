@@ -27,18 +27,18 @@ public class OilDrumEntity : PropBase, IUpdatable
         : base(name, position, sprite, scale, 6, anchor)
     {
         _audio = audio;
-        Sprite.Color = Color.White;
-        Sprite.SetAnimation(SelectAnimation());
+        SpriteRenderer.SetColor(Color.White);
+        SpriteRenderer.SetAnimation(SelectAnimation());
     }
 
     public void Update(GameTime gameTime)
     {
         if (!HealthComponent.IsAlive) return;
 
-        Sprite?.Update(gameTime);
+        SpriteRenderer.Update(gameTime);
 
         if (_behavior.Update((float)gameTime.ElapsedGameTime.TotalSeconds))
-            Sprite.SetAnimation(SelectAnimation());
+            SpriteRenderer.SetAnimation(SelectAnimation());
     }
 
     public override void TakeDamage(DamageInfo info)
@@ -57,7 +57,7 @@ public class OilDrumEntity : PropBase, IUpdatable
         {
             _audio.PlaySfx(SfxId.HitMetal);
             _behavior.ApplyStun();
-            Sprite.SetAnimation(SelectAnimation());
+            SpriteRenderer.SetAnimation(SelectAnimation());
         }
     }
 }

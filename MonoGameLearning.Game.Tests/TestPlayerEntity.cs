@@ -8,8 +8,6 @@ namespace MonoGameLearning.Game.Tests;
 class PlayerEntityTester(string name, Vector2 position, float scale)
     : PlayerEntity(name, position, scale, null!, null!)
 {
-    protected override bool EnsureSpriteAttached() => true;
-
     protected override PlayerStateController CreateStateController()
     {
         return new PlayerStateController(new()
@@ -79,5 +77,15 @@ class PlayerEntityInvulnerabilityTests
             player.Update(new GameTime(elapsed / 10, elapsed / 10));
 
         Assert.That(player.IsInvincible, Is.False);
+    }
+
+    [Test]
+    public void IncapacitatedUpdate_HeadlessNullSprite_DoesNotThrow()
+    {
+        var player = CreatePlayer();
+        player.TakeDamage(new DamageInfo { Amount = 1, Knockdown = false });
+
+        Assert.DoesNotThrow(() => player.Update(ZeroGameTime));
+        Assert.That(player.IsInvincible, Is.True);
     }
 }

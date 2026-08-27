@@ -18,13 +18,13 @@ public record struct AnimationSet(string Idle, string Run, string Hurt, string F
 
 public enum KnockdownPhase { Falling, GettingUp }
 
-public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, ICollisionLayer, IDamageable, IDamageResponse, IHitboxProvider, IMoveable, IAnimated
+public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, ICollisionLayer, IDamageable, IDamageResponse, IHitboxProvider, IMoveable, IAnimated, IWeaponWielder
 {
     public string LayerName => "actors";
     public int Id => GetHashCode();
     public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
 
-    protected readonly SpriteRenderer SpriteRenderer;
+    public readonly SpriteRenderer SpriteRenderer;
     protected readonly Health HealthComponent;
     protected readonly AnimationFrameTracker FrameTracker = new();
     protected readonly AnimationSet Animations;
@@ -53,9 +53,6 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         };
     }
 
-    // TODO: Null-guard idioms are dispersed and inconsistent across this class (if-is-null return,
-    // ?. call, Debug.Assert + !, EnsureSpriteAttached). Consolidate to one boundary guard — see TODO.md item 1.
-    public AnimatedSprite? Sprite => SpriteRenderer?.Sprite;
     public RectangleF MovementBounds { get; set; }
     public Vector2 MovementDirection { get; set; }
     public float Speed { get; set; }
@@ -97,22 +94,19 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
 
     protected void PlayAnimation(string key)
     {
-        if (Sprite is null) return;
         UnsubscribeFromAnimationEvent();
-        Sprite.SetAnimation(key);
+        SpriteRenderer.SetAnimation(key);
         SubscribeToAnimationEvent();
     }
 
     private void SubscribeToAnimationEvent()
     {
-        if (Sprite is null) return;
-        Sprite.Controller.OnAnimationEvent += OnAnimationCompleted;
+        SpriteRenderer.SubscribeAnimationEvents(OnAnimationCompleted);
     }
 
     private void UnsubscribeFromAnimationEvent()
     {
-        if (Sprite is null) return;
-        Sprite.Controller.OnAnimationEvent -= OnAnimationCompleted;
+        SpriteRenderer.UnsubscribeAnimationEvents(OnAnimationCompleted);
     }
 
     protected void OnAnimationCompleted(IAnimationController controller, AnimationEventTrigger trigger)
@@ -123,8 +117,7 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         {
             if (KnockdownPhase == KnockdownPhase.Falling)
             {
-                Debug.Assert(Sprite is not null, $"{GetType().Name} [{Name}] animation event fired with no Sprite");
-                Sprite!.SetAnimation(Animations.GetUp);
+                SpriteRenderer.SetAnimation(Animations.GetUp);
                 KnockdownPhase = KnockdownPhase.GettingUp;
                 SubscribeToAnimationEvent();
             }
@@ -151,8 +144,7 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
 
     public void Render(RenderContext context)
     {
-        if (Sprite is null) return;
-        context.SpriteBatch.Draw(Sprite, Position, 0f, new Vector2(SpriteRenderer.Scale));
+        SpriteRenderer.Render(context.SpriteBatch, Position, 0f);
         RenderWeaponOverlay(context);
     }
 
@@ -229,8 +221,7 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
 
     protected void AdvanceFrameAndRegisterHitboxes(GameTime gameTime)
     {
-        if (Sprite is null) return;
-        FrameTracker.AdvanceOnFrameChange(Sprite, gameTime);
+        SpriteRenderer.AdvanceFrame(FrameTracker, gameTime);
 
         if (CurrentMove is not null && FrameTracker.TryGetNewFrame(out var newFrameIndex))
         {
@@ -255,13 +246,6 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
 
     // --- Knockdown phase ---
     protected KnockdownPhase KnockdownPhase { get; set; }
-
-    // --- Sprite null guard ---
-    protected virtual bool EnsureSpriteAttached()
-    {
-        Debug.Assert(Sprite is not null, $"{GetType().Name} [{Name}] has no Sprite assigned");
-        return Sprite is not null;
-    }
 
     // --- Shared state controller callbacks (cached delegates — zero alloc per use) ---
     private void AttackingExitImpl()
@@ -300,7 +284,7 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     {
         if (!IsIncapacitated) return false;
         MovementDirection = Vector2.Zero;
-        Sprite?.Update(gameTime);
+        SpriteRenderer.Update(gameTime);
         return true;
     }
 
@@ -312,11 +296,8 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         MovementDirection = Vector2.Zero;
         Direction = FacingDirection.Right;
         UnequipWeapon();
-        if (Sprite is not null)
-        {
-            Sprite.Effect = SpriteEffects.None;
-            Sprite.SetAnimation(Animations.Idle);
-        }
+        SpriteRenderer.SetEffect(SpriteEffects.None);
+        SpriteRenderer.SetAnimation(Animations.Idle);
         CurrentMove = null;
         FrameTracker.Reset();
         KnockdownPhase = KnockdownPhase.Falling;

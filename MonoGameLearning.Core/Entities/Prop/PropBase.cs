@@ -23,12 +23,12 @@ public abstract class PropBase : Entity, IRenderable, IDebugDrawable, ICollision
         HealthComponent = new(maxHealth);
     }
 
-    // Sprite-less overload for test doubles — SpriteRenderer gets null! sprite (Render/DrawDebug already guard).
+    // Sprite-less overload for test doubles — SpriteRenderer gets null sprite (ops are no-ops).
     protected PropBase(string name, Vector2 position, int width, int height, int maxHealth, CollisionAnchor anchor)
         : base(name, position, width, height)
     {
         Anchor = anchor;
-        SpriteRenderer = new(null!, 1f);
+        SpriteRenderer = new(null, 1f);
         HealthComponent = new(maxHealth);
     }
 
@@ -62,7 +62,6 @@ public abstract class PropBase : Entity, IRenderable, IDebugDrawable, ICollision
     protected readonly SpriteRenderer SpriteRenderer;
     protected readonly Health HealthComponent;
 
-    public AnimatedSprite Sprite => SpriteRenderer.Sprite;
     public Faction Faction => Faction.Neutral;
     public event EventHandler Died = null!;
 
@@ -81,8 +80,7 @@ public abstract class PropBase : Entity, IRenderable, IDebugDrawable, ICollision
 
     public void Render(RenderContext context)
     {
-        if (Sprite is null) return;
-        context.SpriteBatch.Draw(Sprite, Position, 0f, new Vector2(SpriteRenderer.Scale));
+        SpriteRenderer.Render(context.SpriteBatch, Position, 0f);
     }
 
     public void DrawDebug(DebugDrawContext context)

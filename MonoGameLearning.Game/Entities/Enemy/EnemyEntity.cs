@@ -65,7 +65,7 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
         : base(name, position, 48, 60, sprite, scale, 30, new(EnemySprite.AnimationIdle, EnemySprite.AnimationRun, EnemySprite.AnimationHurt, EnemySprite.AnimationFall, EnemySprite.AnimationDie, EnemySprite.AnimationGetUp), audio)
     {
         Speed = 120f;
-        Sprite?.Color = Color.Red;
+        SpriteRenderer.SetColor(Color.Red);
         Faction = Faction.Enemy;
         _ai = new EnemyAI(AttackRange, MinChaseDistance);
         _stateController = CreateStateController();
@@ -91,8 +91,8 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
 
     protected virtual EnemyStateController CreateStateController() => new(new()
     {
-        OnIdleEntry = () => Sprite.SetAnimation(Animations.Idle),
-        OnChasingEntry = () => Sprite.SetAnimation(Animations.Run),
+        OnIdleEntry = () => SpriteRenderer.SetAnimation(Animations.Idle),
+        OnChasingEntry = () => SpriteRenderer.SetAnimation(Animations.Run),
         OnAttackingEntry = () =>
         {
             CurrentMove = AttackMove;
@@ -130,7 +130,7 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
         OnDeadEntry = Callbacks.OnDeadEntry,
         OnEnteringEntry = () =>
         {
-            Sprite.SetAnimation(Animations.Run);
+            SpriteRenderer.SetAnimation(Animations.Run);
         },
         OnEnteringExit = () =>
         {
@@ -148,8 +148,6 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
 
     public override void Update(GameTime gameTime)
     {
-        if (!EnsureSpriteAttached()) return;
-
         if (TryHandleIncapacitatedUpdate(gameTime)) return;
 
         float deltaSeconds = (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -190,7 +188,7 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
             }
 
             if (_ai.FacingChanged)
-                Direction = Mover.UpdateFacingDirection(Sprite, new Vector2(_ai.NewFacingX, 0), Direction);
+                Direction = Mover.UpdateFacingDirection(SpriteRenderer, new Vector2(_ai.NewFacingX, 0), Direction);
         }
         else
         {
@@ -209,7 +207,7 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
         _stateController = CreateStateController();
         _ai.Reset();
         Target = target;
-        Sprite?.Color = Color.Red;
+        SpriteRenderer.SetColor(Color.Red);
         _spawnWalkTargetX = 0f;
         _spawnWalkDirection = Vector2.Zero;
         Drops = null;

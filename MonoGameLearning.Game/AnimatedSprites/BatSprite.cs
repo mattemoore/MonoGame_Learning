@@ -1,4 +1,3 @@
-using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using MonoGame.Extended.Graphics;
@@ -8,7 +7,6 @@ namespace MonoGameLearning.Game.AnimatedSprites;
 public static class BatSprite
 {
     public const string AnimationSwing = "swing";
-    private const double FrameDuration = 0.1;
     private const int FrameCount = 4;
 
     private static SpriteSheet _sheet;
@@ -23,12 +21,7 @@ public static class BatSprite
 
         Texture2DAtlas atlas = content.Load<Texture2DAtlas>("images/bat");
         _sheet = new SpriteSheet("bat", atlas);
-        _sheet.DefineAnimation(AnimationSwing, builder =>
-        {
-            builder.IsLooping(false);
-            for (int i = 0; i < FrameCount; i++)
-                builder.AddFrame($"bat-{i:00}", TimeSpan.FromSeconds(FrameDuration));
-        });
+        _sheet.DefineFrames(AnimationSwing, "bat", FrameCount, false);
     }
 
     public static AnimatedSprite Create()

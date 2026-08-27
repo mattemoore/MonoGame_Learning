@@ -14,6 +14,22 @@ using MonoGameLearning.Game.Weapons;
 
 namespace MonoGameLearning.Game.Tests;
 
+internal sealed class WeaponWielderTrackerEntity : IDamageable, IWeaponWielder
+{
+    public string Name => "WeaponWielderTracker";
+    public Faction Faction => Faction.Player;
+    public int Health => 100;
+    public int MaxHealth => 100;
+    public bool IsAlive => true;
+    public event EventHandler Died = delegate { };
+    public MeleeWeaponDef? Equipped { get; private set; }
+
+    public void TakeDamage(DamageInfo info) { }
+    public void Heal(int amount) { }
+    public void EquipWeapon(MeleeWeaponDef weapon) => Equipped = weapon;
+    public void UnequipWeapon() => Equipped = null;
+}
+
 [TestFixture]
 public class MeleeWeaponTests
 {
@@ -108,6 +124,17 @@ public class MeleeWeaponTests
         pickup.OnPickup(player);
 
         Assert.That(player.EquippedWeapon, Is.SameAs(BatWeapon.Bat));
+    }
+
+    [Test]
+    public void WeaponPickup_OnPickup_EquipsAnyWeaponWielder()
+    {
+        var pickup = new WeaponPickupEntity("Bat", Vector2.Zero, BatWeapon.Bat);
+        var wielder = new WeaponWielderTrackerEntity();
+
+        pickup.OnPickup(wielder);
+
+        Assert.That(wielder.Equipped, Is.SameAs(BatWeapon.Bat));
     }
 
     [Test]

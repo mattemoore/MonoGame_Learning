@@ -1,4 +1,3 @@
-using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using MonoGame.Extended.Graphics;
@@ -21,23 +20,9 @@ public static class OilDrumSprite
         Texture2DAtlas atlas = content.Load<Texture2DAtlas>("images/oilcan");
         _spriteSheet = new("oilcan", atlas);
 
-        _spriteSheet.DefineAnimation(AnimationIdle, builder =>
-        {
-            builder.IsLooping(true);
-            builder.AddFrame("oildrum-00", TimeSpan.FromSeconds(0.1));
-        });
-
-        _spriteSheet.DefineAnimation(AnimationDamaged, builder =>
-        {
-            builder.IsLooping(true);
-            builder.AddFrame("oildrum-01", TimeSpan.FromSeconds(0.1));
-        });
-
-        _spriteSheet.DefineAnimation(AnimationCritical, builder =>
-        {
-            builder.IsLooping(true);
-            builder.AddFrame("oildrum-02", TimeSpan.FromSeconds(0.1));
-        });
+        _spriteSheet.DefineFrames(AnimationIdle, "oildrum", 1, true);
+        _spriteSheet.DefineFrames(AnimationDamaged, "oildrum", 1, true, firstFrame: 1);
+        _spriteSheet.DefineFrames(AnimationCritical, "oildrum", 1, true, firstFrame: 2);
     }
 
     public static AnimatedSprite Create()

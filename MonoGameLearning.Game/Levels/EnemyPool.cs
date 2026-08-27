@@ -120,6 +120,6 @@ public class EnemyPool
     private void WarmUpAnimations(EnemyEntity enemy)
     {
         for (int i = 0; i < WarmUpKeys.Length; i++)
-            enemy.Sprite.SetAnimation(WarmUpKeys[i]);
+            enemy.SpriteRenderer.SetAnimation(WarmUpKeys[i]);
     }
 }
