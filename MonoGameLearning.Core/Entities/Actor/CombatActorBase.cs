@@ -18,7 +18,7 @@ public record struct AnimationSet(string Idle, string Run, string Hurt, string F
 
 public enum KnockdownPhase { Falling, GettingUp }
 
-public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, ICollisionLayer, IDamageable, IDamageResponse, IHitboxProvider, IMoveable, IAnimated
+public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, ICollisionLayer, IDamageable, IDamageResponse, IHitboxProvider, IMoveable, IAnimated, IWeaponWielder
 {
     public string LayerName => "actors";
     public int Id => GetHashCode();
@@ -53,9 +53,21 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         };
     }
 
-    // TODO: Null-guard idioms are dispersed and inconsistent across this class (if-is-null return,
-    // ?. call, Debug.Assert + !, EnsureSpriteAttached). Consolidate to one boundary guard — see TODO.md item 1.
+    // Sprite is nullable only as a headless-test boundary: production always assigns a sprite, while
+    // test doubles construct without one. Interior paths must never see null — `SpriteRequired` is the
+    // single assert spot — and null is only tolerated at the entry guards this class intentionally keeps
+    // (Update via EnsureSpriteAttached, PlayAnimation, UnsubscribeFromAnimationEvent,
+    // AdvanceFrameAndRegisterHitboxes, TryHandleIncapacitatedUpdate, ResetActor), all using `Sprite is {} sprite`.
     public AnimatedSprite? Sprite => SpriteRenderer?.Sprite;
+
+    protected AnimatedSprite SpriteRequired
+    {
+        get
+        {
+            Debug.Assert(Sprite is not null, $"{GetType().Name} [{Name}] has no Sprite assigned");
+            return Sprite!;
+        }
+    }
     public RectangleF MovementBounds { get; set; }
     public Vector2 MovementDirection { get; set; }
     public float Speed { get; set; }
@@ -97,22 +109,21 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
 
     protected void PlayAnimation(string key)
     {
-        if (Sprite is null) return;
+        if (Sprite is not { } sprite) return;
         UnsubscribeFromAnimationEvent();
-        Sprite.SetAnimation(key);
+        sprite.SetAnimation(key);
         SubscribeToAnimationEvent();
     }
 
     private void SubscribeToAnimationEvent()
     {
-        if (Sprite is null) return;
-        Sprite.Controller.OnAnimationEvent += OnAnimationCompleted;
+        SpriteRequired.Controller.OnAnimationEvent += OnAnimationCompleted;
     }
 
     private void UnsubscribeFromAnimationEvent()
     {
-        if (Sprite is null) return;
-        Sprite.Controller.OnAnimationEvent -= OnAnimationCompleted;
+        if (Sprite is not { } sprite) return;
+        sprite.Controller.OnAnimationEvent -= OnAnimationCompleted;
     }
 
     protected void OnAnimationCompleted(IAnimationController controller, AnimationEventTrigger trigger)
@@ -123,8 +134,7 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         {
             if (KnockdownPhase == KnockdownPhase.Falling)
             {
-                Debug.Assert(Sprite is not null, $"{GetType().Name} [{Name}] animation event fired with no Sprite");
-                Sprite!.SetAnimation(Animations.GetUp);
+                SpriteRequired.SetAnimation(Animations.GetUp);
                 KnockdownPhase = KnockdownPhase.GettingUp;
                 SubscribeToAnimationEvent();
             }
@@ -151,8 +161,8 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
 
     public void Render(RenderContext context)
     {
-        if (Sprite is null) return;
-        context.SpriteBatch.Draw(Sprite, Position, 0f, new Vector2(SpriteRenderer.Scale));
+        var sprite = SpriteRequired;
+        context.SpriteBatch.Draw(sprite, Position, 0f, new Vector2(SpriteRenderer.Scale));
         RenderWeaponOverlay(context);
     }
 
@@ -229,8 +239,8 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
 
     protected void AdvanceFrameAndRegisterHitboxes(GameTime gameTime)
     {
-        if (Sprite is null) return;
-        FrameTracker.AdvanceOnFrameChange(Sprite, gameTime);
+        if (Sprite is not { } sprite) return;
+        FrameTracker.AdvanceOnFrameChange(sprite, gameTime);
 
         if (CurrentMove is not null && FrameTracker.TryGetNewFrame(out var newFrameIndex))
         {
@@ -300,7 +310,8 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     {
         if (!IsIncapacitated) return false;
         MovementDirection = Vector2.Zero;
-        Sprite?.Update(gameTime);
+        if (Sprite is { } sprite)
+            sprite.Update(gameTime);
         return true;
     }
 
@@ -312,10 +323,10 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         MovementDirection = Vector2.Zero;
         Direction = FacingDirection.Right;
         UnequipWeapon();
-        if (Sprite is not null)
+        if (Sprite is { } sprite)
         {
-            Sprite.Effect = SpriteEffects.None;
-            Sprite.SetAnimation(Animations.Idle);
+            sprite.Effect = SpriteEffects.None;
+            sprite.SetAnimation(Animations.Idle);
         }
         CurrentMove = null;
         FrameTracker.Reset();

@@ -80,4 +80,14 @@ class PlayerEntityInvulnerabilityTests
 
         Assert.That(player.IsInvincible, Is.False);
     }
+
+    [Test]
+    public void IncapacitatedUpdate_HeadlessNullSprite_DoesNotThrow()
+    {
+        var player = CreatePlayer();
+        player.TakeDamage(new DamageInfo { Amount = 1, Knockdown = false });
+
+        Assert.DoesNotThrow(() => player.Update(ZeroGameTime));
+        Assert.That(player.IsInvincible, Is.True);
+    }
 }
