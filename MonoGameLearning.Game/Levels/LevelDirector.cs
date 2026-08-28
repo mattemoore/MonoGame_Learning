@@ -29,6 +29,7 @@ public class LevelDirector
     private readonly Level _level;
     private readonly Entity _player;
     private readonly AudioService _audio;
+    private readonly Texture2D _foodTexture;
 
     protected EnemyPool EnemyPool { get; set; }
 
@@ -54,12 +55,13 @@ public class LevelDirector
 
     public ref readonly WorldSnapshot CurrentWorld => ref _currentSnapshot;
 
-    public LevelDirector(EntityService entityManager, Level level, Entity player, AudioService audio)
+    public LevelDirector(EntityService entityManager, Level level, Entity player, AudioService audio, Texture2D foodTexture = null)
     {
         _entityManager = entityManager;
         _level = level;
         _player = player;
         _audio = audio;
+        _foodTexture = foodTexture;
 
         _enemyBuf.Capacity = 16;
         _propBuf.Capacity = 16;
@@ -99,7 +101,7 @@ public class LevelDirector
 
     private Entity CreatePickup(PickupSpawnDef def) => def.Type switch
     {
-        "Food" => new FoodPickupEntity(def.Type, def.Position, FoodPickupSprite.Texture),
+        "Food" => new FoodPickupEntity(def.Type, def.Position, _foodTexture),
         "Bat" => new WeaponPickupEntity(def.Type, def.Position, BatWeapon.Bat),
         _ => throw new ArgumentException($"Unknown pickup type: {def.Type}", nameof(def)),
     };

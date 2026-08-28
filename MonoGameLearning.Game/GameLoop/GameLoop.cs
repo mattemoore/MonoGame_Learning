@@ -13,6 +13,7 @@ using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Camera;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Actor;
 using MonoGameLearning.Core.Entities.Pickup;
 using MonoGameLearning.Core.Input;
 using MonoGameLearning.Core.Levels;
@@ -53,6 +54,9 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private AudioService _audio;
     private GoIndicatorEntity _goIndicator;
     private HudService _hudService;
+
+    private static readonly StaticTextureAsset GoIndicatorTexture = new("images/arrow");
+    private static readonly StaticTextureAsset FoodPickupTexture = new("images/apple-pickup");
 
     protected override void Initialize()
     {
@@ -125,13 +129,13 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
         EnemySprite.Load(Content);
         OilDrumSprite.Load(Content);
-        FoodPickupSprite.Load(Content);
+        FoodPickupTexture.Load(Content);
         BatWeapon.Load(Content);
 
         _player.Died += OnPlayerDied;
         _hudService = new HudService(_player, _debugFont);
 
-        GoIndicatorSprite.Load(Content);
+        GoIndicatorTexture.Load(Content);
 
         _actionHandlers = new()
         {
@@ -150,7 +154,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         };
 
         ReinitLevel();
-        _goIndicator = new GoIndicatorEntity("goIndicator", GoIndicatorSprite.Texture);
+        _goIndicator = new GoIndicatorEntity("goIndicator", GoIndicatorTexture.Texture);
         _entityManager.Register(_goIndicator);
     }
 
@@ -190,7 +194,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             {
                 if (hit.Target is not { } damageable) continue;
                 damageable.TakeDamage(hit);
-                if (damageable.Faction == Faction.Enemy)
+                if (damageable is CombatActorBase { Faction: Faction.Enemy })
                     _hudService.OnEnemyHit(damageable);
             }
 
@@ -413,7 +417,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     {
         _cameraController = new CameraService(_player, GAME_WIDTH, GAME_HEIGHT, _currentLevel.MovementBounds);
 
-        _levelDirector = new LevelDirector(_entityManager, _currentLevel, _player, _audio);
+        _levelDirector = new LevelDirector(_entityManager, _currentLevel, _player, _audio, FoodPickupTexture.Texture);
         _levelDirector.LevelCompleted += () => _gameState.Fire(GameTrigger.CompleteLevel);
     }
 

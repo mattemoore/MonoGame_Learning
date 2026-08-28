@@ -60,17 +60,12 @@ Bounds: Core must never reference `MonoGameLearning.Game`. Every phase ends with
    `OnAnimationCompleted` checks state first, and `CanFire` returns true for
    `.Ignore`d triggers), so behavior is identical in practice and all tests stay
    green.
-2. **Player/Enemy sprite de-duplication.** Both `PlayerSprite` and `EnemySprite`
-   load `"images/adventurer"` into a sheet named `"adventurer"` and define 6
-   identical `DefineFrames` calls. Extract one static "adventurer" sheet/anim
-   builder parameterized by which animations to define (player adds attack2/3),
-   so the atlas is loaded and defined once.
-3. **Texture sprite singletons.** `GoIndicatorSprite`, `BatPickupSprite`,
+2. **Texture sprite singletons.** `GoIndicatorSprite`, `BatPickupSprite`,
    `FoodPickupSprite` are token-identical static `Texture2D` singers whose
    `_loaded` is set `true` before `content.Load` (failure poisons the flag).
    Collapse into one reusable `StaticTextureAsset` helper (name+path), and set
    the flag only after a successful load.
-4. **Damage-interface adapters.** In `Core/Combat/IDamageable.cs` drop `Faction`
+3. **Damage-interface adapters.** In `Core/Combat/IDamageable.cs` drop `Faction`
    (only consumed by same-faction hit filtering on actors) and remove the
    duplicated explicit-interface `IDamageable`/`IDamageResponse` adapter blocks
    in `CombatActorBase.cs:80-93` and `PropBase.cs:68-79` — give `IDamageResponse`

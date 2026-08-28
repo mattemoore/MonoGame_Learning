@@ -13,12 +13,13 @@ using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.AnimatedSprites;
+using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Entities.Enemy;
 
 public class EnemyEntity : CombatActorBase, IPickupDropper
 {
-    private EnemyStateController _stateController;
+    private StateMachineController<EnemyState, EnemyTrigger> _stateController;
     private readonly EnemyAI _ai;
     private readonly LevelDirector _director;
 
@@ -72,24 +73,24 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
         _director = director;
     }
 
-    protected override bool CanTakeDamage() =>
+    public override bool CanTakeDamage() =>
         HealthComponent.IsAlive && _stateController.State != EnemyState.KnockedDown;
 
-    protected override void OnDeath() => _stateController.Fire(EnemyTrigger.Die);
+    public override void OnDeath() => _stateController.Fire(EnemyTrigger.Die);
 
-    protected override void OnKnockdown(DamageInfo info)
+    public override void OnKnockdown(DamageInfo info)
     {
         LastImpactSfx = info.ImpactSfx;
         _stateController.Fire(EnemyTrigger.TakeKnockdown);
     }
 
-    protected override void OnHit(DamageInfo info)
+    public override void OnHit(DamageInfo info)
     {
         LastImpactSfx = info.ImpactSfx;
         _stateController.Fire(EnemyTrigger.TakeDamage);
     }
 
-    protected virtual EnemyStateController CreateStateController() => new(new()
+    protected virtual StateMachineController<EnemyState, EnemyTrigger> CreateStateController() => EnemyStateMachine.Create(new()
     {
         OnIdleEntry = () => SpriteRenderer.SetAnimation(Animations.Idle),
         OnChasingEntry = () => SpriteRenderer.SetAnimation(Animations.Run),

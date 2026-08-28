@@ -2,15 +2,16 @@ using Microsoft.Xna.Framework;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.UI;
 using MonoGameLearning.Game.Entities.Player;
+using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Tests;
 
 class PlayerEntityTester(string name, Vector2 position, float scale)
     : PlayerEntity(name, position, scale, null!, null!)
 {
-    protected override PlayerStateController CreateStateController()
+    protected override StateMachineController<PlayerState, PlayerTrigger> CreateStateController()
     {
-        return new PlayerStateController(new()
+        return PlayerStateMachine.Create(new()
         {
             OnAttackingExit = Callbacks.OnAttackingExit,
             OnHurtEntry = Callbacks.OnHurtEntry,

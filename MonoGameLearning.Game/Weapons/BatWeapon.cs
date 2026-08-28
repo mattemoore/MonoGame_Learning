@@ -3,12 +3,14 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Combat;
+using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Game.AnimatedSprites;
 
 namespace MonoGameLearning.Game.Weapons;
 
 public static class BatWeapon
 {
+    private static readonly StaticTextureAsset BatPickupTexture = new("images/bat-pickup");
     public static readonly MeleeWeaponDef Bat = new()
     {
         Name = "Bat",
@@ -38,9 +40,9 @@ public static class BatWeapon
 
     public static void Load(ContentManager content)
     {
-        BatPickupSprite.Load(content);
+        BatPickupTexture.Load(content);
         BatSprite.Load(content);
-        Bat.Texture = BatPickupSprite.Texture;
+        Bat.Texture = BatPickupTexture.Texture;
         Bat.Sheet = BatSprite.Sheet;
     }
 }

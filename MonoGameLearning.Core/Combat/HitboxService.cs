@@ -3,6 +3,7 @@ using System.Diagnostics;
 using MonoGame.Extended;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Actor;
 using MonoGameLearning.Core.Movement;
 
 namespace MonoGameLearning.Core.Combat;
@@ -69,7 +70,7 @@ public class HitboxService
                 }
                 if (!ownerDedup.Add(tgt)) continue;
 
-                if (active.OwnerFaction == tgt.Faction) continue;
+                if (tgt is CombatActorBase { Faction: var targetFaction } && active.OwnerFaction == targetFaction) continue;
 
                 _resultBuffer.Add(new()
                 {

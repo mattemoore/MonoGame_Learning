@@ -4,6 +4,7 @@ using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended.Collisions;
 using MonoGameLearning.Core.Combat;
+using MonoGameLearning.Core.Entities.Actor;
 using MonoGameLearning.Core.Entities.Prop;
 using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Core.Rendering;
@@ -95,7 +96,7 @@ public class EntityService(CollisionWorld2D world)
         float nearestDist = float.MaxValue;
         for (int i = 0; i < _all.Count; i++)
         {
-            if (_all[i] is IDamageable { IsAlive: true, Faction: Faction.Enemy } d)
+            if (_all[i] is CombatActorBase { IsAlive: true, Faction: Faction.Enemy } d)
             {
                 float dist = Math.Abs(((Entity)d).Position.X - origin.X);
                 if (dist < nearestDist)

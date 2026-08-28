@@ -1,24 +1,8 @@
-using System;
+using System.Diagnostics;
+using MonoGameLearning.Game.StateMachines;
 using Stateless;
 
 namespace MonoGameLearning.Game.Entities.Enemy;
-
-public class EnemyStateEntryCallbacks
-{
-    public Action OnIdleEntry { get; init; }
-    public Action OnChasingEntry { get; init; }
-    public Action OnAttackingEntry { get; init; }
-    public Action OnAttackingExit { get; init; }
-    public Action OnHurtEntry { get; init; }
-    public Action OnHurtExit { get; init; }
-    public Action OnKnockdownEntry { get; init; }
-    public Action OnKnockdownExit { get; init; }
-    public Action OnDyingEntry { get; init; }
-    public Action OnDyingExit { get; init; }
-    public Action OnDeadEntry { get; init; }
-    public Action OnEnteringEntry { get; init; }
-    public Action OnEnteringExit { get; init; }
-}
 
 public enum EnemyState
 {
@@ -48,18 +32,24 @@ public enum EnemyTrigger
     DeathCompleted
 }
 
-public class EnemyStateController
+public static class EnemyStateMachine
 {
-    public StateMachine<EnemyState, EnemyTrigger> StateMachine { get; }
-    public EnemyState State => StateMachine.State;
-
-    public EnemyStateController(EnemyStateEntryCallbacks callbacks = null)
+    public static StateMachineController<EnemyState, EnemyTrigger> Create(ActorStateMachineCallbacks callbacks = null)
     {
-        StateMachine = new(EnemyState.Idle);
+        callbacks ??= new ActorStateMachineCallbacks();
+        Debug.Assert(callbacks.OnMovingEntry is null,
+            "EnemyStateMachine: player-only callback (OnMovingEntry) is not wired by the enemy machine");
+        return new StateMachineController<EnemyState, EnemyTrigger>(
+            EnemyState.Idle,
+            sm => Configure(sm, callbacks),
+            () => callbacks.OnIdleEntry?.Invoke());
+    }
 
-        StateMachine.Configure(EnemyState.Entering)
-            .OnEntry(_ => callbacks?.OnEnteringEntry?.Invoke())
-            .OnExit(_ => callbacks?.OnEnteringExit?.Invoke())
+    private static void Configure(StateMachine<EnemyState, EnemyTrigger> sm, ActorStateMachineCallbacks c)
+    {
+        sm.Configure(EnemyState.Entering)
+            .OnEntry(_ => c.OnEnteringEntry?.Invoke())
+            .OnExit(_ => c.OnEnteringExit?.Invoke())
             .Permit(EnemyTrigger.SpawnWalkCompleted, EnemyState.Idle)
             .Permit(EnemyTrigger.Die, EnemyState.Dying)
             .Ignore(EnemyTrigger.StartEntering)
@@ -73,8 +63,8 @@ public class EnemyStateController
             .Ignore(EnemyTrigger.HurtCompleted)
             .Ignore(EnemyTrigger.DeathCompleted);
 
-        StateMachine.Configure(EnemyState.Idle)
-            .OnEntry(_ => callbacks?.OnIdleEntry?.Invoke())
+        sm.Configure(EnemyState.Idle)
+            .OnEntry(_ => c.OnIdleEntry?.Invoke())
             .Permit(EnemyTrigger.StartEntering, EnemyState.Entering)
             .Permit(EnemyTrigger.StartChase, EnemyState.Chasing)
             .Permit(EnemyTrigger.AttackStart, EnemyState.Attacking)
@@ -84,8 +74,8 @@ public class EnemyStateController
             .Ignore(EnemyTrigger.AttackCompleted)
             .Ignore(EnemyTrigger.StopChase);
 
-        StateMachine.Configure(EnemyState.Chasing)
-            .OnEntry(_ => callbacks?.OnChasingEntry?.Invoke())
+        sm.Configure(EnemyState.Chasing)
+            .OnEntry(_ => c.OnChasingEntry?.Invoke())
             .Permit(EnemyTrigger.StopChase, EnemyState.Idle)
             .Permit(EnemyTrigger.AttackStart, EnemyState.Attacking)
             .Permit(EnemyTrigger.TakeDamage, EnemyState.Hurt)
@@ -94,9 +84,9 @@ public class EnemyStateController
             .Ignore(EnemyTrigger.StartChase)
             .Ignore(EnemyTrigger.AttackCompleted);
 
-        StateMachine.Configure(EnemyState.Attacking)
-            .OnEntry(_ => callbacks?.OnAttackingEntry?.Invoke())
-            .OnExit(_ => callbacks?.OnAttackingExit?.Invoke())
+        sm.Configure(EnemyState.Attacking)
+            .OnEntry(_ => c.OnAttackingEntry?.Invoke())
+            .OnExit(_ => c.OnAttackingExit?.Invoke())
             .Permit(EnemyTrigger.AttackCompleted, EnemyState.Idle)
             .Permit(EnemyTrigger.TakeDamage, EnemyState.Hurt)
             .Permit(EnemyTrigger.TakeKnockdown, EnemyState.KnockedDown)
@@ -105,9 +95,9 @@ public class EnemyStateController
             .Ignore(EnemyTrigger.StopChase)
             .Ignore(EnemyTrigger.AttackStart);
 
-        StateMachine.Configure(EnemyState.Hurt)
-            .OnEntry(_ => callbacks?.OnHurtEntry?.Invoke())
-            .OnExit(_ => callbacks?.OnHurtExit?.Invoke())
+        sm.Configure(EnemyState.Hurt)
+            .OnEntry(_ => c.OnHurtEntry?.Invoke())
+            .OnExit(_ => c.OnHurtExit?.Invoke())
             .Permit(EnemyTrigger.HurtCompleted, EnemyState.Idle)
             .Permit(EnemyTrigger.TakeKnockdown, EnemyState.KnockedDown)
             .Permit(EnemyTrigger.Die, EnemyState.Dying)
@@ -117,9 +107,9 @@ public class EnemyStateController
             .Ignore(EnemyTrigger.StopChase)
             .Ignore(EnemyTrigger.AttackCompleted);
 
-        StateMachine.Configure(EnemyState.KnockedDown)
-            .OnEntry(_ => callbacks?.OnKnockdownEntry?.Invoke())
-            .OnExit(_ => callbacks?.OnKnockdownExit?.Invoke())
+        sm.Configure(EnemyState.KnockedDown)
+            .OnEntry(_ => c.OnKnockdownEntry?.Invoke())
+            .OnExit(_ => c.OnKnockdownExit?.Invoke())
             .Permit(EnemyTrigger.KnockdownCompleted, EnemyState.Idle)
             .Permit(EnemyTrigger.Die, EnemyState.Dying)
             .Ignore(EnemyTrigger.TakeDamage)
@@ -130,9 +120,9 @@ public class EnemyStateController
             .Ignore(EnemyTrigger.StopChase)
             .Ignore(EnemyTrigger.HurtCompleted);
 
-        StateMachine.Configure(EnemyState.Dying)
-            .OnEntry(_ => callbacks?.OnDyingEntry?.Invoke())
-            .OnExit(_ => callbacks?.OnDyingExit?.Invoke())
+        sm.Configure(EnemyState.Dying)
+            .OnEntry(_ => c.OnDyingEntry?.Invoke())
+            .OnExit(_ => c.OnDyingExit?.Invoke())
             .Permit(EnemyTrigger.DeathCompleted, EnemyState.Dead)
             .Ignore(EnemyTrigger.TakeDamage)
             .Ignore(EnemyTrigger.Die)
@@ -144,8 +134,8 @@ public class EnemyStateController
             .Ignore(EnemyTrigger.TakeKnockdown)
             .Ignore(EnemyTrigger.KnockdownCompleted);
 
-        StateMachine.Configure(EnemyState.Dead)
-            .OnEntry(_ => callbacks?.OnDeadEntry?.Invoke())
+        sm.Configure(EnemyState.Dead)
+            .OnEntry(_ => c.OnDeadEntry?.Invoke())
             .Ignore(EnemyTrigger.TakeDamage)
             .Ignore(EnemyTrigger.Die)
             .Ignore(EnemyTrigger.HurtCompleted)
@@ -156,16 +146,5 @@ public class EnemyStateController
             .Ignore(EnemyTrigger.AttackCompleted)
             .Ignore(EnemyTrigger.TakeKnockdown)
             .Ignore(EnemyTrigger.KnockdownCompleted);
-
-        callbacks?.OnIdleEntry?.Invoke();
-    }
-
-    public bool IsInState(EnemyState state) => StateMachine.IsInState(state);
-
-    public bool CanFire(EnemyTrigger trigger) => StateMachine.CanFire(trigger);
-
-    public void Fire(EnemyTrigger trigger)
-    {
-        StateMachine.Fire(trigger);
     }
 }

@@ -7,6 +7,7 @@ using MonoGameLearning.Core.Entities.Actor;
 using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Core.UI;
 using MonoGameLearning.Game.AnimatedSprites;
+using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Entities.Player;
 
@@ -14,7 +15,7 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
 {
     public const int InitialLives = 3;
 
-    private PlayerStateController _stateController;
+    private StateMachineController<PlayerState, PlayerTrigger> _stateController;
     private float _invincibilityTimer;
     private MoveData _pendingMove;
 
@@ -84,26 +85,26 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
         _stateController = CreateStateController();
     }
 
-    protected override bool CanTakeDamage() =>
+    public override bool CanTakeDamage() =>
         HealthComponent.IsAlive && _invincibilityTimer <= 0 && _stateController.State != PlayerState.KnockedDown;
 
-    protected override void OnDeath() => _stateController.Fire(PlayerTrigger.Die);
+    public override void OnDeath() => _stateController.Fire(PlayerTrigger.Die);
 
-    protected override void OnKnockdown(DamageInfo info)
+    public override void OnKnockdown(DamageInfo info)
     {
         LastImpactSfx = info.ImpactSfx;
         _invincibilityTimer = 1.5f;
         _stateController.Fire(PlayerTrigger.TakeKnockdown);
     }
 
-    protected override void OnHit(DamageInfo info)
+    public override void OnHit(DamageInfo info)
     {
         LastImpactSfx = info.ImpactSfx;
         _invincibilityTimer = 1.0f;
         _stateController.Fire(PlayerTrigger.TakeDamage);
     }
 
-    protected virtual PlayerStateController CreateStateController() => new(new()
+    protected virtual StateMachineController<PlayerState, PlayerTrigger> CreateStateController() => PlayerStateMachine.Create(new()
     {
         OnIdleEntry = () => SpriteRenderer.SetAnimation(Animations.Idle),
         OnMovingEntry = () => SpriteRenderer.SetAnimation(Animations.Run),

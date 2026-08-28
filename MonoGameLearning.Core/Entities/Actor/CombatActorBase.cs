@@ -65,6 +65,20 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     public MeleeWeaponDef? EquippedWeapon { get; private set; }
     protected AnimatedSprite? WeaponSprite { get; private set; }
 
+    public int Health => HealthComponent.Value;
+    public int MaxHealth => HealthComponent.MaxHealth;
+    public bool IsAlive => HealthComponent.IsAlive;
+    public void Heal(int amount) => HealthComponent.Add(amount);
+
+    public void TakeDamage(DamageInfo info) => CombatService.ApplyDamage(this, info);
+
+    public void ReduceHealth(int amount) => HealthComponent.Subtract(amount);
+
+    public virtual bool CanTakeDamage() => HealthComponent.IsAlive;
+    public virtual void OnDeath() { }
+    public virtual void OnKnockdown(DamageInfo info) { }
+    public virtual void OnHit(DamageInfo info) { }
+
     public void EquipWeapon(MeleeWeaponDef weapon)
     {
         EquippedWeapon = weapon;
@@ -76,21 +90,6 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         EquippedWeapon = null;
         WeaponSprite = null;
     }
-
-    int IDamageable.Health => HealthComponent.Value;
-    int IDamageable.MaxHealth => HealthComponent.MaxHealth;
-    bool IDamageable.IsAlive => HealthComponent.IsAlive;
-
-    bool IDamageResponse.IsAlive => HealthComponent.IsAlive;
-    bool IDamageResponse.CanTakeDamage() => CanTakeDamage();
-    void IDamageResponse.ReduceHealth(int amount) => HealthComponent.Subtract(amount);
-    void IDamageResponse.OnDeath() => OnDeath();
-    void IDamageResponse.OnKnockdown(DamageInfo info) => OnKnockdown(info);
-    void IDamageResponse.OnHit(DamageInfo info) => OnHit(info);
-
-    public void TakeDamage(DamageInfo info) => CombatService.ApplyDamage(this, info);
-
-    void IDamageable.Heal(int amount) => HealthComponent.Add(amount);
 
     protected void PlayAnimation(string key)
     {
@@ -132,11 +131,6 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     }
 
     public abstract void Update(GameTime gameTime);
-
-    protected virtual bool CanTakeDamage() => HealthComponent.IsAlive;
-    protected virtual void OnDeath() { }
-    protected virtual void OnKnockdown(DamageInfo info) { }
-    protected virtual void OnHit(DamageInfo info) { }
 
     protected void RaiseDied() => Died?.Invoke(this, EventArgs.Empty);
 
