@@ -1,4 +1,4 @@
-# Architecture Fixes Plan (phases 1-5 complete)
+# Architecture Fixes Plan (phases 1-6 complete)
 
 Goal: resolve the 17 architecture smells from the audit, phased by risk so each
 phase stays behavior-preserving (432 tests green + `dotnet build --warnaserror`
@@ -173,7 +173,7 @@ Bounds: Core must never reference `MonoGameLearning.Game`. Every phase ends with
 - Validation: `dotnet build --warnaserror` clean; 446 tests pass (3 skipped);
   no `MonoGameLearning.Game` references under `MonoGameLearning.Core/`.
 
-## Phase 6 — Structural (largest; later milestone)
+## Phase 6 — Structural (largest; later milestone) [COMPLETE]
 
 1. **GameCore de-static (single injected context).** Remove the 7 static
    singletons and the `new GraphicsDevice`/`new Content` shadowing
@@ -190,6 +190,52 @@ Bounds: Core must never reference `MonoGameLearning.Game`. Every phase ends with
 4. **Promote `LevelDirector` encounter core** to Core, keeping game content
    instantiation (drums/pickups/weapons) behind an injected factory/delegate so
    Core never references Game.
+
+**Phase 6 implementation notes:**
+
+- **#1 was NOT done as the plan literally described.** MonoGame's own `Game`
+  class IS the context object (`Game.GraphicsDevice` throws
+  `InvalidOperationException` until `base.Initialize()` creates it; `Game.Content`
+  is constructed by the base class from `Services`; `base.Initialize()` triggers
+  `LoadContent()` at its end). A ctor-injected "context bundle" would be a
+  partially-null mutable bag that is invalid outside the lifecycle and has no
+  real consumer. Instead: `GameCore` keeps every resource as an **instance
+  member** (`Graphics`/`SpriteBatch`/`Camera`/`ViewportAdapter` instance props,
+  `GraphicsDevice`/`Content` inherited from `Game`), the `s_instance` singleton
+  and the `static new` shadowing are deleted; `MenuService` receives the
+  `GraphicsDeviceManager` by ctor (2 `GameCore.Graphics` static reads removed);
+  `GameLoop`'s `GameCore.Camera` read is now the instance member. No `GameCore.X`
+  static reads remain.
+- **#2:** `GameStateService` moved to `Core/GameStateService.cs`
+  (`MonoGameLearning.Core` namespace); Core now references Stateless 5.20.0
+  (the plan's "no deps change" was imprecise — Core gained the package ref).
+- **#3:** Generic `EntityPool<TEnemy>` (`where TEnemy : Entity`) in
+  `Core/Levels/EntityPool.cs` — rent/return/sentinel/per-type stacks; sprite
+  warmup moved OUT of the pool into the Game composition-root `createEnemy`
+  factory (`GameLoop.CreateEnemy`); reset (rent) and hitbox cleanup (return)
+  are now `protected abstract` hooks implemented by the thin Game subclass
+  `Game/Levels/EnemyPool.cs`.
+- **#4:** `LevelDirectorCore<TEnemy>` (`where TEnemy : CombatActorBase,
+  IPickupDropper`) in `Core/Levels/LevelDirectorCore.cs` — wave gating,
+  scroll-lock, snapshots, prop/pickup/drop spawning, debug draw, pool rent/
+  return all in Core; `IPickupDropper` gained a settable `Drops` property so
+  the core can assign per-`EnemySpawnDef` drops generically. Game content stays
+  injected: `createProp`/`createPickup`/`getWeapon`/`createEnemy`/`getCameraView`
+  plus a new `onEnemySpawned` delegate (`Action<TEnemy, EnemySpawnDef,
+  FacingDirection, MeleeWeaponDef?>` — weapon equip, facing, sprite effect,
+  spawn-walk) wired by `GameLoop.ConfigureSpawnedEnemy`. The hard-coded `24f`/
+  `30f` spawn sizing now derives from the enemy's own `Width`/`Height`.
+  `InitializePool` is `protected abstract` — the no-op default was removed after
+  review so a hook-less pool can never be silently used.
+  Game's `LevelDirector` is a thin subclass overriding `InitializePool` to
+  install the Game `EnemyPool`.
+- Test doubles updated (`TestLevelDirector`, `CapturingHookLevelDirector`,
+  `TestEnemyPool`, `TestEnemyEntity` untouched); new tests cover the
+  `onEnemySpawned` injected seam (facing + weapon resolution), dimension-based
+  spawn positioning, and the generic `EntityPool<TEnemy>` hooks.
+- Validation: `dotnet build --warnaserror` clean; **449 tests pass (3 skipped)**;
+  `grep -rn "MonoGameLearning.Game" MonoGameLearning.Core --include=*.cs`
+  (excluding `obj/`) returns nothing; no `GameCore.X` static reads remain.
 
 Each promotion must keep the invariant "Core never references Game" (verify with
 a grep for `MonoGameLearning.Game` under `MonoGameLearning.Core/`).

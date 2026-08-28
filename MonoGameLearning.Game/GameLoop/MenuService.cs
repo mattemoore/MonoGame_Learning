@@ -20,6 +20,7 @@ public class MenuService
     private readonly Action<SfxId> _playSfx;
     private readonly Func<AudioSettings> _getAudioSettings;
     private readonly Action<AudioSettings> _setAudioSettings;
+    private readonly GraphicsDeviceManager _graphics;
 
     private ContainerRuntime _titleScreen, _pauseScreen, _gameOverScreen, _levelCompleteScreen, _settingsScreen;
     private int _menuIndex;
@@ -32,7 +33,8 @@ public class MenuService
     private TextRuntime _musicCursor, _musicLabel, _musicValue;
 
     public MenuService(GameStateService gameState, Action exitGame, GumUiService gum,
-        Action<SfxId> playSfx, Func<AudioSettings> getAudioSettings, Action<AudioSettings> setAudioSettings)
+        Action<SfxId> playSfx, Func<AudioSettings> getAudioSettings, Action<AudioSettings> setAudioSettings,
+        GraphicsDeviceManager graphics)
     {
         _gameState = gameState;
         _exitGame = exitGame;
@@ -40,6 +42,7 @@ public class MenuService
         _playSfx = playSfx;
         _getAudioSettings = getAudioSettings;
         _setAudioSettings = setAudioSettings;
+        _graphics = graphics;
     }
 
     public void BuildScreens()
@@ -132,7 +135,7 @@ public class MenuService
             int newIdx = Math.Clamp(currentIdx + delta, 0, options.Count - 1);
             var selected = options[newIdx];
             SettingsService.SaveResolution(selected);
-            SettingsService.Apply(GameCore.Graphics, selected);
+            SettingsService.Apply(_graphics, selected);
             UpdateSettingsDisplays();
         }
         else if (_menuIndex == 1)
@@ -185,7 +188,7 @@ public class MenuService
     private void ApplySelectedResolution()
     {
         var selected = SettingsService.CurrentResolution;
-        SettingsService.Apply(GameCore.Graphics, selected);
+        SettingsService.Apply(_graphics, selected);
     }
 
     private void BuildSettingsScreen()

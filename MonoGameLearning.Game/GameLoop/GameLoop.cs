@@ -64,6 +64,17 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private static readonly StaticTextureAsset GoIndicatorTexture = new("images/arrow");
     private static readonly StaticTextureAsset FoodPickupTexture = new("images/apple-pickup");
 
+    private static readonly string[] EnemyWarmUpKeys =
+    [
+        EnemySprite.AnimationIdle,
+        EnemySprite.AnimationRun,
+        EnemySprite.AnimationAttack1,
+        EnemySprite.AnimationHurt,
+        EnemySprite.AnimationFall,
+        EnemySprite.AnimationDie,
+        EnemySprite.AnimationGetUp,
+    ];
+
     protected override void Initialize()
     {
         _input = new InputService();
@@ -89,7 +100,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             SettingsService.SaveAudio(settings);
             _audio.SfxVolume = settings.SfxVolume;
             _audio.MusicVolume = settings.MusicVolume;
-        });
+        }, Graphics);
 
         base.Initialize();
 
@@ -341,7 +352,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
     internal Vector2 ComputeRespawnPosition()
     {
-        return ComputeRespawnPosition(GameCore.Camera?.Position.X ?? _currentLevel.MovementBounds.X, _currentLevel.MovementBounds, _currentLevel.WalkableTopY);
+        return ComputeRespawnPosition(Camera?.Position.X ?? _currentLevel.MovementBounds.X, _currentLevel.MovementBounds, _currentLevel.WalkableTopY);
     }
 
     private void RespawnPlayer()
@@ -406,6 +417,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             CreatePickup,
             BatWeapon.Get,
             CreateEnemy,
+            ConfigureSpawnedEnemy,
             GetCameraView);
 
         _levelDirector.LevelCompleted += () => _gameState.Fire(GameTrigger.CompleteLevel);
@@ -425,11 +437,40 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _ => throw new ArgumentException($"Unknown pickup type: {def.Type}", nameof(def)),
     };
 
-    private EnemyEntity CreateEnemy(string type, int index, Func<WorldSnapshot> getWorld) => type switch
+    private EnemyEntity CreateEnemy(string type, int index, Func<WorldSnapshot> getWorld)
     {
-        LevelContent.Grunt => new EnemyEntity($"grunt_pool_{index}", Vector2.Zero, 2.0f, EnemySprite.Create(), _audio, getWorld),
-        _ => throw new ArgumentException($"Unknown enemy type: {type}", nameof(type)),
-    };
+        var enemy = type switch
+        {
+            LevelContent.Grunt => new EnemyEntity($"grunt_pool_{index}", Vector2.Zero, 2.0f, EnemySprite.Create(), _audio, getWorld),
+            _ => throw new ArgumentException($"Unknown enemy type: {type}", nameof(type)),
+        };
+        foreach (var key in EnemyWarmUpKeys)
+            enemy.SpriteRenderer.SetAnimation(key);
+        return enemy;
+    }
+
+    private void ConfigureSpawnedEnemy(EnemyEntity enemy, EnemySpawnDef def, FacingDirection initialFacing, MeleeWeaponDef weapon)
+    {
+        if (weapon is not null)
+            enemy.EquipWeapon(weapon);
+
+        // SpriteRenderer without an attached sprite (test enemies) → skip visual setup.
+        if (enemy.SpriteRenderer.Sprite is not null)
+        {
+            enemy.Direction = initialFacing;
+            enemy.SpriteRenderer.SetEffect(initialFacing == FacingDirection.Left
+                ? SpriteEffects.FlipHorizontally
+                : SpriteEffects.None);
+
+            Vector2 walkDir = initialFacing == FacingDirection.Left ? new Vector2(-1, 0) : new Vector2(1, 0);
+            float halfW = enemy.Width * 0.5f;
+            var view = GetCameraView();
+            float targetX = initialFacing == FacingDirection.Left
+                ? view.X + view.Width - halfW - 50f
+                : view.X + halfW + 50f;
+            enemy.SetSpawnWalkData(walkDir, targetX);
+        }
+    }
 
     private RectangleF GetCameraView() =>
         new(Camera.Position.X, 0, ViewportAdapter.VirtualWidth, ViewportAdapter.VirtualHeight);

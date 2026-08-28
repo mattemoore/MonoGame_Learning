@@ -1,6 +1,4 @@
-using System;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.ViewportAdapters;
@@ -10,15 +8,10 @@ namespace MonoGameLearning.Core;
 
 public class GameCore : Game
 {
-    internal static GameCore s_instance = null!;
-    public static GameCore Instance => s_instance;
-    public static GraphicsDeviceManager Graphics { get; private set; } = null!;
-    public static new GraphicsDevice GraphicsDevice { get; private set; } = null!;
-    public static SpriteBatch SpriteBatch { get; private set; } = null!;
-    public static new ContentManager Content { get; private set; } = null!;
-    public static OrthographicCamera Camera { get; private set; } = null!;
-    public static BoxingViewportAdapter ViewportAdapter { get; private set; } = null!;
-
+    public GraphicsDeviceManager Graphics { get; }
+    public SpriteBatch SpriteBatch { get; private set; } = null!;
+    public OrthographicCamera Camera { get; private set; } = null!;
+    public BoxingViewportAdapter ViewportAdapter { get; private set; } = null!;
 
     public GumUiService Gum { get; }
 
@@ -30,10 +23,6 @@ public class GameCore : Game
 
     public GameCore(string title, int resolutionWidth, int resolutionHeight, int virtualWidth, int virtualHeight, bool fullScreen)
     {
-        if (s_instance != null)
-            throw new InvalidOperationException("Only a single Core instance can be created");
-
-        s_instance = this;
         _virtualWidth = virtualWidth;
         _virtualHeight = virtualHeight;
 
@@ -49,7 +38,6 @@ public class GameCore : Game
 
         Window.Title = title;
         Window.AllowUserResizing = true;
-        Content = base.Content;
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
     }
@@ -58,7 +46,6 @@ public class GameCore : Game
     {
         base.Initialize();
         Graphics.ApplyChanges();
-        GraphicsDevice = base.GraphicsDevice;
         ViewportAdapter = new(Window, GraphicsDevice, _virtualWidth, _virtualHeight);
         Camera = new(ViewportAdapter);
         SpriteBatch = new(GraphicsDevice);

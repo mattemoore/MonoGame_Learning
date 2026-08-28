@@ -8,6 +8,7 @@
 1. GameStateService hoisted to Core?
 1. ActorStateMachine callbacks still needed after adding phases?  What about StateMachineController...should that be in Core?
 1. MenuService hoisted to Core?
+1. Fix undesired behaviour of Combat actor changing directions mid attack
 
 TODO
 

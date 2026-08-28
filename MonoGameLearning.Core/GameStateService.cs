@@ -1,7 +1,6 @@
-using MonoGameLearning.Core;
 using Stateless;
 
-namespace MonoGameLearning.Game.GameLoop;
+namespace MonoGameLearning.Core;
 
 public class GameStateService
 {

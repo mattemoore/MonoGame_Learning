@@ -14,15 +14,19 @@ The solution is structured into two main projects:
 ## Architecture
 
 * **Core Library (`MonoGameLearning.Core`)**
-  * **`GameCore`**: A base class (inheriting from `Microsoft.Xna.Framework.Game`) that handles boilerplate setup: `GraphicsDeviceManager`, `SpriteBatch`, `ContentManager`, and an `OrthographicCamera` with a `BoxingViewportAdapter` for resolution independence.
+  * **`GameCore`**: A base class (inheriting from `Microsoft.Xna.Framework.Game`) that handles boilerplate setup as **instance members** (no statics): `GraphicsDevice`/`Content` are inherited from `Game`; `GraphicsDeviceManager`, `SpriteBatch`, `OrthographicCamera`, and `BoxingViewportAdapter` are instance properties assigned in `Initialize` (after `base.Initialize()` creates the `GraphicsDevice` — MonoGame resources only exist inside the lifecycle, never at construction).
   * **`Input`**: Contains `InputManager` to abstract raw input into game actions (e.g., `Action1Pressed`).
   * **`Entities`**: Defines base entity classes.
   * **`Drawing`**: Basic shape drawing utilities.
+  * **`GameStateService`**: Core-level arcade-shell FSM (`GameState`/`GameTrigger` via Stateless), owned by `GameLoop`.
+  * **`Levels.EntityPool<TEnemy>`**: Generic rent/return/sentinel pool (per-type stacks). Game behavior (entity reset, hitbox cleanup) comes from subclasses overriding `OnRentEnemy`/`OnReturnEnemy`; sprite warmup happens in the Game-side createEnemy factory.
+  * **`Levels.LevelDirectorCore<TEnemy>`** (where `TEnemy : CombatActorBase, IPickupDropper`): Encounter core — wave gating, scroll-lock, snapshots, prop/pickup/drop spawning, debug draw. Game content (drums, pickups, weapons, enemy visuals, spawn-walk) is injected via `createProp`/`createPickup`/`getWeapon`/`createEnemy`/`onEnemySpawned` delegates; enemy spawning sizes off the enemy's own dimensions.
 
 * **Game Project (`MonoGameLearning.Game`)**
-  * **`GameLoop`**: Inherits from `GameCore`. Implements the specific game logic (`Update`, `Draw`), manages entities (like the player), and handles the main application lifecycle.
+  * **`GameLoop`**: Inherits from `GameCore`. Implements the specific game logic (`Update`, `Draw`), manages entities (like the player), and handles the main application lifecycle. Composition root for injected factories.
   * **`Program.cs`**: The entry point, using C# top-level statements to bootstrap `GameLoop`.
   * **`Entities`**: Game-specific entities, such as `PlayerEntity`.
+  * **`Levels.LevelDirector` / `Levels.EnemyPool`**: Thin Game-side subclasses of `LevelDirectorCore<EnemyEntity>` / `EntityPool<EnemyEntity>` — they only assemble the Game-specific pools and pass content factories through.
 *   **`Weapons`**: Static melee weapon defs (e.g., `BatWeapon`) built from `Core.Combat.MeleeWeaponDef` that swap `Attack1Move`/`AttackMove` while armed. Swing rendering uses a 4-frame `bat-texture.png`/`bat.json` atlas via `AnimatedSprites.BatSprite`, positioned per `attack` frame via `SwingAnchors`/`CarryAnchor`; hitboxes fire at swing apex (frames 2–3) only. The swing is frame-stepped (see the `SetFrame()`/`TextureRegion` pitfall below) so it stays in sync with the player's attack animation. `AnimatedSprites.BatPickupSprite` owns the separate static `bat-pickup.png` texture used by `WeaponPickupEntity` for the dropped-pickup icon (same pattern as `FoodPickupSprite`/`apple-pickup.png`).
   * **`Sprites`**: Sprite management and animation logic (e.g., `PlayerSprite`).
   * **`Content`**: Contains game assets (images, fonts, etc.) processed by the MonoGame Content Pipeline (`.mgcb`).

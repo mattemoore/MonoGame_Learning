@@ -122,6 +122,22 @@ public class EnemyPoolTests
             Assert.That(getWorld(), Is.EqualTo(default(WorldSnapshot)));
     }
 
+    [Test]
+    public void GenericCorePool_UsesRentReturnHooks_AndStaysTypeAgnostic()
+    {
+        var pool = new GenericHookPool(_entityManager);
+        pool.Build(_level);
+
+        var entity = pool.Rent("Grunt", new Vector2(500, 300), _player);
+        Assert.That(pool.RentCalls, Is.EqualTo(1));
+        Assert.That(entity.Position, Is.EqualTo(new Vector2(500, 300)), "Rent hook positions the entity.");
+        Assert.That(_entityManager.All, Does.Contain(entity));
+
+        pool.Return(entity);
+        Assert.That(pool.ReturnCalls, Is.EqualTo(1));
+        Assert.That(entity.Position, Is.EqualTo(new Vector2(-99999, -99999)), "Return parks the entity at the sentinel.");
+    }
+
     private static int _mockCounter;
 
     private static EnemyEntity MockFactory(string type, int index, Func<WorldSnapshot> getWorld)
@@ -137,6 +153,22 @@ public class EnemyPoolTests
             return new TestEnemyEntity($"test_enemy_{_mockCounter}", Vector2.Zero);
         })
     {
+    }
+
+    private class GenericHookPool(EntityService entityManager)
+        : EntityPool<EntityStub>(entityManager, () => default, (type, index, getWorld) =>
+            new EntityStub($"generic_{index}", Vector2.Zero, 10, 10))
+    {
+        public int RentCalls;
+        public int ReturnCalls;
+
+        protected override void OnRentEnemy(EntityStub enemy, Vector2 position, Entity target)
+        {
+            RentCalls++;
+            enemy.Position = position;
+        }
+
+        protected override void OnReturnEnemy(EntityStub enemy) => ReturnCalls++;
     }
 
     private class EntityStub(string name, Vector2 position, int width, int height)
