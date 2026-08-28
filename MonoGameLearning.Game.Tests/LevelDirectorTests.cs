@@ -79,10 +79,10 @@ public class LevelDirectorTests
         var world = new CollisionWorld2D();
         var bb = new BoundingBox2D(new Vector2(Bounds.X, Bounds.Y), new Vector2(Bounds.Right, Bounds.Bottom));
         var actorSpace = new QuadTreeSpace(bb);
-        world.AddLayer("actors", new Layer(actorSpace));
+        world.AddLayer(CollisionLayers.Actors, new Layer(actorSpace));
         var propSpace = new QuadTreeSpace(bb);
-        world.AddLayer("props", new Layer(propSpace));
-        world.EnableCollisionBetweenLayers("actors", "props");
+        world.AddLayer(CollisionLayers.Props, new Layer(propSpace));
+        world.EnableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Props);
         return world;
     }
 

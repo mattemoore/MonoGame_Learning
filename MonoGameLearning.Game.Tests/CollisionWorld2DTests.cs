@@ -3,6 +3,7 @@ using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
+using MonoGameLearning.Core.Entities;
 
 namespace MonoGameLearning.Game.Tests;
 
@@ -16,11 +17,11 @@ public class CollisionWorld2DTests
     {
         var world = new CollisionWorld2D();
         var bb = new BoundingBox2D(new Vector2(Bounds.X, Bounds.Y), new Vector2(Bounds.Right, Bounds.Bottom));
-        world.AddLayer("actors", new Layer(new QuadTreeSpace(bb)));
-        world.DisableCollisionBetweenLayers("actors", "actors");
-        world.AddLayer("props", new Layer(new QuadTreeSpace(bb)));
-        world.DisableCollisionBetweenLayers("props", "props");
-        world.EnableCollisionBetweenLayers("actors", "props");
+        world.AddLayer(CollisionLayers.Actors, new Layer(new QuadTreeSpace(bb)));
+        world.DisableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Actors);
+        world.AddLayer(CollisionLayers.Props, new Layer(new QuadTreeSpace(bb)));
+        world.DisableCollisionBetweenLayers(CollisionLayers.Props, CollisionLayers.Props);
+        world.EnableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Props);
         return world;
     }
 
@@ -37,20 +38,20 @@ public class CollisionWorld2DTests
         var actor = MakeActor(100, 100);
         var prop = MakeProp(110, 100);
 
-        world.Insert(actor, "actors");
-        world.Insert(prop, "props");
+        world.Insert(actor, CollisionLayers.Actors);
+        world.Insert(prop, CollisionLayers.Props);
 
         world.RebuildDynamicLayers();
 
         // Cross-layer query should find the collision
-        var crossPairs = world.QueryCollisionPairs("actors", "props").ToList();
+        var crossPairs = world.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Props).ToList();
         Assert.That(crossPairs, Has.Count.EqualTo(1));
         Assert.That(crossPairs[0].First, Is.EqualTo(actor));
         Assert.That(crossPairs[0].Second, Is.EqualTo(prop));
 
         // Same-layer queries should be empty (self-collision disabled)
-        var actorPairs = world.QueryCollisionPairs("actors", "actors").ToList();
-        var propPairs = world.QueryCollisionPairs("props", "props").ToList();
+        var actorPairs = world.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Actors).ToList();
+        var propPairs = world.QueryCollisionPairs(CollisionLayers.Props, CollisionLayers.Props).ToList();
         Assert.That(actorPairs, Is.Empty);
         Assert.That(propPairs, Is.Empty);
     }
@@ -62,12 +63,12 @@ public class CollisionWorld2DTests
         var actor = MakeActor(100, 100);
         var prop = MakeProp(500, 500);
 
-        world.Insert(actor, "actors");
-        world.Insert(prop, "props");
+        world.Insert(actor, CollisionLayers.Actors);
+        world.Insert(prop, CollisionLayers.Props);
 
         world.RebuildDynamicLayers();
 
-        var pairs = world.QueryCollisionPairs("actors", "props").ToList();
+        var pairs = world.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Props).ToList();
         Assert.That(pairs, Is.Empty);
     }
 
@@ -108,22 +109,22 @@ public class CollisionWorld2DTests
     {
         var world = new CollisionWorld2D();
         var bb = new BoundingBox2D(new Vector2(0, 0), new Vector2(2000, 2000));
-        world.AddLayer("actors", new Layer(new QuadTreeSpace(bb)));
+        world.AddLayer(CollisionLayers.Actors, new Layer(new QuadTreeSpace(bb)));
         // Enable self-collision so actors within the same layer detect each other
-        world.AddLayer("props", new Layer(new QuadTreeSpace(bb)));
-        world.DisableCollisionBetweenLayers("props", "props");
+        world.AddLayer(CollisionLayers.Props, new Layer(new QuadTreeSpace(bb)));
+        world.DisableCollisionBetweenLayers(CollisionLayers.Props, CollisionLayers.Props);
         // Intentionally NOT enabling actors<->props — they should NOT collide
 
         var actor = MakeActor(100, 100);
         var prop = MakeProp(110, 100);
 
-        world.Insert(actor, "actors");
-        world.Insert(prop, "props");
+        world.Insert(actor, CollisionLayers.Actors);
+        world.Insert(prop, CollisionLayers.Props);
 
         world.RebuildDynamicLayers();
 
         // actors<->props collision is not enabled; query should return nothing
-        var pairs = world.QueryCollisionPairs("actors", "props").ToList();
+        var pairs = world.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Props).ToList();
         Assert.That(pairs, Is.Empty);
 
         // Actors with self-collision disabled at layer creation also report nothing
@@ -139,15 +140,15 @@ public class CollisionWorld2DTests
         var prop2 = MakeProp(600, 500);   // Far from actor2 (no overlap)
         var prop3 = MakeProp(510, 100);   // Overlaps actor2
 
-        world.Insert(actor1, "actors");
-        world.Insert(actor2, "actors");
-        world.Insert(prop1, "props");
-        world.Insert(prop2, "props");
-        world.Insert(prop3, "props");
+        world.Insert(actor1, CollisionLayers.Actors);
+        world.Insert(actor2, CollisionLayers.Actors);
+        world.Insert(prop1, CollisionLayers.Props);
+        world.Insert(prop2, CollisionLayers.Props);
+        world.Insert(prop3, CollisionLayers.Props);
 
         world.RebuildDynamicLayers();
 
-        var pairs = world.QueryCollisionPairs("actors", "props").ToList();
+        var pairs = world.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Props).ToList();
 
         // actor1-prop1, actor2-prop3 should collide
         // prop2 is far from both actors

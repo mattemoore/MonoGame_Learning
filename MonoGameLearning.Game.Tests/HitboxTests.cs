@@ -116,7 +116,7 @@ public class HitboxTests
 
         Assert.That(hits, Has.Count.EqualTo(1));
         Assert.That(hits[0].Target, Is.EqualTo(target));
-        Assert.That(hits[0].Damage, Is.EqualTo(10));
+        Assert.That(hits[0].Amount, Is.EqualTo(10));
     }
 
     [Test]
@@ -213,9 +213,9 @@ public class HitboxTests
         var hits = service.ResolveHits([owner, target]);
 
         Assert.That(hits, Has.Count.EqualTo(1));
-        Assert.That(hits[0].Damage, Is.EqualTo(7));
+        Assert.That(hits[0].Amount, Is.EqualTo(7));
 
-        hits[0].Target.TakeDamage(new DamageInfo { Amount = hits[0].Damage });
+        hits[0].Target!.TakeDamage(hits[0]);
         Assert.That(target.Health, Is.EqualTo(93));
     }
 
@@ -276,7 +276,7 @@ public class HitboxTests
         var hits = service.ResolveHits([player, enemy]);
 
         Assert.That(hits, Has.Count.EqualTo(1));
-        Assert.That(hits[0].Damage, Is.EqualTo(5));
+        Assert.That(hits[0].Amount, Is.EqualTo(5));
 
         // Frame 2 of the same attack — same (owner, target) pair should be blocked
         service.Clear(player);
@@ -346,7 +346,7 @@ public class HitboxTests
     }
 
     [Test]
-    public void HitResult_TargetIsIDamageable()
+    public void ResolvedHit_TargetIsIDamageable()
     {
         var service = new HitboxService();
         var owner = MakeActor(0, 0, faction: Faction.Player);

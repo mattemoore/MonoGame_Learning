@@ -36,7 +36,7 @@ public class Level1(int gameWidth, int gameHeight) : Level(CreateWaveDefs(), gam
     ];
 
     public override BackgroundRenderer CreateBackgroundRenderer(ContentManager content) =>
-        BackgroundRenderer.Create(content, gameWidth, gameHeight, BackgroundCount);
+        BackgroundRenderer.Create(content, gameWidth, gameHeight, BackgroundCount, "backgrounds/background1");
 
     private static List<WaveDef> CreateWaveDefs() =>
     [

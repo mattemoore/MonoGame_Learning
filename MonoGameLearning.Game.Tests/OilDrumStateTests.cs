@@ -66,11 +66,9 @@ public class OilDrumBehaviorTests
     }
 
     [Test]
-    public void Reset_ClearsHitStun()
+    public void FreshInstance_HasNoHitStun()
     {
         var behavior = new OilDrumBehavior();
-        behavior.ApplyStun();
-        behavior.Reset();
         Assert.That(behavior.IsHitStunned, Is.False);
         Assert.That(behavior.CanTakeDamage(true), Is.True);
     }

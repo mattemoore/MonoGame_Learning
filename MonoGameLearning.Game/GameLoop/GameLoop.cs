@@ -188,8 +188,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             var hitResults = _hitboxService.ResolveHits(_entityManager.All);
             foreach (var hit in hitResults)
             {
-                var damageable = hit.Target;
-                damageable.TakeDamage(new DamageInfo { Amount = hit.Damage, Knockdown = hit.Knockdown, Strength = hit.Strength, ImpactSfx = hit.ImpactSfx });
+                if (hit.Target is not { } damageable) continue;
+                damageable.TakeDamage(hit);
                 if (damageable.Faction == Faction.Enemy)
                     _hudService.OnEnemyHit(damageable);
             }
@@ -205,7 +205,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                 var movable = movables[i];
                 if (movable is IDamageable { IsAlive: false }) continue;
                 movable.MovementBounds = movementBounds;
-                Mover.ClampToBounds((ISpatial)movable, movable.MovementBounds);
+                Mover.ClampToBounds(movable, movable.MovementBounds);
             }
         }
 
@@ -296,14 +296,12 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     {
         _collisionWorld.RebuildDynamicLayers();
 
-        foreach (var pair in _collisionWorld.QueryCollisionPairs("actors", "props"))
+        foreach (var pair in _collisionWorld.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Props))
         {
             var actor = pair.First;
             var result = pair.FirstResult;
             if (!result.Intersects) continue;
-            Debug.Assert(actor is ISpatial,
-                "Actor in the \"actors\" layer is not positionable — pushback cannot be applied.");
-            var positionable = (ISpatial)actor;
+            if (actor is not ISpatial positionable) continue;
             positionable.Position += result.MinimumTranslationVector;
         }
     }
@@ -424,16 +422,16 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         var world = new CollisionWorld2D();
         var bb = new BoundingBox2D(new Vector2(bounds.X, bounds.Y), new Vector2(bounds.Right, bounds.Bottom));
         var actorSpace = new QuadTreeSpace(bb);
-        world.AddLayer("actors", new Layer(actorSpace));
-        world.DisableCollisionBetweenLayers("actors", "actors");
+        world.AddLayer(CollisionLayers.Actors, new Layer(actorSpace));
+        world.DisableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Actors);
         var propSpace = new QuadTreeSpace(bb);
-        world.AddLayer("props", new Layer(propSpace));
-        world.DisableCollisionBetweenLayers("props", "props");
-        world.EnableCollisionBetweenLayers("actors", "props");
+        world.AddLayer(CollisionLayers.Props, new Layer(propSpace));
+        world.DisableCollisionBetweenLayers(CollisionLayers.Props, CollisionLayers.Props);
+        world.EnableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Props);
         var pickupSpace = new QuadTreeSpace(bb);
-        world.AddLayer("pickups", new Layer(pickupSpace));
-        world.DisableCollisionBetweenLayers("pickups", "pickups");
-        world.EnableCollisionBetweenLayers("actors", "pickups");
+        world.AddLayer(CollisionLayers.Pickups, new Layer(pickupSpace));
+        world.DisableCollisionBetweenLayers(CollisionLayers.Pickups, CollisionLayers.Pickups);
+        world.EnableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Pickups);
         return world;
     }
 }

@@ -9,7 +9,7 @@ namespace MonoGameLearning.Core.Entities.Pickup;
 
 public abstract class PickupBase : Entity, IRenderable, IDebugDrawable, ICollisionActor, ICollisionLayer, IPickup
 {
-    public string LayerName => "pickups";
+    public string LayerName => CollisionLayers.Pickups;
 
     private const int DefaultTextureSize = 32;
 

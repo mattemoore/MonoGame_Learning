@@ -23,9 +23,9 @@ public class EnemyPoolTests
     {
         var world = new CollisionWorld2D();
         var bb = new BoundingBox2D(new Vector2(Bounds.X, Bounds.Y), new Vector2(Bounds.Right, Bounds.Bottom));
-        world.AddLayer("actors", new Layer(new QuadTreeSpace(bb)));
-        world.AddLayer("props", new Layer(new QuadTreeSpace(bb)));
-        world.EnableCollisionBetweenLayers("actors", "props");
+        world.AddLayer(CollisionLayers.Actors, new Layer(new QuadTreeSpace(bb)));
+        world.AddLayer(CollisionLayers.Props, new Layer(new QuadTreeSpace(bb)));
+        world.EnableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Props);
         return world;
     }
 

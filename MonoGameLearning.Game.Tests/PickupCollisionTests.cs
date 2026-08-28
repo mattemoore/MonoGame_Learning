@@ -50,11 +50,11 @@ public class PickupCollisionTests
     {
         var world = new CollisionWorld2D();
         var bb = new BoundingBox2D(new Vector2(0, 0), new Vector2(2000, 2000));
-        world.AddLayer("actors", new Layer(new QuadTreeSpace(bb)));
-        world.DisableCollisionBetweenLayers("actors", "actors");
-        world.AddLayer("pickups", new Layer(new QuadTreeSpace(bb)));
-        world.DisableCollisionBetweenLayers("pickups", "pickups");
-        world.EnableCollisionBetweenLayers("actors", "pickups");
+        world.AddLayer(CollisionLayers.Actors, new Layer(new QuadTreeSpace(bb)));
+        world.DisableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Actors);
+        world.AddLayer(CollisionLayers.Pickups, new Layer(new QuadTreeSpace(bb)));
+        world.DisableCollisionBetweenLayers(CollisionLayers.Pickups, CollisionLayers.Pickups);
+        world.EnableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Pickups);
         return world;
     }
 
@@ -71,11 +71,11 @@ public class PickupCollisionTests
         var actor = MakeActor(100, 100);
         var pickup = MakePickup(100, 100);
 
-        world.Insert(actor, "actors");
-        world.Insert(pickup, "pickups");
+        world.Insert(actor, CollisionLayers.Actors);
+        world.Insert(pickup, CollisionLayers.Pickups);
         world.RebuildDynamicLayers();
 
-        var pairs = world.QueryCollisionPairs("actors", "pickups").ToList();
+        var pairs = world.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Pickups).ToList();
 
         Assert.That(pairs, Has.Count.EqualTo(1));
     }
@@ -87,11 +87,11 @@ public class PickupCollisionTests
         var actor = MakeActor(100, 100);
         var pickup = MakePickup(500, 100);
 
-        world.Insert(actor, "actors");
-        world.Insert(pickup, "pickups");
+        world.Insert(actor, CollisionLayers.Actors);
+        world.Insert(pickup, CollisionLayers.Pickups);
         world.RebuildDynamicLayers();
 
-        var pairs = world.QueryCollisionPairs("actors", "pickups").ToList();
+        var pairs = world.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Pickups).ToList();
 
         Assert.That(pairs, Is.Empty);
     }
@@ -103,11 +103,11 @@ public class PickupCollisionTests
         var actor = MakeActor(100, 100);
         var pickup = MakePickup(100, 100);
 
-        world.Insert(actor, "actors");
-        world.Insert(pickup, "pickups");
+        world.Insert(actor, CollisionLayers.Actors);
+        world.Insert(pickup, CollisionLayers.Pickups);
         world.RebuildDynamicLayers();
 
-        var pairs = world.QueryCollisionPairs("actors", "pickups").ToList();
+        var pairs = world.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Pickups).ToList();
         Assert.That(pairs, Has.Count.EqualTo(1));
 
         // Simulate the pickup resolution logic

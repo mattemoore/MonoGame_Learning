@@ -30,10 +30,10 @@ public class BackgroundRenderer(List<Sprite> sprites, int gameWidth, int gameHei
         LastFrameDrawCount = drawn;
     }
 
-    public static BackgroundRenderer Create(ContentManager content, int gameWidth, int gameHeight, int backgroundCount)
+    public static BackgroundRenderer Create(ContentManager content, int gameWidth, int gameHeight, int backgroundCount, string assetPath)
     {
         var sprites = new List<Sprite>(backgroundCount);
-        var tex = content.Load<Texture2D>("backgrounds/background1");
+        var tex = content.Load<Texture2D>(assetPath);
         for (int i = 0; i < backgroundCount; i++)
             sprites.Add(new Sprite(tex));
         return new(sprites, gameWidth, gameHeight);

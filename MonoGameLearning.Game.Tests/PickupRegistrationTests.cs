@@ -13,7 +13,7 @@ internal sealed class StubPickupEntity(string name, Vector2 position, int width,
     : Entity(name, position, width, height), ICollisionActor, ICollisionLayer, IPickup
 {
     public int Id => GetHashCode();
-    public string LayerName => "pickups";
+    public string LayerName => CollisionLayers.Pickups;
     public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
     public void OnPickup(IDamageable target) { }
 }
@@ -25,11 +25,11 @@ public class PickupRegistrationTests
     {
         var world = new CollisionWorld2D();
         var bb = new BoundingBox2D(new Vector2(0, 0), new Vector2(2000, 600));
-        world.AddLayer("actors", new Layer(new QuadTreeSpace(bb)));
-        world.AddLayer("props", new Layer(new QuadTreeSpace(bb)));
-        world.AddLayer("pickups", new Layer(new QuadTreeSpace(bb)));
-        world.EnableCollisionBetweenLayers("actors", "props");
-        world.EnableCollisionBetweenLayers("actors", "pickups");
+        world.AddLayer(CollisionLayers.Actors, new Layer(new QuadTreeSpace(bb)));
+        world.AddLayer(CollisionLayers.Props, new Layer(new QuadTreeSpace(bb)));
+        world.AddLayer(CollisionLayers.Pickups, new Layer(new QuadTreeSpace(bb)));
+        world.EnableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Props);
+        world.EnableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Pickups);
         return world;
     }
 
@@ -54,8 +54,8 @@ public class PickupRegistrationTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(mgr.GetCollidables("actors"), Is.Empty);
-            Assert.That(mgr.GetCollidables("props"), Is.Empty);
+            Assert.That(mgr.GetCollidables(CollisionLayers.Actors), Is.Empty);
+            Assert.That(mgr.GetCollidables(CollisionLayers.Props), Is.Empty);
         });
     }
 
