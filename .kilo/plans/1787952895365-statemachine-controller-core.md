@@ -1,6 +1,6 @@
 # [NOT IMPLEMENTED] StateMachineController to Core; Keep ActorStateMachineCallbacks
 
-**Verdict: MIXED**
+## Verdict: MIXED
 
 - (a) "Callbacks still needed after phases?" → **REJECT removing them.** They are not obsolete.
 - (b) "StateMachineController in Core?" → **VALID.** It is generic and should be hoisted.
