@@ -171,9 +171,11 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
         {
             Vector2 movementDirectionNoDiagonal = Mover.PreventDiagonal(MovementDirection);
             _stateController.Fire(PlayerTrigger.MoveStart);
-            Direction = Mover.UpdateFacingDirection(SpriteRenderer, movementDirectionNoDiagonal, Direction);
             if (_stateController.IsInState(PlayerState.Moving))
+            {
+                Direction = Mover.UpdateFacingDirection(SpriteRenderer, movementDirectionNoDiagonal, Direction);
                 Move(movementDirectionNoDiagonal, (float)gameTime.ElapsedGameTime.TotalSeconds);
+            }
         }
 
         AdvanceFrameAndRegisterHitboxes(gameTime);

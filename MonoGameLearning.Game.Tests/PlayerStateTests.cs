@@ -1,3 +1,5 @@
+using Microsoft.Xna.Framework;
+using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Game.Entities.Player;
 using MonoGameLearning.Game.StateMachines;
 
@@ -6,6 +8,8 @@ namespace MonoGameLearning.Game.Tests;
 [TestFixture]
 public class PlayerStateTests
 {
+    private static readonly GameTime ZeroGameTime = new(TimeSpan.Zero, TimeSpan.Zero);
+
     private StateMachineController<PlayerState, PlayerTrigger> _controller;
 
     [SetUp]
@@ -400,5 +404,29 @@ public class PlayerStateTests
         controller.Fire(PlayerTrigger.TakeKnockdown);
         controller.Fire(PlayerTrigger.KnockdownCompleted);
         Assert.That(exitInvoked, Is.True);
+    }
+
+    [Test]
+    public void WhileAttacking_MovementInput_DoesNotChangeDirection()
+    {
+        var player = new PlayerEntityTester("Test", Vector2.Zero, 1f);
+        player.Attack(player.Attack1Move);
+
+        player.MovementDirection = new Vector2(-1, 0);
+        player.Update(ZeroGameTime);
+
+        Assert.That(player.Direction, Is.EqualTo(FacingDirection.Right),
+            "Facing must stay frozen mid-attack so the weapon overlay/hitbox does not flip");
+    }
+
+    [Test]
+    public void WhileMoving_MovementInput_ChangesDirection()
+    {
+        var player = new PlayerEntityTester("Test", Vector2.Zero, 1f);
+
+        player.MovementDirection = new Vector2(-1, 0);
+        player.Update(ZeroGameTime);
+
+        Assert.That(player.Direction, Is.EqualTo(FacingDirection.Left));
     }
 }

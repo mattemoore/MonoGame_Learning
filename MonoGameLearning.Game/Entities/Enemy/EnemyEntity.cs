@@ -157,6 +157,12 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
         _stateController?.Fire(EnemyTrigger.StartEntering);
     }
 
+    protected virtual void ApplyFacingFromResult(in AIUpdateResult result)
+    {
+        if (result.FacingChanged && !IsInAttackingState)
+            Direction = Mover.UpdateFacingDirection(SpriteRenderer, new Vector2(result.NewFacingX, 0), Direction);
+    }
+
     public override void Update(GameTime gameTime)
     {
         if (TryHandleIncapacitatedUpdate(gameTime)) return;
@@ -199,8 +205,7 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
                     break;
             }
 
-            if (result.FacingChanged)
-                Direction = Mover.UpdateFacingDirection(SpriteRenderer, new Vector2(result.NewFacingX, 0), Direction);
+            ApplyFacingFromResult(result);
 
             if (_stateController.State == EnemyState.Chasing && result.MovementDirection != Vector2.Zero)
                 Position += result.MovementDirection * deltaSeconds * Speed;
