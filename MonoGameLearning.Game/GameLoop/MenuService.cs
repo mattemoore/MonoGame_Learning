@@ -119,11 +119,11 @@ public class MenuService
         if (_menuIndex == 0)
         {
             // Resolution: cycle through available options
-            var options = ResolutionSettings.AvailableResolutions;
+            var options = SettingsService.AvailableResolutions;
             int currentIdx = -1;
             for (int i = 0; i < options.Count; i++)
             {
-                if (options[i].Width == ResolutionSettings.Current.Width && options[i].Height == ResolutionSettings.Current.Height)
+                if (options[i].Width == SettingsService.CurrentResolution.Width && options[i].Height == SettingsService.CurrentResolution.Height)
                 {
                     currentIdx = i;
                     break;
@@ -131,7 +131,7 @@ public class MenuService
             }
             int newIdx = Math.Clamp(currentIdx + delta, 0, options.Count - 1);
             var selected = options[newIdx];
-            ResolutionSettings.Save(selected);
+            SettingsService.SaveResolution(selected);
             SettingsService.Apply(GameCore.Graphics, selected);
             UpdateSettingsDisplays();
         }
@@ -184,7 +184,7 @@ public class MenuService
 
     private void ApplySelectedResolution()
     {
-        var selected = ResolutionSettings.Current;
+        var selected = SettingsService.CurrentResolution;
         SettingsService.Apply(GameCore.Graphics, selected);
     }
 
@@ -309,7 +309,7 @@ public class MenuService
 
     private void UpdateSettingsDisplays()
     {
-        var res = ResolutionSettings.Current;
+        var res = SettingsService.CurrentResolution;
         var audio = _getAudioSettings();
         int sfxPct = (int)MathF.Round(audio.SfxVolume * 100f);
         int musicPct = (int)MathF.Round(audio.MusicVolume * 100f);

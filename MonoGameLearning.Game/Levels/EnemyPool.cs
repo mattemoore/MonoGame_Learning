@@ -110,7 +110,7 @@ public class EnemyPool
     {
         EnemyEntity enemy = type switch
         {
-            "Grunt" => new EnemyEntity($"grunt_pool_{index}", Sentinel, 2.0f, EnemySprite.Create(), _audio, _director),
+            "Grunt" => new EnemyEntity($"grunt_pool_{index}", Sentinel, 2.0f, EnemySprite.Create(), _audio, () => _director.CurrentWorld),
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };
         WarmUpAnimations(enemy);

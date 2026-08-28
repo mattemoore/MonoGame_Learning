@@ -16,7 +16,7 @@ public class ResolutionSettingsTests
     }
 
     [SetUp]
-    public void ResetToDefault() => ResolutionSettings.Save(new ResolutionSetting(1024, 768));
+    public void ResetToDefault() => SettingsService.SaveResolution(new ResolutionSetting(1024, 768));
 
     [OneTimeTearDown]
     public void OneTimeTearDown()
@@ -33,8 +33,8 @@ public class ResolutionSettingsTests
     {
         Assert.Multiple(() =>
         {
-            Assert.That(ResolutionSettings.Current.Width, Is.EqualTo(1024));
-            Assert.That(ResolutionSettings.Current.Height, Is.EqualTo(768));
+            Assert.That(SettingsService.CurrentResolution.Width, Is.EqualTo(1024));
+            Assert.That(SettingsService.CurrentResolution.Height, Is.EqualTo(768));
         });
     }
 
@@ -42,9 +42,9 @@ public class ResolutionSettingsTests
     public void SaveThenLoad_RoundTrips()
     {
         var original = new ResolutionSetting(800, 600);
-        ResolutionSettings.Save(original);
+        SettingsService.SaveResolution(original);
 
-        var reloaded = ResolutionSettings.Load();
+        var reloaded = SettingsService.LoadResolution();
         Assert.Multiple(() =>
         {
             Assert.That(reloaded.Width, Is.EqualTo(800));
@@ -61,7 +61,7 @@ public class ResolutionSettingsTests
         if (File.Exists(path))
             File.Delete(path);
 
-        var loaded = ResolutionSettings.Load();
+        var loaded = SettingsService.LoadResolution();
         Assert.Multiple(() =>
         {
             Assert.That(loaded.Width, Is.EqualTo(1024));
@@ -72,11 +72,11 @@ public class ResolutionSettingsTests
     [Test]
     public void Save_Then_Load_UpdatesCurrent()
     {
-        ResolutionSettings.Save(new ResolutionSetting(800, 600));
+        SettingsService.SaveResolution(new ResolutionSetting(800, 600));
         Assert.Multiple(() =>
         {
-            Assert.That(ResolutionSettings.Current.Width, Is.EqualTo(800));
-            Assert.That(ResolutionSettings.Current.Height, Is.EqualTo(600));
+            Assert.That(SettingsService.CurrentResolution.Width, Is.EqualTo(800));
+            Assert.That(SettingsService.CurrentResolution.Height, Is.EqualTo(600));
         });
     }
 
@@ -91,19 +91,37 @@ public class ResolutionSettingsTests
     [Test]
     public void Load_Non4to3Resolution_FallsBackToDefault()
     {
-        ResolutionSettings.Save(new ResolutionSetting(1920, 1080));
-        ResolutionSettings.Load();
+        SettingsService.SaveResolution(new ResolutionSetting(1920, 1080));
+        SettingsService.LoadResolution();
         Assert.Multiple(() =>
         {
-            Assert.That(ResolutionSettings.Current.Width, Is.EqualTo(1024));
-            Assert.That(ResolutionSettings.Current.Height, Is.EqualTo(768));
+            Assert.That(SettingsService.CurrentResolution.Width, Is.EqualTo(1024));
+            Assert.That(SettingsService.CurrentResolution.Height, Is.EqualTo(768));
         });
     }
 
     [Test]
     public void AvailableResolutions_AllAre4to3()
     {
-        foreach (var r in ResolutionSettings.AvailableResolutions)
+        foreach (var r in SettingsService.AvailableResolutions)
             Assert.That(r.Width * 3, Is.EqualTo(r.Height * 4), $"{r.Width}x{r.Height} is not 4:3");
+    }
+
+    [Test]
+    public void LoadResolution_Then_LoadAudio_PreservesPersistedAudio_AtStartupOrder()
+    {
+        // Simulate startup order: GameLoop static field init calls LoadResolution() (GameLoop.cs:36-37)
+        // before Initialize() calls LoadAudio() (GameLoop.cs:66). An audio-only settings file must not
+        // have its audio clobbered by LoadResolution's fallback SaveSettings().
+        File.WriteAllText(SettingsService.GetSettingsPath(), """{"audio":{"SfxVolume":0.25,"MusicVolume":0.5}}""");
+
+        SettingsService.LoadResolution();
+        SettingsService.LoadAudio();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(SettingsService.AudioSettings.SfxVolume, Is.EqualTo(0.25f));
+            Assert.That(SettingsService.AudioSettings.MusicVolume, Is.EqualTo(0.5f));
+        });
     }
 }

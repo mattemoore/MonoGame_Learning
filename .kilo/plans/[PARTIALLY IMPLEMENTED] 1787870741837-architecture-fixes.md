@@ -1,4 +1,4 @@
-# Architecture Fixes Plan (phases 1-2 complete)
+# Architecture Fixes Plan (phases 1-4 complete)
 
 Goal: resolve the 17 architecture smells from the audit, phased by risk so each
 phase stays behavior-preserving (432 tests green + `dotnet build --warnaserror`
@@ -41,7 +41,7 @@ Bounds: Core must never reference `MonoGameLearning.Game`. Every phase ends with
    `"backgrounds/background1"` inside Core. Add a `string assetPath` parameter
    to `Create`, passed by `Level1.CreateBackgroundRenderer` (`Level1.cs:38`).
 
-## Phase 3 — Duplication collapses (mechanical, larger files)
+## Phase 3 — Duplication collapses (mechanical, larger files) [COMPLETE]
 
 1. **Generic state controller.** Collapse
    `MonoGameLearning.Game/Entities/Player/PlayerStateController.cs` and
@@ -73,7 +73,7 @@ Bounds: Core must never reference `MonoGameLearning.Game`. Every phase ends with
    carrying dead hooks, and stop hard-coding `Faction.Neutral` on props
    (remove the `Faction` prop from `PropBase`).
 
-## Phase 4 — Coupling & circularity breaks
+## Phase 4 — Coupling & circularity breaks [COMPLETE]
 
 1. **EnemyEntity ↔ LevelDirector.** `EnemyEntity` only reads
    `_director.CurrentWorld` (`EnemyEntity.cs:171`). Replace the `LevelDirector
@@ -105,7 +105,21 @@ Bounds: Core must never reference `MonoGameLearning.Game`. Every phase ends with
    (Core enum) that each subclass maps from its state enum in one switch, and a
    single `FirePhaseCompleted()` where the base already fires. Re-wire
    `PlayerEntity`/`EnemyEntity` mappings and the test doubles
-   (`StubCombatActor`, `TestPlayerEntity`, `TestEnemyEntity`) to the new surface.
+    (`StubCombatActor`, `TestPlayerEntity`, `TestEnemyEntity`) to the new surface.
+
+**Phase 4 implementation notes:**
+
+- New Core files: `AI/AIUpdateResult.cs` (consolidated `EnemyAI` result struct),
+  `Entities/Actor/ActorPhase.cs` (Core phase enum), `Settings/ResolutionSetting.cs`
+  (record split out of the deleted `ResolutionSettings.cs`).
+- Deleted: `Entities/Actor/CombatActorCallbacks.cs`, `Settings/ResolutionSettings.cs`.
+- `EnemyAI.Update` returns `AIUpdateResult` (public `MovementDirection`/`FacingChanged`/
+  `NewFacingX`/`Force` knobs removed); idle cooldown decay moved to `EnemyAI.UpdateIdle`.
+  Weapon-render helpers now live on `MeleeWeaponDef`. `CombatActorBase` exposes 8
+  `protected virtual` hooks plus `Phase`/`FirePhaseCompleted` (2 abstract members
+  replacing the former 5 predicates + 3 `Fire*` methods).
+- Validation: `dotnet build --warnaserror` clean; 447 tests pass (3 skipped);
+  no `MonoGameLearning.Game` references under `MonoGameLearning.Core/`.
 
 ## Phase 5 — God-class / registry cleanup
 
@@ -180,7 +194,7 @@ a grep for `MonoGameLearning.Game` under `MonoGameLearning.Core/`).
 ## Open decisions (finalize during implementation, keep behavior identical)
 
 - Exact `Func<WorldSnapshot>` vs a small `IWorldSnapshotProvider` — default to the
-  `Func` to avoid a new type.
+  `Func` to avoid a new type. *(Resolved in Phase 4: `Func<WorldSnapshot>` chosen.)*
 - `ActorPhase` enum member set — derive from the union of the five current
   predicates (`Idle/Moving/Attacking/Hurt/KnockedDown/Dying/Dead`), mapped once in
-  each subclass.
+  each subclass. *(Resolved in Phase 4: implemented as specified.)*

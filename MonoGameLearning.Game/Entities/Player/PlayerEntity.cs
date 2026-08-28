@@ -67,15 +67,26 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
         }
     };
 
-    protected override bool IsIncapacitated => _stateController.State is PlayerState.Dead or PlayerState.Dying or PlayerState.Hurt or PlayerState.KnockedDown;
-    protected override bool IsInKnockedDownState => _stateController.State == PlayerState.KnockedDown;
-    protected override bool IsInHurtState => _stateController.State == PlayerState.Hurt;
-    protected override bool IsInDyingState => _stateController.State == PlayerState.Dying;
-    protected override bool IsInAttackingState => _stateController.State == PlayerState.Attacking;
-    protected override void FireKnockdownCompleted() => _stateController.Fire(PlayerTrigger.KnockdownCompleted);
-    protected override void FireHurtCompleted() => _stateController.Fire(PlayerTrigger.HurtCompleted);
-    protected override void FireDeathCompleted() => _stateController.Fire(PlayerTrigger.DeathCompleted);
-    protected override void FireAttackCompleted() => _stateController.Fire(PlayerTrigger.AttackCompleted);
+    protected override ActorPhase Phase => _stateController.State switch
+    {
+        PlayerState.Moving => ActorPhase.Moving,
+        PlayerState.Attacking => ActorPhase.Attacking,
+        PlayerState.Hurt => ActorPhase.Hurt,
+        PlayerState.KnockedDown => ActorPhase.KnockedDown,
+        PlayerState.Dying => ActorPhase.Dying,
+        PlayerState.Dead => ActorPhase.Dead,
+        _ => ActorPhase.Idle,
+    };
+    protected override void FirePhaseCompleted()
+    {
+        switch (Phase)
+        {
+            case ActorPhase.KnockedDown: _stateController.Fire(PlayerTrigger.KnockdownCompleted); break;
+            case ActorPhase.Hurt: _stateController.Fire(PlayerTrigger.HurtCompleted); break;
+            case ActorPhase.Dying: _stateController.Fire(PlayerTrigger.DeathCompleted); break;
+            default: _stateController.Fire(PlayerTrigger.AttackCompleted); break;
+        }
+    }
 
     public PlayerEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, AudioService audio)
         : base(name, position, 48, 60, sprite, scale, 100, new(PlayerSprite.AnimationIdle, PlayerSprite.AnimationRun, PlayerSprite.AnimationHurt, PlayerSprite.AnimationFall, PlayerSprite.AnimationDie, PlayerSprite.AnimationGetUp), audio)
@@ -116,7 +127,7 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
             if (_pendingMove.AttackSfx.HasValue)
                 Audio.PlaySfx(_pendingMove.AttackSfx.Value);
         },
-        OnAttackingExit = Callbacks.OnAttackingExit,
+        OnAttackingExit = OnAttackingExitHook,
         OnHurtEntry = () =>
         {
             PlayAnimation(Animations.Hurt);
@@ -124,7 +135,7 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
                 Audio.PlaySfx(LastImpactSfx.Value);
             Audio.PlaySfx(SfxId.PlayerHurt);
         },
-        OnHurtExit = Callbacks.OnHurtExit,
+        OnHurtExit = OnHurtExitHook,
         OnKnockdownEntry = () =>
         {
             KnockdownPhase = KnockdownPhase.Falling;
@@ -134,15 +145,15 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
                 Audio.PlaySfx(LastImpactSfx.Value);
             Audio.PlaySfx(SfxId.Knockdown);
         },
-        OnKnockdownExit = Callbacks.OnKnockdownExit,
+        OnKnockdownExit = OnKnockdownExitHook,
         OnDyingEntry = () =>
         {
             UnequipWeapon();
             PlayAnimation(Animations.Die);
             Audio.PlaySfx(SfxId.PlayerDeath);
         },
-        OnDyingExit = Callbacks.OnDyingExit,
-        OnDeadEntry = Callbacks.OnDeadEntry,
+        OnDyingExit = OnDyingExitHook,
+        OnDeadEntry = OnDeadEntryHook,
     });
 
     public override void Update(GameTime gameTime)

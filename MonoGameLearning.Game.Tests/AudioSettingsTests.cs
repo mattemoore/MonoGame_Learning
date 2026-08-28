@@ -116,4 +116,17 @@ public class AudioSettingsTests
             Assert.That(SettingsService.AudioSettings.MusicVolume, Is.EqualTo(1.0f));
         });
     }
+
+    [Test]
+    public void LoadAudio_AudioOnlySettings_PreservesPersistedAudio()
+    {
+        // A settings file with only the audio section (no resolution) must not drop the audio.
+        File.WriteAllText(GetTestPath(), """{"audio":{"SfxVolume":0.25,"MusicVolume":0.5}}""");
+        SettingsService.LoadAudio();
+        Assert.Multiple(() =>
+        {
+            Assert.That(SettingsService.AudioSettings.SfxVolume, Is.EqualTo(0.25f));
+            Assert.That(SettingsService.AudioSettings.MusicVolume, Is.EqualTo(0.5f));
+        });
+    }
 }

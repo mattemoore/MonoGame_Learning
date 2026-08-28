@@ -24,8 +24,8 @@ public class EnemyAITests
         var ai = new EnemyAI(AttackRange, MinChaseDistance);
         var result = ai.Update(new Vector2(200, 300), HalfWidth, HalfHeight, WorldWithPlayer(new Vector2(400, 300)), true, 1.0f);
 
-        Assert.That(result, Is.EqualTo(AIAction.StartChase));
-        Assert.That(ai.MovementDirection.X, Is.GreaterThan(0));
+        Assert.That(result.Action, Is.EqualTo(AIAction.StartChase));
+        Assert.That(result.MovementDirection.X, Is.GreaterThan(0));
     }
 
     [Test]
@@ -34,8 +34,8 @@ public class EnemyAITests
         var ai = new EnemyAI(AttackRange, MinChaseDistance);
         var result = ai.Update(new Vector2(400, 300), HalfWidth, HalfHeight, WorldWithPlayer(new Vector2(200, 300)), true, 1.0f);
 
-        Assert.That(result, Is.EqualTo(AIAction.StartChase));
-        Assert.That(ai.MovementDirection.X, Is.LessThan(0));
+        Assert.That(result.Action, Is.EqualTo(AIAction.StartChase));
+        Assert.That(result.MovementDirection.X, Is.LessThan(0));
     }
 
     [Test]
@@ -46,7 +46,7 @@ public class EnemyAITests
 
         var result = ai.Update(new Vector2(200, 300), HalfWidth, HalfHeight, WorldWithPlayer(new Vector2(250, 300)), true, 0.6f);
 
-        Assert.That(result, Is.EqualTo(AIAction.Attack));
+        Assert.That(result.Action, Is.EqualTo(AIAction.Attack));
     }
 
     [Test]
@@ -55,7 +55,7 @@ public class EnemyAITests
         var ai = new EnemyAI(AttackRange, MinChaseDistance);
         var result = ai.Update(new Vector2(200, 300), HalfWidth, HalfHeight, WorldWithPlayer(new Vector2(250, 300)), true, 0.5f);
 
-        Assert.That(result, Is.EqualTo(AIAction.StopChase));
+        Assert.That(result.Action, Is.EqualTo(AIAction.StopChase));
     }
 
     [Test]
@@ -64,17 +64,17 @@ public class EnemyAITests
         var ai = new EnemyAI(AttackRange, MinChaseDistance) { AttackCooldown = 2.0f };
         var result = ai.Update(new Vector2(200, 300), HalfWidth, HalfHeight, WorldWithPlayer(new Vector2(250, 300)), true, 1.0f);
 
-        Assert.That(result, Is.EqualTo(AIAction.StopChase));
-        Assert.That(ai.MovementDirection, Is.EqualTo(Vector2.Zero));
+        Assert.That(result.Action, Is.EqualTo(AIAction.StopChase));
+        Assert.That(result.MovementDirection, Is.EqualTo(Vector2.Zero));
     }
 
     [Test]
     public void Update_AtMinChaseDistance_StopsMovement()
     {
         var ai = new EnemyAI(AttackRange, minChaseDistance: 100f);
-        ai.Update(new Vector2(200, 300), HalfWidth, HalfHeight, WorldWithPlayer(new Vector2(280, 300)), true, 1.0f);
+        var result = ai.Update(new Vector2(200, 300), HalfWidth, HalfHeight, WorldWithPlayer(new Vector2(280, 300)), true, 1.0f);
 
-        Assert.That(ai.MovementDirection, Is.EqualTo(Vector2.Zero));
+        Assert.That(result.MovementDirection, Is.EqualTo(Vector2.Zero));
     }
 
     [Test]
@@ -84,13 +84,13 @@ public class EnemyAITests
         var selfPos = new Vector2(200, 300);
         var target = new Vector2(400, 300);
 
-        ai.Update(selfPos, HalfWidth, HalfHeight, WorldWithPlayer(target), true, 0.5f);
-        var initialDirection = ai.MovementDirection;
+        var first = ai.Update(selfPos, HalfWidth, HalfHeight, WorldWithPlayer(target), true, 0.5f);
+        var initialDirection = first.MovementDirection;
 
         target = new Vector2(380, 300);
-        ai.Update(selfPos, HalfWidth, HalfHeight, WorldWithPlayer(target), true, 0.1f);
+        var second = ai.Update(selfPos, HalfWidth, HalfHeight, WorldWithPlayer(target), true, 0.1f);
 
-        Assert.That(ai.MovementDirection, Is.EqualTo(initialDirection));
+        Assert.That(second.MovementDirection, Is.EqualTo(initialDirection));
     }
 
     [Test]
@@ -99,15 +99,15 @@ public class EnemyAITests
         var ai = new EnemyAI(AttackRange, MinChaseDistance);
         var selfPos = new Vector2(200, 300);
 
-        ai.Update(selfPos, HalfWidth, HalfHeight, WorldWithPlayer(new Vector2(400, 300)), true, 1.0f);
-        Assert.That(ai.FacingChanged, Is.True);
+        var r1 = ai.Update(selfPos, HalfWidth, HalfHeight, WorldWithPlayer(new Vector2(400, 300)), true, 1.0f);
+        Assert.That(r1.FacingChanged, Is.True);
 
-        ai.Update(selfPos, HalfWidth, HalfHeight, WorldWithPlayer(new Vector2(400, 300)), true, 1.0f);
-        Assert.That(ai.FacingChanged, Is.False);
+        var r2 = ai.Update(selfPos, HalfWidth, HalfHeight, WorldWithPlayer(new Vector2(400, 300)), true, 1.0f);
+        Assert.That(r2.FacingChanged, Is.False);
 
-        ai.Update(selfPos, HalfWidth, HalfHeight, WorldWithPlayer(new Vector2(0, 300)), true, 1.0f);
-        Assert.That(ai.FacingChanged, Is.True);
-        Assert.That(ai.NewFacingX, Is.LessThan(0));
+        var r3 = ai.Update(selfPos, HalfWidth, HalfHeight, WorldWithPlayer(new Vector2(0, 300)), true, 1.0f);
+        Assert.That(r3.FacingChanged, Is.True);
+        Assert.That(r3.NewFacingX, Is.LessThan(0));
     }
 
     [Test]
@@ -125,7 +125,7 @@ public class EnemyAITests
         var ai = new EnemyAI(AttackRange, MinChaseDistance) { AttackCooldown = 1.0f };
         var result = ai.Update(new Vector2(200, 300), HalfWidth, HalfHeight, WorldWithPlayer(new Vector2(250, 300)), true, 0.5f);
 
-        Assert.That(result, Is.EqualTo(AIAction.StopChase));
+        Assert.That(result.Action, Is.EqualTo(AIAction.StopChase));
     }
 
     // --- Steering tests ---
@@ -139,8 +139,8 @@ public class EnemyAITests
 
         var result = ai.Update(new Vector2(100, 300), HalfWidth, HalfHeight, world, true, 1.0f);
 
-        Assert.That(result, Is.EqualTo(AIAction.StartChase));
-        Assert.That(MathF.Abs(ai.MovementDirection.Y), Is.GreaterThan(0.01f));
+        Assert.That(result.Action, Is.EqualTo(AIAction.StartChase));
+        Assert.That(MathF.Abs(result.MovementDirection.Y), Is.GreaterThan(0.01f));
     }
 
     [Test]
@@ -153,9 +153,9 @@ public class EnemyAITests
 
         var result = ai.Update(Vector2.Zero, HalfWidth, HalfHeight, world, true, 1.0f);
 
-        Assert.That(result, Is.EqualTo(AIAction.StartChase));
+        Assert.That(result.Action, Is.EqualTo(AIAction.StartChase));
         // Avoidance should produce Y deflection (enemy steered away from prop's side)
-        Assert.That(MathF.Abs(ai.MovementDirection.Y), Is.GreaterThan(0.01f));
+        Assert.That(MathF.Abs(result.MovementDirection.Y), Is.GreaterThan(0.01f));
     }
 
     [Test]
@@ -165,9 +165,9 @@ public class EnemyAITests
         var other = new ActorSnapshot(new Vector2(200, 320), HalfWidth, HalfHeight);
         var world = new WorldSnapshot(new Vector2(400, 300), DefaultBounds, new[] { other }, []);
 
-        ai.Update(new Vector2(200, 300), HalfWidth, HalfHeight, world, true, 1.0f);
+        var result = ai.Update(new Vector2(200, 300), HalfWidth, HalfHeight, world, true, 1.0f);
 
-        Assert.That(MathF.Abs(ai.MovementDirection.Y), Is.GreaterThan(0.01f));
+        Assert.That(MathF.Abs(result.MovementDirection.Y), Is.GreaterThan(0.01f));
     }
 
     [Test]
@@ -177,10 +177,10 @@ public class EnemyAITests
         var far = new ActorSnapshot(new Vector2(200, 500), HalfWidth, HalfHeight);
         var world = new WorldSnapshot(new Vector2(400, 300), DefaultBounds, new[] { far }, []);
 
-        ai.Update(new Vector2(200, 300), HalfWidth, HalfHeight, world, true, 1.0f);
+        var result = ai.Update(new Vector2(200, 300), HalfWidth, HalfHeight, world, true, 1.0f);
 
-        Assert.That(ai.MovementDirection.X, Is.GreaterThan(0));
-        Assert.That(MathF.Abs(ai.MovementDirection.Y), Is.LessThanOrEqualTo(0.01f));
+        Assert.That(result.MovementDirection.X, Is.GreaterThan(0));
+        Assert.That(MathF.Abs(result.MovementDirection.Y), Is.LessThanOrEqualTo(0.01f));
     }
 
     [Test]
@@ -190,9 +190,9 @@ public class EnemyAITests
         var tightBounds = new RectangleF(0, 0, 100, 600);
         var world = new WorldSnapshot(new Vector2(200, 300), tightBounds, [], []);
 
-        ai.Update(new Vector2(10, 300), HalfWidth, HalfHeight, world, true, 1.0f);
+        var result = ai.Update(new Vector2(10, 300), HalfWidth, HalfHeight, world, true, 1.0f);
 
-        Assert.That(ai.MovementDirection.X, Is.GreaterThan(0));
+        Assert.That(result.MovementDirection.X, Is.GreaterThan(0));
     }
 
     [Test]
@@ -203,7 +203,7 @@ public class EnemyAITests
 
         var result = ai.Update(new Vector2(200, 300), HalfWidth, HalfHeight, world, true, 0.5f);
 
-        Assert.That(result, Is.Not.EqualTo(AIAction.StartChase));
+        Assert.That(result.Action, Is.Not.EqualTo(AIAction.StartChase));
     }
 
     [Test]
@@ -212,9 +212,9 @@ public class EnemyAITests
         var ai = new EnemyAI(AttackRange, minChaseDistance: 100f);
         var world = WorldWithPlayer(new Vector2(280, 300));
 
-        ai.Update(new Vector2(200, 300), HalfWidth, HalfHeight, world, true, 1.0f);
+        var result = ai.Update(new Vector2(200, 300), HalfWidth, HalfHeight, world, true, 1.0f);
 
-        Assert.That(ai.MovementDirection, Is.EqualTo(Vector2.Zero));
+        Assert.That(result.MovementDirection, Is.EqualTo(Vector2.Zero));
     }
 
     [Test]
@@ -239,5 +239,15 @@ public class EnemyAITests
 
         Assert.That(after - before, Is.EqualTo(0),
             "Update should allocate zero bytes per call after warmup");
+    }
+
+    [Test]
+    public void UpdateIdle_DecaysCooldown_WhenNoTarget()
+    {
+        var ai = new EnemyAI(AttackRange, MinChaseDistance) { AttackCooldown = 2.0f };
+
+        ai.UpdateIdle(0.5f);
+
+        Assert.That(ai.AttackCooldown, Is.EqualTo(1.5f));
     }
 }

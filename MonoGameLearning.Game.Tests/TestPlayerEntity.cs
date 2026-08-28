@@ -13,14 +13,14 @@ class PlayerEntityTester(string name, Vector2 position, float scale)
     {
         return PlayerStateMachine.Create(new()
         {
-            OnAttackingExit = Callbacks.OnAttackingExit,
-            OnHurtEntry = Callbacks.OnHurtEntry,
-            OnHurtExit = Callbacks.OnHurtExit,
-            OnKnockdownEntry = Callbacks.OnKnockdownEntry,
-            OnKnockdownExit = Callbacks.OnKnockdownExit,
-            OnDyingEntry = Callbacks.OnDyingEntry,
-            OnDyingExit = Callbacks.OnDyingExit,
-            OnDeadEntry = Callbacks.OnDeadEntry,
+            OnAttackingExit = OnAttackingExitHook,
+            OnHurtEntry = OnHurtEntryHook,
+            OnHurtExit = OnHurtExitHook,
+            OnKnockdownEntry = OnKnockdownEntryHook,
+            OnKnockdownExit = OnKnockdownExitHook,
+            OnDyingEntry = OnDyingEntryHook,
+            OnDyingExit = OnDyingExitHook,
+            OnDeadEntry = OnDeadEntryHook,
         });
     }
 }

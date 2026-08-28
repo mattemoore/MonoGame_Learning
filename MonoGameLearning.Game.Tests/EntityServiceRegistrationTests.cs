@@ -21,14 +21,8 @@ internal sealed class StubCombatActor : CombatActorBase
 
     public void CallAdvanceFrameAndRegisterHitboxes(GameTime gt) => AdvanceFrameAndRegisterHitboxes(gt);
     public override void Update(GameTime gameTime) { }
-    protected override bool IsIncapacitated => false;
-    protected override bool IsInKnockedDownState => false;
-    protected override bool IsInHurtState => false;
-    protected override bool IsInDyingState => false;
-    protected override bool IsInAttackingState => false;
-    protected override void FireKnockdownCompleted() { }
-    protected override void FireHurtCompleted() { }
-    protected override void FireDeathCompleted() { }
+    protected override ActorPhase Phase => ActorPhase.Idle;
+    protected override void FirePhaseCompleted() { }
 }
 
 internal sealed class GenericCollidableEntity(string name, Vector2 position, int width, int height)

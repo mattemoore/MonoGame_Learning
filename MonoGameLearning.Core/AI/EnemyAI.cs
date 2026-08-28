@@ -22,15 +22,15 @@ public class EnemyAI(float attackRange, float minChaseDistance)
 
     private float _directionUpdateTimer;
     private float _lastFacingX;
+    private Vector2 _movementDirection;
+    private bool _facingChanged;
+    private float _newFacingX;
+    private DominantForce _force;
 
     public float AttackCooldown { get; set; }
-    public float AttackDelayTimer { get; set; }
-    public Vector2 MovementDirection { get; private set; }
-    public bool FacingChanged { get; private set; }
-    public float NewFacingX { get; private set; }
-    public DominantForce Force { get; private set; }
+    private float AttackDelayTimer { get; set; }
 
-    public AIAction Update(
+    public AIUpdateResult Update(
         Vector2 selfPosition,
         float selfHalfWidth,
         float selfHalfHeight,
@@ -38,14 +38,14 @@ public class EnemyAI(float attackRange, float minChaseDistance)
         bool isIdleOrChasing,
         float deltaSeconds)
     {
-        AttackCooldown = Math.Max(0, AttackCooldown - deltaSeconds);
-        FacingChanged = false;
-        Force = DominantForce.None;
+        UpdateIdle(deltaSeconds);
+        _facingChanged = false;
+        _force = DominantForce.None;
 
         if (!isIdleOrChasing)
         {
-            MovementDirection = Vector2.Zero;
-            return AIAction.None;
+            _movementDirection = Vector2.Zero;
+            return new AIUpdateResult { Action = AIAction.None };
         }
 
         Vector2 toTarget = world.PlayerPosition - selfPosition;
@@ -59,15 +59,15 @@ public class EnemyAI(float attackRange, float minChaseDistance)
             AttackDelayTimer -= deltaSeconds;
 
             Vector2 separate = ComputeSeparation(selfPosition, world.Enemies);
-            MovementDirection = separate.LengthSquared() > EpsilonSquared ? Vector2.Normalize(separate) : Vector2.Zero;
-            Force = DominantForce.Separate;
+            _movementDirection = separate.LengthSquared() > EpsilonSquared ? Vector2.Normalize(separate) : Vector2.Zero;
+            _force = DominantForce.Separate;
 
             if (AttackDelayTimer <= 0)
             {
                 AttackDelayTimer = 0;
-                return AIAction.Attack;
+                return new AIUpdateResult { Action = AIAction.Attack, MovementDirection = _movementDirection, Force = _force };
             }
-            return AIAction.StopChase;
+            return new AIUpdateResult { Action = AIAction.StopChase, MovementDirection = _movementDirection, Force = _force };
         }
 
         if (distance > attackRange)
@@ -78,25 +78,35 @@ public class EnemyAI(float attackRange, float minChaseDistance)
             if (_directionUpdateTimer <= 0)
             {
                 _directionUpdateTimer = DirectionUpdateInterval;
-                MovementDirection = ComputeSteering(selfPosition, selfHalfWidth, selfHalfHeight, toTarget, distance, world);
+                _movementDirection = ComputeSteering(selfPosition, selfHalfWidth, selfHalfHeight, toTarget, distance, world);
 
-                if (Math.Sign(MovementDirection.X) != Math.Sign(_lastFacingX))
+                if (Math.Sign(_movementDirection.X) != Math.Sign(_lastFacingX))
                 {
-                    _lastFacingX = MovementDirection.X;
-                    NewFacingX = MovementDirection.X;
-                    FacingChanged = true;
+                    _lastFacingX = _movementDirection.X;
+                    _newFacingX = _movementDirection.X;
+                    _facingChanged = true;
                 }
             }
 
             if (distance <= minChaseDistance)
-                MovementDirection = Vector2.Zero;
+                _movementDirection = Vector2.Zero;
 
-            return AIAction.StartChase;
+            return new AIUpdateResult
+            {
+                Action = AIAction.StartChase,
+                FacingChanged = _facingChanged,
+                NewFacingX = _newFacingX,
+                MovementDirection = _movementDirection,
+                Force = _force
+            };
         }
 
-        MovementDirection = Vector2.Zero;
-        return AIAction.StopChase;
+        _movementDirection = Vector2.Zero;
+        return new AIUpdateResult { Action = AIAction.StopChase, MovementDirection = _movementDirection, Force = _force };
     }
+
+    public void UpdateIdle(float deltaSeconds) =>
+        AttackCooldown = Math.Max(0, AttackCooldown - deltaSeconds);
 
     private Vector2 ComputeSteering(
         Vector2 selfPosition,
@@ -114,7 +124,7 @@ public class EnemyAI(float attackRange, float minChaseDistance)
             Vector2 seek = toTarget / distance * SeekWeight;
             steer += seek;
             bestWeight = SeekWeight;
-            Force = DominantForce.Seek;
+            _force = DominantForce.Seek;
         }
 
         Vector2 separate = ComputeSeparation(selfPosition, world.Enemies);
@@ -124,7 +134,7 @@ public class EnemyAI(float attackRange, float minChaseDistance)
             if (SeparationWeight > bestWeight)
             {
                 bestWeight = SeparationWeight;
-                Force = DominantForce.Separate;
+                _force = DominantForce.Separate;
             }
         }
 
@@ -135,7 +145,7 @@ public class EnemyAI(float attackRange, float minChaseDistance)
             if (AvoidWeight > bestWeight)
             {
                 bestWeight = AvoidWeight;
-                Force = DominantForce.Avoid;
+                _force = DominantForce.Avoid;
             }
         }
 
@@ -146,7 +156,7 @@ public class EnemyAI(float attackRange, float minChaseDistance)
             if (BoundsWeight > bestWeight)
             {
                 bestWeight = BoundsWeight;
-                Force = DominantForce.Bounds;
+                _force = DominantForce.Bounds;
             }
         }
 
@@ -254,7 +264,9 @@ public class EnemyAI(float attackRange, float minChaseDistance)
         AttackDelayTimer = 0;
         _directionUpdateTimer = 0;
         _lastFacingX = 0;
-        MovementDirection = Vector2.Zero;
-        Force = DominantForce.None;
+        _movementDirection = Vector2.Zero;
+        _facingChanged = false;
+        _newFacingX = 0;
+        _force = DominantForce.None;
     }
 }

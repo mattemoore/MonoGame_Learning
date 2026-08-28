@@ -30,8 +30,6 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     protected readonly AnimationSet Animations;
     protected readonly AudioService Audio;
 
-    public CombatActorCallbacks Callbacks { get; }
-
     public CombatActorBase(string name, Vector2 position, int width, int height, AnimatedSprite sprite, float scale, int maxHealth, AnimationSet animations, AudioService audio)
         : base(name, position, width, height)
     {
@@ -39,18 +37,6 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         HealthComponent = new(maxHealth);
         Animations = animations;
         Audio = audio;
-
-        Callbacks = new()
-        {
-            OnAttackingExit = AttackingExitImpl,
-            OnHurtEntry = HurtEntryImpl,
-            OnHurtExit = UnsubscribeFromAnimationEvent,
-            OnKnockdownEntry = KnockdownEntryImpl,
-            OnKnockdownExit = KnockdownExitImpl,
-            OnDyingEntry = DyingEntryImpl,
-            OnDyingExit = UnsubscribeFromAnimationEvent,
-            OnDeadEntry = DeadEntryImpl,
-        };
     }
 
     public RectangleF MovementBounds { get; set; }
@@ -112,7 +98,7 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     {
         if (trigger != AnimationEventTrigger.AnimationCompleted) return;
 
-        if (IsInKnockedDownState)
+        if (Phase == ActorPhase.KnockedDown)
         {
             if (KnockdownPhase == KnockdownPhase.Falling)
             {
@@ -121,13 +107,11 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
                 SubscribeToAnimationEvent();
             }
             else
-                FireKnockdownCompleted();
+                FirePhaseCompleted();
             return;
         }
 
-        if (IsInHurtState) FireHurtCompleted();
-        else if (IsInDyingState) FireDeathCompleted();
-        else FireAttackCompleted();
+        FirePhaseCompleted();
     }
 
     public abstract void Update(GameTime gameTime);
@@ -152,8 +136,8 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
             return;
         }
 
-        var (anchor, frame) = ResolveWeaponAnchorAndFrame(weapon, IsInAttackingState, FrameTracker.FrameIndex);
-        var effect = WeaponFacingEffect(Direction);
+        var (anchor, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(weapon, IsInAttackingState, FrameTracker.FrameIndex);
+        var effect = MeleeWeaponDef.WeaponFacingEffect(Direction);
         WeaponSprite.Effect = effect;
         WeaponSprite.Controller.SetFrame(frame);
         // SetFrame only updates the controller's internal frame index — it never refreshes
@@ -161,7 +145,7 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         if (weapon.Sheet is not null)
             WeaponSprite.TextureRegion = weapon.Sheet.TextureAtlas[WeaponSprite.Controller.CurrentFrame];
 
-        var anchorOffset = ApplyWeaponFacing(anchor, Direction);
+        var anchorOffset = MeleeWeaponDef.ApplyWeaponFacing(anchor, Direction);
         var region = WeaponSprite.TextureRegion;
         var origin = new Vector2(region.Width / 2f, region.Height / 2f);
         var scale = new Vector2(SpriteRenderer.Scale);
@@ -169,23 +153,6 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
             new Vector2(Position.X + anchorOffset.X * SpriteRenderer.Scale, Position.Y + anchorOffset.Y * SpriteRenderer.Scale),
             Color.White, 0f, origin, scale, effect, 0f);
     }
-
-    internal static (Vector2 anchor, int frame) ResolveWeaponAnchorAndFrame(
-        MeleeWeaponDef weapon, bool isAttacking, int frameIndex)
-    {
-        if (isAttacking && weapon.SwingAnchors.Length > 0)
-        {
-            int frame = Math.Clamp(frameIndex, 0, weapon.SwingAnchors.Length - 1);
-            return (weapon.SwingAnchors[frame], frame);
-        }
-        return (weapon.CarryAnchor, 0);
-    }
-
-    internal static Vector2 ApplyWeaponFacing(Vector2 anchor, FacingDirection direction) =>
-        direction == FacingDirection.Left ? new Vector2(-anchor.X, anchor.Y) : anchor;
-
-    internal static SpriteEffects WeaponFacingEffect(FacingDirection direction) =>
-        direction == FacingDirection.Left ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
 
     public virtual void DrawDebug(DebugDrawContext context)
     {
@@ -203,8 +170,8 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
 
         if (EquippedWeapon is not null)
         {
-            var (anchor, frame) = ResolveWeaponAnchorAndFrame(EquippedWeapon, IsInAttackingState, FrameTracker.FrameIndex);
-            var anchorScreen = Position + ApplyWeaponFacing(anchor, Direction);
+            var (anchor, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(EquippedWeapon, IsInAttackingState, FrameTracker.FrameIndex);
+            var anchorScreen = Position + MeleeWeaponDef.ApplyWeaponFacing(anchor, Direction);
             context.SpriteBatch.DrawRectangle(new RectangleF(anchorScreen.X - 2, anchorScreen.Y - 2, 4, 4), Color.Orange);
             var name = $"{EquippedWeapon.Name} f{frame}";
             var nameSize = context.Font.MeasureString(name);
@@ -225,15 +192,11 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     }
 
     // --- State abstractions ---
-    protected abstract bool IsIncapacitated { get; }
-    protected abstract bool IsInKnockedDownState { get; }
-    protected abstract bool IsInHurtState { get; }
-    protected abstract bool IsInDyingState { get; }
-    protected abstract bool IsInAttackingState { get; }
-    protected abstract void FireKnockdownCompleted();
-    protected abstract void FireHurtCompleted();
-    protected abstract void FireDeathCompleted();
-    protected virtual void FireAttackCompleted() { }
+    protected abstract ActorPhase Phase { get; }
+    protected abstract void FirePhaseCompleted();
+
+    protected bool IsIncapacitated => Phase is ActorPhase.Dead or ActorPhase.Dying or ActorPhase.Hurt or ActorPhase.KnockedDown;
+    protected bool IsInAttackingState => Phase == ActorPhase.Attacking;
 
     // --- Debug frame color ---
     protected virtual Color GetDebugFrameColor() => Color.Blue;
@@ -241,7 +204,17 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     // --- Knockdown phase ---
     protected KnockdownPhase KnockdownPhase { get; set; }
 
-    // --- Shared state controller callbacks (cached delegates — zero alloc per use) ---
+    // --- Shared state controller hooks (overridable by subclasses wiring their state machines) ---
+    protected virtual void OnAttackingExitHook() => AttackingExitImpl();
+    protected virtual void OnHurtEntryHook() => HurtEntryImpl();
+    protected virtual void OnHurtExitHook() => UnsubscribeFromAnimationEvent();
+    protected virtual void OnKnockdownEntryHook() => KnockdownEntryImpl();
+    protected virtual void OnKnockdownExitHook() => KnockdownExitImpl();
+    protected virtual void OnDyingEntryHook() => DyingEntryImpl();
+    protected virtual void OnDyingExitHook() => UnsubscribeFromAnimationEvent();
+    protected virtual void OnDeadEntryHook() => DeadEntryImpl();
+
+    // --- Shared state controller callback implementations ---
     private void AttackingExitImpl()
     {
         UnsubscribeFromAnimationEvent();

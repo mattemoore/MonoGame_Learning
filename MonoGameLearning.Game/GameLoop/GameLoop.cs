@@ -33,8 +33,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 {
     public const int GAME_WIDTH = 800;
     public const int GAME_HEIGHT = 600;
-    private static readonly int RESOLUTION_WIDTH = ResolutionSettings.Load().Width;
-    private static readonly int RESOLUTION_HEIGHT = ResolutionSettings.Load().Height;
+    private static readonly int RESOLUTION_WIDTH = SettingsService.LoadResolution().Width;
+    private static readonly int RESOLUTION_HEIGHT = SettingsService.LoadResolution().Height;
     public const bool IS_FULL_SCREEN = false;
     private PlayerEntity _player;
     private Level _currentLevel;

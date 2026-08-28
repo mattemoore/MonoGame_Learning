@@ -11,7 +11,6 @@ using MonoGameLearning.Core.Entities.Actor;
 using MonoGameLearning.Core.Entities.Pickup;
 using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Core.Rendering;
-using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.AnimatedSprites;
 using MonoGameLearning.Game.StateMachines;
 
@@ -21,23 +20,34 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
 {
     private StateMachineController<EnemyState, EnemyTrigger> _stateController;
     private readonly EnemyAI _ai;
-    private readonly LevelDirector _director;
+    private readonly Func<WorldSnapshot> _getWorld;
+    private AIUpdateResult _lastAIResult;
 
     private float _spawnWalkTargetX;
     private Vector2 _spawnWalkDirection;
 
-    protected override bool IsIncapacitated => _stateController.State is EnemyState.Dead or EnemyState.Dying or EnemyState.Hurt or EnemyState.KnockedDown;
-    protected override bool IsInKnockedDownState => _stateController.State == EnemyState.KnockedDown;
-    protected override bool IsInHurtState => _stateController.State == EnemyState.Hurt;
-    protected override bool IsInDyingState => _stateController.State == EnemyState.Dying;
-    protected override bool IsInAttackingState => _stateController.State == EnemyState.Attacking;
-    protected override void FireKnockdownCompleted() => _stateController.Fire(EnemyTrigger.KnockdownCompleted);
-    protected override void FireHurtCompleted() => _stateController.Fire(EnemyTrigger.HurtCompleted);
-    protected override void FireDeathCompleted() => _stateController.Fire(EnemyTrigger.DeathCompleted);
-    protected override void FireAttackCompleted()
+    protected override ActorPhase Phase => _stateController.State switch
     {
-        _ai.AttackCooldown = 1.5f;
-        _stateController.Fire(EnemyTrigger.AttackCompleted);
+        EnemyState.Chasing or EnemyState.Entering => ActorPhase.Moving,
+        EnemyState.Attacking => ActorPhase.Attacking,
+        EnemyState.Hurt => ActorPhase.Hurt,
+        EnemyState.KnockedDown => ActorPhase.KnockedDown,
+        EnemyState.Dying => ActorPhase.Dying,
+        EnemyState.Dead => ActorPhase.Dead,
+        _ => ActorPhase.Idle,
+    };
+    protected override void FirePhaseCompleted()
+    {
+        switch (Phase)
+        {
+            case ActorPhase.KnockedDown: _stateController.Fire(EnemyTrigger.KnockdownCompleted); break;
+            case ActorPhase.Hurt: _stateController.Fire(EnemyTrigger.HurtCompleted); break;
+            case ActorPhase.Dying: _stateController.Fire(EnemyTrigger.DeathCompleted); break;
+            default:
+                _ai.AttackCooldown = 1.5f;
+                _stateController.Fire(EnemyTrigger.AttackCompleted);
+                break;
+        }
     }
 
     public Entity Target { get; set; }
@@ -62,7 +72,7 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
 
     public MoveData AttackMove => EquippedWeapon?.SwingMove ?? _attackMove;
 
-    public EnemyEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, AudioService audio, LevelDirector director)
+    public EnemyEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, AudioService audio, Func<WorldSnapshot> getWorld)
         : base(name, position, 48, 60, sprite, scale, 30, new(EnemySprite.AnimationIdle, EnemySprite.AnimationRun, EnemySprite.AnimationHurt, EnemySprite.AnimationFall, EnemySprite.AnimationDie, EnemySprite.AnimationGetUp), audio)
     {
         Speed = 120f;
@@ -70,7 +80,7 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
         Faction = Faction.Enemy;
         _ai = new EnemyAI(AttackRange, MinChaseDistance);
         _stateController = CreateStateController();
-        _director = director;
+        _getWorld = getWorld;
     }
 
     public override bool CanTakeDamage() =>
@@ -102,7 +112,7 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
             if (AttackMove.AttackSfx.HasValue)
                 Audio.PlaySfx(AttackMove.AttackSfx.Value);
         },
-        OnAttackingExit = Callbacks.OnAttackingExit,
+        OnAttackingExit = OnAttackingExitHook,
         OnHurtEntry = () =>
         {
             PlayAnimation(Animations.Hurt);
@@ -110,7 +120,7 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
                 Audio.PlaySfx(LastImpactSfx.Value);
             Audio.PlaySfx(SfxId.EnemyHurt);
         },
-        OnHurtExit = Callbacks.OnHurtExit,
+        OnHurtExit = OnHurtExitHook,
         OnKnockdownEntry = () =>
         {
             KnockdownPhase = KnockdownPhase.Falling;
@@ -120,15 +130,15 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
                 Audio.PlaySfx(LastImpactSfx.Value);
             Audio.PlaySfx(SfxId.Knockdown);
         },
-        OnKnockdownExit = Callbacks.OnKnockdownExit,
+        OnKnockdownExit = OnKnockdownExitHook,
         OnDyingEntry = () =>
         {
             UnequipWeapon();
             PlayAnimation(Animations.Die);
             Audio.PlaySfx(SfxId.EnemyDeath);
         },
-        OnDyingExit = Callbacks.OnDyingExit,
-        OnDeadEntry = Callbacks.OnDeadEntry,
+        OnDyingExit = OnDyingExitHook,
+        OnDeadEntry = OnDeadEntryHook,
         OnEnteringEntry = () =>
         {
             SpriteRenderer.SetAnimation(Animations.Run);
@@ -169,12 +179,13 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
 
         if (Target is not null)
         {
-            ref readonly var world = ref _director.CurrentWorld;
+            var world = _getWorld();
             float halfW = Width * 0.5f;
             float halfH = Height * 0.5f;
-            var action = _ai.Update(Position, halfW, halfH, world, isIdleOrChasing, deltaSeconds);
+            var result = _ai.Update(Position, halfW, halfH, world, isIdleOrChasing, deltaSeconds);
+            _lastAIResult = result;
 
-            switch (action)
+            switch (result.Action)
             {
                 case AIAction.StartChase:
                     if (_stateController.State == EnemyState.Idle)
@@ -188,16 +199,16 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
                     break;
             }
 
-            if (_ai.FacingChanged)
-                Direction = Mover.UpdateFacingDirection(SpriteRenderer, new Vector2(_ai.NewFacingX, 0), Direction);
+            if (result.FacingChanged)
+                Direction = Mover.UpdateFacingDirection(SpriteRenderer, new Vector2(result.NewFacingX, 0), Direction);
+
+            if (_stateController.State == EnemyState.Chasing && result.MovementDirection != Vector2.Zero)
+                Position += result.MovementDirection * deltaSeconds * Speed;
         }
         else
         {
-            _ai.AttackCooldown = Math.Max(0, _ai.AttackCooldown - deltaSeconds);
+            _ai.UpdateIdle(deltaSeconds);
         }
-
-        if (_stateController.State == EnemyState.Chasing && _ai.MovementDirection != Vector2.Zero)
-            Position += _ai.MovementDirection * deltaSeconds * Speed;
 
         AdvanceFrameAndRegisterHitboxes(gameTime);
     }
@@ -218,7 +229,7 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
     {
         base.DrawDebug(context);
 
-        var force = _ai.Force;
+        var force = _lastAIResult.Force;
         var color = force switch
         {
             DominantForce.Avoid => Color.Red,
