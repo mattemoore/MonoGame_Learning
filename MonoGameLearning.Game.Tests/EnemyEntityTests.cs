@@ -1,6 +1,8 @@
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGameLearning.Core.AI;
+using MonoGameLearning.Core.Movement;
+using MonoGameLearning.Game.Entities.Enemy;
 
 namespace MonoGameLearning.Game.Tests;
 
@@ -249,5 +251,36 @@ public class EnemyAITests
         ai.UpdateIdle(0.5f);
 
         Assert.That(ai.AttackCooldown, Is.EqualTo(1.5f));
+    }
+}
+
+[TestFixture]
+public class EnemyFacingLockTests
+{
+    private static GameTime ZeroGameTime => new(TimeSpan.Zero, TimeSpan.Zero);
+
+    [Test]
+    public void WhileAttacking_AIFacingChange_DoesNotChangeDirection()
+    {
+        var enemy = new FacingChangeForcingEnemy();
+        enemy.Target = new TestSpatialEntity("target", Vector2.Zero, 10, 10);
+        enemy.StateController!.Fire(EnemyTrigger.AttackStart);
+
+        enemy.Update(ZeroGameTime);
+
+        Assert.That(enemy.Direction, Is.EqualTo(FacingDirection.Right),
+            "AI-reported facing flips must be ignored while the enemy attacks");
+    }
+
+    [Test]
+    public void WhileNotAttacking_AIFacingChange_AppliesDirection()
+    {
+        var enemy = new FacingChangeForcingEnemy();
+        enemy.Target = new TestSpatialEntity("target", Vector2.Zero, 10, 10);
+        enemy.Position = new Vector2(500, 0);
+
+        enemy.Update(ZeroGameTime);
+
+        Assert.That(enemy.Direction, Is.EqualTo(FacingDirection.Left));
     }
 }
