@@ -10,17 +10,6 @@ namespace MonoGameLearning.Core.Combat;
 
 public class HitboxService
 {
-    private readonly record struct ActiveHitbox
-    {
-        public IHitboxProvider Owner { get; init; }
-        public Faction OwnerFaction { get; init; }
-        public RectangleF Bounds { get; init; }
-        public int Damage { get; init; }
-        public bool Knockdown { get; init; }
-        public AttackStrength Strength { get; init; }
-        public SfxId? ImpactSfx { get; init; }
-    }
-
     private readonly List<ActiveHitbox> _activeHitboxes = [];
     private readonly Dictionary<IHitboxProvider, HashSet<IDamageable>> _attackDedup = [];
     private readonly List<DamageInfo> _resultBuffer = [];

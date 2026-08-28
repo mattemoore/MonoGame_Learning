@@ -10,7 +10,7 @@ using MonoGameLearning.Game.Entities.GoIndicator;
 
 namespace MonoGameLearning.Game.Tests;
 
-public class TestUiEntity(string name) : UiBase(name, Vector2.Zero, 64, 64)
+public class TestUiEntity : UiBase
 {
     public override void Update(GameTime gameTime) { }
     public override void Render(RenderContext context) { }
@@ -32,91 +32,49 @@ public class GoIndicatorTests
     [Test]
     public void UiBase_IsUpdatable()
     {
-        var entity = new TestUiEntity("test");
+        var entity = new TestUiEntity();
         Assert.That(entity, Is.InstanceOf<IUpdatable>());
     }
 
     [Test]
     public void UiBase_IsScreenRenderable()
     {
-        var entity = new TestUiEntity("test");
+        var entity = new TestUiEntity();
         Assert.That(entity, Is.InstanceOf<IScreenRenderable>());
     }
 
     [Test]
     public void UiBase_IsNotWorldRenderable()
     {
-        var entity = new TestUiEntity("test");
+        var entity = new TestUiEntity();
         Assert.That(entity, Is.Not.InstanceOf<IRenderable>());
     }
 
     [Test]
     public void UiBase_IsDebugDrawable()
     {
-        var entity = new TestUiEntity("test");
+        var entity = new TestUiEntity();
         Assert.That(entity, Is.InstanceOf<IDebugDrawable>());
     }
 
     [Test]
-    public void UiBase_EntityManager_RegistersInUpdatables()
+    public void UiBase_IsNotEntity()
     {
-        var mgr = new EntityService(CreateTestWorld());
-        var entity = new TestUiEntity("test");
-
-        mgr.Register(entity);
-
-        Assert.That(mgr.Updatables, Does.Contain(entity));
-    }
-
-    [Test]
-    public void UiBase_EntityManager_RegistersInScreenRenderables()
-    {
-        var mgr = new EntityService(CreateTestWorld());
-        var entity = new TestUiEntity("test");
-
-        mgr.Register(entity);
-
-        Assert.That(mgr.ScreenRenderables, Does.Contain(entity));
-        Assert.That(mgr.Renderables, Does.Not.Contain(entity));
-    }
-
-    [Test]
-    public void UiBase_EntityManager_RegistersInDebugDrawables()
-    {
-        var mgr = new EntityService(CreateTestWorld());
-        var entity = new TestUiEntity("test");
-
-        mgr.Register(entity);
-
-        Assert.That(mgr.DebugDrawables, Does.Contain(entity));
-    }
-
-    [Test]
-    public void UiBase_EntityManager_Clear_RemovesFromAllLists()
-    {
-        var mgr = new EntityService(CreateTestWorld());
-        var entity = new TestUiEntity("test");
-        mgr.Register(entity);
-
-        mgr.Clear();
-
-        Assert.That(mgr.ScreenRenderables, Does.Not.Contain(entity));
-        Assert.That(mgr.Updatables, Does.Not.Contain(entity));
-        Assert.That(mgr.Renderables, Does.Not.Contain(entity));
-        Assert.That(mgr.DebugDrawables, Does.Not.Contain(entity));
+        var entity = new TestUiEntity();
+        Assert.That(entity, Is.Not.InstanceOf<Entity>());
     }
 
     [Test]
     public void UiBase_DefaultVisibilityIsTrue()
     {
-        var entity = new TestUiEntity("test");
+        var entity = new TestUiEntity();
         Assert.That(entity.Visible, Is.True);
     }
 
     [Test]
     public void UiBase_CanToggleVisibility()
     {
-        var entity = new TestUiEntity("test");
+        var entity = new TestUiEntity();
         entity.Visible = false;
         Assert.That(entity.Visible, Is.False);
         entity.Visible = true;

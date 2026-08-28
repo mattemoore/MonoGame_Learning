@@ -1,3 +1,4 @@
+using MonoGameLearning.Core;
 using MonoGameLearning.Core.Audio;
 
 namespace MonoGameLearning.Game.Tests;
@@ -127,5 +128,64 @@ public class AudioServiceTests
     {
         var mgr = new AudioService();
         Assert.DoesNotThrow(() => mgr.PlaySfx(SfxId.PickupHeal));
+    }
+
+    [Test]
+    public void OnGameStateChanged_ToPaused_SetsPaused()
+    {
+        var mgr = new AudioService();
+        mgr.OnGameStateChanged(GameState.Playing, GameState.Paused);
+        Assert.That(mgr.IsPausedForTest, Is.True);
+    }
+
+    [Test]
+    public void OnGameStateChanged_FromPausedToPlaying_Unpauses()
+    {
+        var mgr = new AudioService();
+        mgr.OnGameStateChanged(GameState.Playing, GameState.Paused);
+        Assert.That(mgr.IsPausedForTest, Is.True);
+
+        mgr.OnGameStateChanged(GameState.Paused, GameState.Playing);
+        Assert.That(mgr.IsPausedForTest, Is.False);
+    }
+
+    [Test]
+    public void OnGameStateChanged_FromPausedToTitle_Unpauses()
+    {
+        var mgr = new AudioService();
+        mgr.OnGameStateChanged(GameState.Playing, GameState.Paused);
+        Assert.That(mgr.IsPausedForTest, Is.True);
+
+        mgr.OnGameStateChanged(GameState.Paused, GameState.TitleScreen);
+        Assert.That(mgr.IsPausedForTest, Is.False);
+    }
+
+    [Test]
+    public void OnGameStateChanged_ToPlaying_DoesNotThrow()
+    {
+        var mgr = new AudioService();
+        Assert.DoesNotThrow(() => mgr.OnGameStateChanged(GameState.TitleScreen, GameState.Playing));
+    }
+
+    [Test]
+    public void OnGameStateChanged_ToGameOver_DoesNotThrow()
+    {
+        var mgr = new AudioService();
+        Assert.DoesNotThrow(() => mgr.OnGameStateChanged(GameState.Playing, GameState.GameOver));
+    }
+
+    [Test]
+    public void OnGameStateChanged_ToLevelComplete_DoesNotThrow()
+    {
+        var mgr = new AudioService();
+        Assert.DoesNotThrow(() => mgr.OnGameStateChanged(GameState.Playing, GameState.LevelComplete));
+    }
+
+    [Test]
+    public void OnGameStateChanged_ToTitleOrSettings_DoesNotThrow()
+    {
+        var mgr = new AudioService();
+        Assert.DoesNotThrow(() => mgr.OnGameStateChanged(GameState.GameOver, GameState.TitleScreen));
+        Assert.DoesNotThrow(() => mgr.OnGameStateChanged(GameState.TitleScreen, GameState.Settings));
     }
 }

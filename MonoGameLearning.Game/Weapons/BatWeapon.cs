@@ -5,6 +5,7 @@ using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Game.AnimatedSprites;
+using MonoGameLearning.Game.Levels;
 
 namespace MonoGameLearning.Game.Weapons;
 
@@ -34,7 +35,7 @@ public static class BatWeapon
 
     public static MeleeWeaponDef Get(string key) => key switch
     {
-        "Bat" => Bat,
+        LevelContent.Bat => Bat,
         _ => throw new ArgumentException($"Unknown weapon: {key}", nameof(key)),
     };
 

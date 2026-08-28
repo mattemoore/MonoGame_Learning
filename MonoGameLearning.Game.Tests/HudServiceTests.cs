@@ -5,6 +5,7 @@ using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Core.UI;
 
 namespace MonoGameLearning.Game.Tests;
@@ -199,17 +200,10 @@ public class HudServiceTests
     }
 
     [Test]
-    public void HudService_RootWidget_IsRegisteredInEntityManager()
+    public void HudService_RootWidget_IsScreenRenderableAndUpdatable()
     {
-        var world = new CollisionWorld2D();
-        var bb = new BoundingBox2D(new Vector2(0, 0), new Vector2(2000, 600));
-        world.AddLayer(CollisionLayers.Actors, new Layer(new QuadTreeSpace(bb)));
-        world.AddLayer(CollisionLayers.Props, new Layer(new QuadTreeSpace(bb)));
-        world.EnableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Props);
-        var mgr = new EntityService(world);
-        mgr.Register(_hud.RootWidget);
-
-        Assert.That(mgr.ScreenRenderables, Does.Contain(_hud.RootWidget));
-        Assert.That(mgr.Updatables, Does.Contain(_hud.RootWidget));
+        Assert.That(_hud.RootWidget, Is.InstanceOf<IScreenRenderable>());
+        Assert.That(_hud.RootWidget, Is.InstanceOf<IUpdatable>());
+        Assert.That(_hud.RootWidget, Is.Not.InstanceOf<Entity>());
     }
 }

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
-using MonoGameLearning.Core.Audio;
+using MonoGameLearning.Core.AI;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Levels;
 using MonoGameLearning.Game.Entities.Enemy;
@@ -25,18 +25,16 @@ public class EnemyPool
     ];
 
     protected readonly EntityService EntityService;
-    private readonly LevelDirector _director;
-    private readonly AudioService _audio;
-    private readonly Func<string, int, EnemyEntity> _factory;
+    private readonly Func<WorldSnapshot> _getWorld;
+    private readonly Func<string, int, Func<WorldSnapshot>, EnemyEntity> _factory;
     protected readonly Dictionary<string, Stack<EnemyEntity>> Free = [];
     protected readonly Dictionary<EnemyEntity, string> EntityType = [];
 
-    public EnemyPool(EntityService entityManager, LevelDirector director, AudioService audio, Func<string, int, EnemyEntity> factory = null)
+    public EnemyPool(EntityService entityManager, Func<WorldSnapshot> getWorld, Func<string, int, Func<WorldSnapshot>, EnemyEntity> factory)
     {
         EntityService = entityManager;
-        _director = director;
-        _audio = audio;
-        _factory = factory ?? DefaultFactory;
+        _getWorld = getWorld;
+        _factory = factory;
     }
 
     public void Build(Level level)
@@ -56,7 +54,8 @@ public class EnemyPool
             var stack = new Stack<EnemyEntity>(count);
             for (int i = 0; i < count; i++)
             {
-                var enemy = _factory(type, i);
+                var enemy = _factory(type, i, _getWorld);
+                WarmUpAnimations(enemy);
                 enemy.Position = Sentinel;
                 stack.Push(enemy);
                 EntityType[enemy] = type;
@@ -104,17 +103,6 @@ public class EnemyPool
     {
         Free.Clear();
         EntityType.Clear();
-    }
-
-    private EnemyEntity DefaultFactory(string type, int index)
-    {
-        EnemyEntity enemy = type switch
-        {
-            "Grunt" => new EnemyEntity($"grunt_pool_{index}", Sentinel, 2.0f, EnemySprite.Create(), _audio, () => _director.CurrentWorld),
-            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
-        };
-        WarmUpAnimations(enemy);
-        return enemy;
     }
 
     private void WarmUpAnimations(EnemyEntity enemy)

@@ -108,47 +108,6 @@ public class EntityServiceRegistrationTests
     }
 
     [Test]
-    public void ScreenRenderable_NotInWorldRenderables()
-    {
-        var mgr = new EntityService(CreateTestWorld());
-        var ui = new TestUiEntity("ui");
-
-        mgr.Register(ui);
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(mgr.ScreenRenderables, Does.Contain(ui));
-            Assert.That(mgr.Renderables, Does.Not.Contain(ui));
-        });
-    }
-
-    [Test]
-    public void WorldRenderable_NotInScreenRenderables()
-    {
-        var mgr = new EntityService(CreateTestWorld());
-        var actor = new StubCombatActor("a", Vector2.Zero, 50, 50);
-
-        mgr.Register(actor);
-
-        Assert.That(mgr.ScreenRenderables, Is.Empty);
-    }
-
-    [Test]
-    public void UiBase_OnlyScreenRenderable_NotWorldRenderable()
-    {
-        var mgr = new EntityService(CreateTestWorld());
-        var ui = new TestUiEntity("ui");
-
-        mgr.Register(ui);
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(mgr.ScreenRenderables, Does.Contain(ui));
-            Assert.That(mgr.Renderables, Does.Not.Contain(ui));
-        });
-    }
-
-    [Test]
     public void Clear_RemovesFromActorCollidables()
     {
         var mgr = new EntityService(CreateTestWorld());
@@ -158,18 +117,6 @@ public class EntityServiceRegistrationTests
         mgr.Clear();
 
         Assert.That(mgr.GetCollidables(CollisionLayers.Actors), Does.Not.Contain(actor));
-    }
-
-    [Test]
-    public void Clear_RemovesFromScreenRenderables()
-    {
-        var mgr = new EntityService(CreateTestWorld());
-        var ui = new TestUiEntity("ui");
-        mgr.Register(ui);
-
-        mgr.Clear();
-
-        Assert.That(mgr.ScreenRenderables, Is.Empty);
     }
 
     [Test]
@@ -183,19 +130,6 @@ public class EntityServiceRegistrationTests
         mgr.ProcessPending();
 
         Assert.That(mgr.GetCollidables(CollisionLayers.Actors), Does.Not.Contain(actor));
-    }
-
-    [Test]
-    public void Destroy_RemovesFromScreenRenderables()
-    {
-        var mgr = new EntityService(CreateTestWorld());
-        var ui = new TestUiEntity("ui");
-        mgr.Register(ui);
-
-        mgr.Destroy(ui);
-        mgr.ProcessPending();
-
-        Assert.That(mgr.ScreenRenderables, Is.Empty);
     }
 
     [Test]
@@ -232,16 +166,16 @@ public class EntityServiceRegistrationTests
     // --- HitboxService assignment tests ---
 
     [Test]
-    public void Register_AssignsHitboxService_WhenSetBeforeRegister()
+    public void Register_AssignsHitboxService_WhenPassedToConstructor()
     {
-        var mgr = new EntityService(CreateTestWorld());
-        mgr.HitboxService = new HitboxService();
+        var service = new HitboxService();
+        var mgr = new EntityService(CreateTestWorld(), service);
         var actor = new StubCombatActor("a", Vector2.Zero, 50, 50);
 
         mgr.Register(actor);
 
         Assert.That(actor.HitboxService, Is.Not.Null);
-        Assert.That(actor.HitboxService, Is.SameAs(mgr.HitboxService));
+        Assert.That(actor.HitboxService, Is.SameAs(service));
     }
 
     [Test]
@@ -253,34 +187,6 @@ public class EntityServiceRegistrationTests
         mgr.Register(actor);
 
         Assert.That(actor.HitboxService, Is.Null);
-    }
-
-    [Test]
-    public void Register_EntityBeforeHitboxServiceSet_HitboxServiceIsNull()
-    {
-        var mgr = new EntityService(CreateTestWorld());
-        var actor = new StubCombatActor("a", Vector2.Zero, 50, 50);
-        mgr.Register(actor);
-
-        mgr.HitboxService = new HitboxService();
-
-        Assert.That(actor.HitboxService, Is.Null,
-            "Auto-assignment only fires during Register; pre-registered entities must be assigned explicitly");
-    }
-
-    [Test]
-    public void Register_ExplicitAssignToPreRegistered_Works()
-    {
-        var mgr = new EntityService(CreateTestWorld());
-        var service = new HitboxService();
-        var actor = new StubCombatActor("a", Vector2.Zero, 50, 50);
-        mgr.Register(actor);
-
-        mgr.HitboxService = service;
-        foreach (var provider in mgr.HitboxProviders)
-            provider.HitboxService = service;
-
-        Assert.That(actor.HitboxService, Is.SameAs(service));
     }
 
     [Test]
@@ -297,8 +203,8 @@ public class EntityServiceRegistrationTests
     [Test]
     public void Register_MultipleHitboxProviders_AllAdded()
     {
-        var mgr = new EntityService(CreateTestWorld());
-        mgr.HitboxService = new HitboxService();
+        var service = new HitboxService();
+        var mgr = new EntityService(CreateTestWorld(), service);
         var a1 = new StubCombatActor("a1", Vector2.Zero, 50, 50);
         var a2 = new StubCombatActor("a2", Vector2.Zero, 50, 50);
 

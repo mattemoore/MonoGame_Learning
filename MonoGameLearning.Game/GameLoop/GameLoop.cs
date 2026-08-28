@@ -9,12 +9,14 @@ using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core;
+using MonoGameLearning.Core.AI;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Camera;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Actor;
 using MonoGameLearning.Core.Entities.Pickup;
+using MonoGameLearning.Core.Entities.Prop;
 using MonoGameLearning.Core.Input;
 using MonoGameLearning.Core.Levels;
 using MonoGameLearning.Core.Movement;
@@ -23,6 +25,9 @@ using MonoGameLearning.Core.Settings;
 using MonoGameLearning.Core.UI;
 using MonoGameLearning.Game.Entities.GoIndicator;
 using MonoGameLearning.Game.Entities.Player;
+using MonoGameLearning.Game.Entities.Enemy;
+using MonoGameLearning.Game.Entities.Pickups;
+using MonoGameLearning.Game.Entities.Props;
 using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.AnimatedSprites;
 using MonoGameLearning.Game.Weapons;
@@ -54,6 +59,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private AudioService _audio;
     private GoIndicatorEntity _goIndicator;
     private HudService _hudService;
+    private readonly List<IScreenRenderable> _screenRenderables = [];
 
     private static readonly StaticTextureAsset GoIndicatorTexture = new("images/arrow");
     private static readonly StaticTextureAsset FoodPickupTexture = new("images/apple-pickup");
@@ -75,28 +81,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             if (t.Destination == GameState.Playing && t.Source != GameState.Paused)
                 ResetGame();
 
-            switch (t.Destination)
-            {
-                case GameState.TitleScreen:
-                case GameState.Settings:
-                    _audio.PlayMusic(MusicId.TitleMenu);
-                    break;
-                case GameState.Playing:
-                    _audio.PlayMusic(MusicId.Gameplay);
-                    break;
-                case GameState.LevelComplete:
-                    _audio.PlayMusic(MusicId.LevelComplete);
-                    break;
-                case GameState.Paused:
-                    _audio.SetPaused(true);
-                    break;
-                case GameState.GameOver:
-                    _audio.PlayMusic(null);
-                    break;
-            }
-
-            if (t.Source == GameState.Paused && t.Destination != GameState.Paused)
-                _audio.SetPaused(false);
+            _audio.OnGameStateChanged(t.Source, t.Destination);
         });
 
         _menuManager = new MenuService(_gameState, Exit, Gum, _audio.PlaySfx, () => SettingsService.AudioSettings, settings =>
@@ -154,8 +139,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         };
 
         ReinitLevel();
-        _goIndicator = new GoIndicatorEntity("goIndicator", GoIndicatorTexture.Texture);
-        _entityManager.Register(_goIndicator);
+        _goIndicator = new GoIndicatorEntity(GoIndicatorTexture.Texture, () => new Point(ViewportAdapter.ViewportWidth, ViewportAdapter.ViewportHeight));
+        _screenRenderables.Add(_goIndicator);
     }
 
     protected override void Update(GameTime gameTime)
@@ -170,9 +155,6 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         if (_gameState.State == GameState.Playing)
         {
             _levelDirector.Update(gameTime);
-            if (_cameraController.WaveEndX is not null && _levelDirector.WaveEndX is null)
-                _cameraController.OnWaveCleared();
-            _cameraController.WaveEndX = _levelDirector.WaveEndX;
             _cameraController.Update(Camera);
             _player.MovementDirection = _input.MovementDirection;
 
@@ -188,6 +170,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             var updatables = _entityManager.Updatables;
             for (int i = 0; i < updatables.Count; i++)
                 updatables[i].Update(gameTime);
+
+            for (int i = 0; i < _screenRenderables.Count; i++)
+                if (_screenRenderables[i] is IUpdatable ui)
+                    ui.Update(gameTime);
 
             var hitResults = _hitboxService.ResolveHits(_entityManager.All);
             foreach (var hit in hitResults)
@@ -250,10 +236,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             {
                 var debugCtx = new DebugDrawContext(SpriteBatch, _debugFont);
                 foreach (var drawable in _entityManager.DebugDrawables)
-                {
-                    if (drawable is IScreenRenderable) continue;
                     drawable.DrawDebug(debugCtx);
-                }
 
                 _levelDirector.DrawDebug(debugCtx);
 
@@ -273,7 +256,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
             SpriteBatch.Begin();
             var uiRenderCtx = new RenderContext(SpriteBatch, Camera);
-            var screenRenderables = _entityManager.ScreenRenderables;
+            var screenRenderables = _screenRenderables;
             for (int i = 0; i < screenRenderables.Count; i++)
                 screenRenderables[i].Render(uiRenderCtx);
 
@@ -395,18 +378,17 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _currentLevel = new Level1(GAME_WIDTH, GAME_HEIGHT);
         _backgroundRenderer = _currentLevel.CreateBackgroundRenderer(Content);
         _collisionWorld = CreateCollisionWorld(_currentLevel.MovementBounds);
-        _entityManager = new EntityService(_collisionWorld)
-        {
-            HitboxService = _hitboxService
-        };
+        _entityManager = new EntityService(_collisionWorld, _hitboxService);
+
+        _screenRenderables.Clear();
 
         _entityManager.Register(_player);
 
         if (_goIndicator is not null)
-            _entityManager.Register(_goIndicator);
+            _screenRenderables.Add(_goIndicator);
 
         if (_hudService is not null)
-            _entityManager.Register(_hudService.RootWidget);
+            _screenRenderables.Add(_hudService.RootWidget);
 
         InitLevelSystems();
         _levelDirector.SpawnProps(_currentLevel.Props);
@@ -415,11 +397,39 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
     private void InitLevelSystems()
     {
-        _cameraController = new CameraService(_player, GAME_WIDTH, GAME_HEIGHT, _currentLevel.MovementBounds);
+        _levelDirector = new LevelDirector(
+            _entityManager,
+            _currentLevel,
+            _player,
+            _audio,
+            CreateProp,
+            CreatePickup,
+            BatWeapon.Get,
+            CreateEnemy,
+            GetCameraView);
 
-        _levelDirector = new LevelDirector(_entityManager, _currentLevel, _player, _audio, FoodPickupTexture.Texture);
         _levelDirector.LevelCompleted += () => _gameState.Fire(GameTrigger.CompleteLevel);
+
+        _cameraController = new CameraService(_player, GAME_WIDTH, GAME_HEIGHT, _currentLevel.MovementBounds, () => _levelDirector.WaveEndX);
     }
+
+    private PropBase CreateProp(PropSpawnDef def) => new OilDrumEntity(def.Type, def.Position, 1.0f, OilDrumSprite.Create(), _audio, anchor: def.Anchor)
+    {
+        Drops = def.Drops
+    };
+
+    private Entity CreatePickup(PickupSpawnDef def) => def.Type switch
+    {
+        LevelContent.Food => new FoodPickupEntity(def.Type, def.Position, FoodPickupTexture.Texture),
+        LevelContent.Bat => new WeaponPickupEntity(def.Type, def.Position, BatWeapon.Bat),
+        _ => throw new ArgumentException($"Unknown pickup type: {def.Type}", nameof(def)),
+    };
+
+    private EnemyEntity CreateEnemy(string type, int index, Func<WorldSnapshot> getWorld) =>
+        new EnemyEntity($"grunt_pool_{index}", Vector2.Zero, 2.0f, EnemySprite.Create(), _audio, getWorld);
+
+    private RectangleF GetCameraView() =>
+        new(Camera.Position.X, 0, ViewportAdapter.VirtualWidth, ViewportAdapter.VirtualHeight);
 
     private static CollisionWorld2D CreateCollisionWorld(RectangleF bounds)
     {

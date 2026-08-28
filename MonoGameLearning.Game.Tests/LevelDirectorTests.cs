@@ -1,9 +1,11 @@
+using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
+using MonoGameLearning.Core.AI;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Pickup;
@@ -11,9 +13,35 @@ using MonoGameLearning.Core.Entities.Prop;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Core.Levels;
 using MonoGameLearning.Game.Entities.Enemy;
+using MonoGameLearning.Game.Entities.Pickups;
 using MonoGameLearning.Game.Levels;
+using MonoGameLearning.Game.Weapons;
 
 namespace MonoGameLearning.Game.Tests;
+
+public static class TestLevelContent
+{
+    public static readonly RectangleF CameraView = new(0, 0, 800, 600);
+
+    public static PropBase CreateProp(PropSpawnDef def) =>
+        throw new NotSupportedException("SpawnProps is not exercised in tests");
+
+    public static Entity CreatePickup(PickupSpawnDef def) => def.Type switch
+    {
+        "Food" => new FoodPickupEntity(def.Type, def.Position, null),
+        "Bat" => new WeaponPickupEntity(def.Type, def.Position, BatWeapon.Bat),
+        _ => throw new ArgumentException($"Unknown pickup type: {def.Type}", nameof(def)),
+    };
+
+    public static MeleeWeaponDef GetWeapon(string key) => key switch
+    {
+        "Bat" => BatWeapon.Bat,
+        _ => throw new ArgumentException($"Unknown weapon: {key}", nameof(key)),
+    };
+
+    public static EnemyEntity CreateEnemy(string type, int index, Func<WorldSnapshot> getWorld) =>
+        new TestEnemyEntity($"test_enemy_{index}", Vector2.Zero);
+}
 
 public class TestPlayerEntity(string name, Vector2 position) : Entity(name, position, 10, 10)
 {
@@ -32,14 +60,19 @@ public class TestLevel(List<WaveDef> waveDefs, float endTriggerX, int gameWidth 
 
 #pragma warning disable CS9107 // Captured by base class — needed for InitializePool() called from base ctor
 public class TestLevelDirector(EntityService entityManager, Level level, Entity player)
-    : LevelDirector(entityManager, level, player, null!, null!)
+    : LevelDirector(entityManager, level, player, null!,
+        TestLevelContent.CreateProp,
+        TestLevelContent.CreatePickup,
+        TestLevelContent.GetWeapon,
+        TestLevelContent.CreateEnemy,
+        () => TestLevelContent.CameraView)
 #pragma warning restore CS9107
 {
     public List<Entity> SpawnedEnemies { get; } = [];
 
     protected override void InitializePool()
     {
-        EnemyPool = new TestEnemyPool(entityManager, this, SpawnedEnemies);
+        EnemyPool = new TestEnemyPool(entityManager, SpawnedEnemies);
         EnemyPool.Build(level);
     }
 
@@ -54,8 +87,8 @@ public class TestLevelDirector(EntityService entityManager, Level level, Entity 
     }
 }
 
-public class TestEnemyPool(EntityService entityManager, LevelDirector director, List<Entity> spawnedEnemies)
-    : EnemyPool(entityManager, director, null!, (type, i) => new TestEnemyEntity($"test_enemy_{i}", Vector2.Zero))
+public class TestEnemyPool(EntityService entityManager, List<Entity> spawnedEnemies)
+    : EnemyPool(entityManager, () => default, (type, i, getWorld) => new TestEnemyEntity($"test_enemy_{i}", Vector2.Zero))
 {
     public override EnemyEntity Rent(string type, Vector2 position, Entity target)
     {

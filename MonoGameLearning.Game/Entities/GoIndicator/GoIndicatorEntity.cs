@@ -2,16 +2,16 @@ using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
-using MonoGameLearning.Core;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Core.UI;
 
 namespace MonoGameLearning.Game.Entities.GoIndicator;
 
-public class GoIndicatorEntity(string name, Texture2D texture)
-    : UiBase(name, Vector2.Zero, (int)(texture.Width * SCALE), (int)(texture.Height * SCALE))
+public class GoIndicatorEntity(Texture2D texture, Func<Point> getViewportSize)
+    : UiBase
 {
     private readonly Texture2D _texture = texture;
+    private readonly Func<Point> _getViewportSize = getViewportSize;
 
     private float _flashTimer;
     private float _flashAlpha = 1f;
@@ -25,11 +25,11 @@ public class GoIndicatorEntity(string name, Texture2D texture)
     public override void Update(GameTime gameTime)
     {
         if (!Visible) return;
-        var vp = GameCore.ViewportAdapter;
+        var vp = _getViewportSize();
         float scaledWidth = _texture.Width * SCALE;
         Position = new Vector2(
-            vp.ViewportWidth - scaledWidth / 2f - MARGIN,
-            vp.ViewportHeight / 2f);
+            vp.X - scaledWidth / 2f - MARGIN,
+            vp.Y / 2f);
 
         _flashTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
         _flashAlpha = 0.3f + (MathF.Sin(_flashTimer * MathF.PI / FLASH_PERIOD * 2f) + 1f) * 0.35f;

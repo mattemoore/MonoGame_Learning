@@ -1,3 +1,4 @@
+using MonoGameLearning.Core;
 using MonoGameLearning.Game.GameLoop;
 
 namespace MonoGameLearning.Game.Tests

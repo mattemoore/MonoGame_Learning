@@ -1,4 +1,4 @@
-# Architecture Fixes Plan (phases 1-4 complete)
+# Architecture Fixes Plan (phases 1-5 complete)
 
 Goal: resolve the 17 architecture smells from the audit, phased by risk so each
 phase stays behavior-preserving (432 tests green + `dotnet build --warnaserror`
@@ -121,7 +121,7 @@ Bounds: Core must never reference `MonoGameLearning.Game`. Every phase ends with
 - Validation: `dotnet build --warnaserror` clean; 447 tests pass (3 skipped);
   no `MonoGameLearning.Game` references under `MonoGameLearning.Core/`.
 
-## Phase 5 — God-class / registry cleanup
+## Phase 5 — God-class / registry cleanup [COMPLETE]
 
 1. **EntityService.** Remove the hidden `IHitboxProvider.HitboxService` settable
    slot property-injection (`EntityService.cs:175`); assign `HitboxService` at
@@ -145,6 +145,33 @@ Bounds: Core must never reference `MonoGameLearning.Game`. Every phase ends with
    (`LevelDirector.cs:100-105`) and `"Grunt"` (`EnemyPool.cs:114`) with typed
    factories/consts injected, and de-duplicate the camera-edge + spawn-position
    computation shared between `SpawnWave` and `DrawDebug`.
+
+**Phase 5 implementation notes:**
+
+- `EntityService` now takes `HitboxService?` via its constructor (the settable
+  property-injection slot is gone) and no longer routes `IScreenRenderable`s —
+  UI widgets register through `GameLoop`'s dedicated `_screenRenderables` list.
+  `RenderableYComparer` moved to `Core/Entities/RenderableYComparer.cs`;
+  `HitboxService.ActiveHitbox` moved to `Core/Combat/ActiveHitbox.cs`.
+- `UiBase` is now a plain widget base (`IUpdatable` + `IScreenRenderable` +
+  `IDebugDrawable`, `Visible` + `Position`), no longer an `Entity`;
+  `IsScreenSpace` deleted. `GoIndicatorEntity` takes a `Func<Point> getViewportSize`
+  instead of reading `GameCore.ViewportAdapter`.
+- `GameState`/`GameTrigger` enums moved to Core (`Core/GameState.cs`,
+  `Core/GameTrigger.cs`) so `AudioService.OnGameStateChanged(previous, current)`
+  can own the per-state music/pause mapping. `CameraService` now owns
+  `WaveEndX`/wave-cleared via an injected `Func<float?>` getter, detecting the
+  non-null→null transition inside `Update` (GameLoop's manual copy-back deleted).
+- `LevelDirector` receives injected content factories (`createProp`,
+  `createPickup`, `getWeapon`, `createEnemy`) and a `Func<RectangleF> getCameraView`;
+  `EnemyPool` takes `Func<WorldSnapshot>` + a factory that receives the
+  world-getter. Stringly-typed dispatch lives in `GameLoop` (composition root)
+  and `LevelContent` consts; `SpawnWave`/`DrawDebug` share `GetSpawnContext()`.
+- Test doubles updated (`TestLevelDirector`, `TestEnemyPool`, `DirectorStub`,
+  `TestUiEntity`, `StubCombatActor` ctor paths); new tests cover
+  `AudioService.OnGameStateChanged` mapping and pool world-getter injection.
+- Validation: `dotnet build --warnaserror` clean; 446 tests pass (3 skipped);
+  no `MonoGameLearning.Game` references under `MonoGameLearning.Core/`.
 
 ## Phase 6 — Structural (largest; later milestone)
 

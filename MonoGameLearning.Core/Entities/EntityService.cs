@@ -11,15 +11,15 @@ using MonoGameLearning.Core.Rendering;
 
 namespace MonoGameLearning.Core.Entities;
 
-public class EntityService(CollisionWorld2D world)
+public class EntityService(CollisionWorld2D world, HitboxService? hitboxService = null)
 {
-    public HitboxService? HitboxService { get; set; }
+    private readonly HitboxService? _hitboxService = hitboxService;
+
     public void Clear()
     {
         _all.Clear();
         _updatables.Clear();
         _renderables.Clear();
-        _screenRenderables.Clear();
         _collidablesByLayer.Clear();
         _damageables.Clear();
         _hitboxProviders.Clear();
@@ -34,7 +34,6 @@ public class EntityService(CollisionWorld2D world)
 
     private readonly List<IUpdatable> _updatables = [];
     private readonly List<IRenderable> _renderables = [];
-    private readonly List<IScreenRenderable> _screenRenderables = [];
     private readonly Dictionary<string, List<ICollisionActor>> _collidablesByLayer = [];
     private readonly List<IDamageable> _damageables = [];
     private readonly List<IHitboxProvider> _hitboxProviders = [];
@@ -45,19 +44,8 @@ public class EntityService(CollisionWorld2D world)
     public IReadOnlyList<Entity> All => _all;
     public IReadOnlyList<IUpdatable> Updatables => _updatables;
     public IReadOnlyList<IRenderable> Renderables => _renderables;
-    public IReadOnlyList<IScreenRenderable> ScreenRenderables => _screenRenderables;
 
     private static readonly RenderableYComparer _renderableYComparer = new();
-
-    private readonly struct RenderableYComparer : IComparer<IRenderable>
-    {
-        public int Compare(IRenderable? x, IRenderable? y)
-        {
-            if (x is null || y is null) return 0;
-            float diff = x.Frame.Center.Y - y.Frame.Center.Y;
-            return diff < 0 ? -1 : diff > 0 ? 1 : 0;
-        }
-    }
 
     public void SortRenderablesByY() => _renderables.Sort(_renderableYComparer);
     public IReadOnlyList<ICollisionActor> GetCollidables(string layer) =>
@@ -129,10 +117,7 @@ public class EntityService(CollisionWorld2D world)
     {
         TryAdd<IUpdatable>(entity, _updatables);
 
-        if (entity is IScreenRenderable screen)
-            _screenRenderables.Add(screen);
-        else if (entity is IRenderable renderable)
-            _renderables.Add(renderable);
+        TryAdd<IRenderable>(entity, _renderables);
         if (entity is ICollisionLayer { } layer && entity is ICollisionActor c)
             AddToCollidables(c, layer.LayerName);
         TryAdd<IDamageable>(entity, _damageables);
@@ -161,10 +146,7 @@ public class EntityService(CollisionWorld2D world)
             world.Remove(c);
         }
         TryRemove<IUpdatable>(entity, _updatables);
-        if (entity is IScreenRenderable screen)
-            _screenRenderables.Remove(screen);
-        else
-            TryRemove<IRenderable>(entity, _renderables);
+        TryRemove<IRenderable>(entity, _renderables);
         TryRemove<IDamageable>(entity, _damageables);
         TryRemove<IHitboxProvider>(entity, _hitboxProviders);
         TryRemove<IMoveable>(entity, _movables);
@@ -178,12 +160,12 @@ public class EntityService(CollisionWorld2D world)
         if (entity is not IHitboxProvider provider)
             return;
 
-        if (HitboxService is null)
+        if (_hitboxService is null)
         {
             Debug.WriteLine($"[EntityService] HitboxService is null — {entity.GetType().Name} \"{entity.Name}\" registered without hitbox support");
             return;
         }
 
-        provider.HitboxService = HitboxService;
+        provider.HitboxService = _hitboxService;
     }
 }

@@ -3,6 +3,7 @@ using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
+using MonoGameLearning.Core.AI;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Levels;
@@ -53,7 +54,7 @@ public class EnemyPoolTests
     public void Rent_EmptyPoolForType_Throws()
     {
         var director = new DirectorStub(_entityManager, _level, _player);
-        var pool = new EnemyPool(_entityManager, director, null!, MockFactory);
+        var pool = new EnemyPool(_entityManager, () => default, MockFactory);
         pool.Build(_level);
 
         Assert.That(() => pool.Rent("UnknownType", Vector2.Zero, _player),
@@ -64,7 +65,7 @@ public class EnemyPoolTests
     public void Rent_ReturnsAndRegistersInstance()
     {
         var director = new DirectorStub(_entityManager, _level, _player);
-        var pool = new TestEnemyPool(_entityManager, director, null!);
+        var pool = new TestEnemyPool(_entityManager);
         pool.Build(_level);
 
         var pos = new Vector2(500, 300);
@@ -78,7 +79,7 @@ public class EnemyPoolTests
     public void Return_SetsPositionToSentinel()
     {
         var director = new DirectorStub(_entityManager, _level, _player);
-        var pool = new TestEnemyPool(_entityManager, director, null!);
+        var pool = new TestEnemyPool(_entityManager);
         pool.Build(_level);
 
         var pos = new Vector2(500, 300);
@@ -96,7 +97,7 @@ public class EnemyPoolTests
     public void Return_ThenRent_GivesBackSameInstance()
     {
         var director = new DirectorStub(_entityManager, _level, _player);
-        var pool = new TestEnemyPool(_entityManager, director, null!);
+        var pool = new TestEnemyPool(_entityManager);
         pool.Build(_level);
 
         var enemy = pool.Rent("Grunt", new Vector2(500, 300), _player);
@@ -109,16 +110,34 @@ public class EnemyPoolTests
         Assert.That(enemy2.GetHashCode(), Is.EqualTo(firstId));
     }
 
+    [Test]
+    public void Build_PassesInjectedWorldGetterToFactory()
+    {
+        var director = new DirectorStub(_entityManager, _level, _player);
+        var captured = new List<Func<WorldSnapshot>>();
+        var pool = new EnemyPool(_entityManager, () => default, (type, index, getWorld) =>
+        {
+            captured.Add(getWorld);
+            return new TestEnemyEntity($"test_enemy_{index}", Vector2.Zero);
+        });
+
+        pool.Build(_level);
+
+        Assert.That(captured, Is.Not.Empty);
+        foreach (var getWorld in captured)
+            Assert.That(getWorld(), Is.EqualTo(default(WorldSnapshot)));
+    }
+
     private static int _mockCounter;
 
-    private static EnemyEntity MockFactory(string type, int index)
+    private static EnemyEntity MockFactory(string type, int index, Func<WorldSnapshot> getWorld)
     {
         _mockCounter++;
         return new TestEnemyEntity($"test_enemy_{_mockCounter}", Vector2.Zero);
     }
 
-    private class TestEnemyPool(EntityService entityManager, LevelDirector director, AudioService audio)
-        : EnemyPool(entityManager, director, audio, (type, index) =>
+    private class TestEnemyPool(EntityService entityManager)
+        : EnemyPool(entityManager, () => default, (type, index, getWorld) =>
         {
             _mockCounter++;
             return new TestEnemyEntity($"test_enemy_{_mockCounter}", Vector2.Zero);
@@ -132,7 +151,12 @@ public class EnemyPoolTests
     }
 
     private class DirectorStub(EntityService entityManager, Level level, Entity player)
-        : LevelDirector(entityManager, level, player, null!)
+        : LevelDirector(entityManager, level, player, null!,
+            TestLevelContent.CreateProp,
+            TestLevelContent.CreatePickup,
+            TestLevelContent.GetWeapon,
+            TestLevelContent.CreateEnemy,
+            () => TestLevelContent.CameraView)
     {
         protected override void InitializePool()
         {

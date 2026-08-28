@@ -4,9 +4,9 @@ using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
-using MonoGameLearning.Core;
 using MonoGameLearning.Core.AI;
 using MonoGameLearning.Core.Audio;
+using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Pickup;
 using MonoGameLearning.Core.Entities.Prop;
@@ -14,10 +14,6 @@ using MonoGameLearning.Core.Levels;
 using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Game.Entities.Enemy;
-using MonoGameLearning.Game.Entities.Props;
-using MonoGameLearning.Game.Weapons;
-using MonoGameLearning.Game.AnimatedSprites;
-using MonoGameLearning.Game.Entities.Pickups;
 
 namespace MonoGameLearning.Game.Levels;
 
@@ -29,7 +25,11 @@ public class LevelDirector
     private readonly Level _level;
     private readonly Entity _player;
     private readonly AudioService _audio;
-    private readonly Texture2D _foodTexture;
+    private readonly Func<PropSpawnDef, PropBase> _createProp;
+    private readonly Func<PickupSpawnDef, Entity> _createPickup;
+    private readonly Func<string, MeleeWeaponDef> _getWeapon;
+    private readonly Func<string, int, Func<WorldSnapshot>, EnemyEntity> _createEnemy;
+    private readonly Func<RectangleF> _getCameraView;
 
     protected EnemyPool EnemyPool { get; set; }
 
@@ -55,13 +55,26 @@ public class LevelDirector
 
     public ref readonly WorldSnapshot CurrentWorld => ref _currentSnapshot;
 
-    public LevelDirector(EntityService entityManager, Level level, Entity player, AudioService audio, Texture2D foodTexture = null)
+    public LevelDirector(
+        EntityService entityManager,
+        Level level,
+        Entity player,
+        AudioService audio,
+        Func<PropSpawnDef, PropBase> createProp,
+        Func<PickupSpawnDef, Entity> createPickup,
+        Func<string, MeleeWeaponDef> getWeapon,
+        Func<string, int, Func<WorldSnapshot>, EnemyEntity> createEnemy,
+        Func<RectangleF> getCameraView)
     {
         _entityManager = entityManager;
         _level = level;
         _player = player;
         _audio = audio;
-        _foodTexture = foodTexture;
+        _createProp = createProp;
+        _createPickup = createPickup;
+        _getWeapon = getWeapon;
+        _createEnemy = createEnemy;
+        _getCameraView = getCameraView;
 
         _enemyBuf.Capacity = 16;
         _propBuf.Capacity = 16;
@@ -71,7 +84,7 @@ public class LevelDirector
 
     protected virtual void InitializePool()
     {
-        EnemyPool = new EnemyPool(_entityManager, this, _audio);
+        EnemyPool = new EnemyPool(_entityManager, () => CurrentWorld, _createEnemy);
         EnemyPool.Build(_level);
     }
 
@@ -79,10 +92,9 @@ public class LevelDirector
     {
         foreach (var prop in propDefs)
         {
-            var drum = new OilDrumEntity(prop.Type, prop.Position, 1.0f, OilDrumSprite.Create(), _audio, anchor: prop.Anchor);
-            drum.Drops = prop.Drops;
-            drum.Destroyed += OnPropDestroyed;
-            _entityManager.Register(drum);
+            var entity = _createProp(prop);
+            entity.Destroyed += OnPropDestroyed;
+            _entityManager.Register(entity);
         }
     }
 
@@ -96,21 +108,14 @@ public class LevelDirector
     public void SpawnPickups(IReadOnlyList<PickupSpawnDef> pickupDefs)
     {
         foreach (var def in pickupDefs)
-            _entityManager.Register(CreatePickup(def));
+            _entityManager.Register(_createPickup(def));
     }
-
-    private Entity CreatePickup(PickupSpawnDef def) => def.Type switch
-    {
-        "Food" => new FoodPickupEntity(def.Type, def.Position, _foodTexture),
-        "Bat" => new WeaponPickupEntity(def.Type, def.Position, BatWeapon.Bat),
-        _ => throw new ArgumentException($"Unknown pickup type: {def.Type}", nameof(def)),
-    };
 
     private void SpawnDrops<T>(T source) where T : Entity, IPickupDropper
     {
         foreach (var def in source.CreateDrops())
         {
-            var pickup = CreatePickup(def);
+            var pickup = _createPickup(def);
             pickup.Position = new Vector2(source.Frame.Center.X, source.Frame.Bottom - pickup.Height / 2f);
             _entityManager.Register(pickup);
         }
@@ -191,14 +196,7 @@ public class LevelDirector
         WaveTriggerX = wave.TriggerX;
         WaveEndX = wave.EndX;
 
-        float cameraLeftEdge = GameCore.Camera?.Position.X ?? 0f;
-        float gameWidth = GameCore.Camera is not null
-            ? GameCore.ViewportAdapter.VirtualWidth
-            : 800;
-
-        var walkableBounds = _level.MovementBounds;
-        float walkableTop = walkableBounds.Y;
-        float walkableBottom = walkableBounds.Bottom;
+        var (cameraLeftEdge, gameWidth, _, walkableTop, walkableBottom) = GetSpawnContext();
 
         foreach (var def in wave.Enemies)
         {
@@ -215,7 +213,7 @@ public class LevelDirector
             var enemy = EnemyPool.Rent(def.Type, pos, _player);
             enemy.Drops = def.Drops;   // after Rent — Rent→Reset clears Drops
             if (def.Weapon is not null)
-                enemy.EquipWeapon(BatWeapon.Get(def.Weapon));
+                enemy.EquipWeapon(_getWeapon(def.Weapon));
             // SpriteRenderer without an attached sprite (test enemies) → skip visual setup.
             if (enemy.SpriteRenderer.Sprite is not null)
             {
@@ -234,6 +232,13 @@ public class LevelDirector
             enemy.Died += OnDiedHandler;
             _activeEnemies.Add(enemy);
         }
+    }
+
+    private (float CameraLeftEdge, float GameWidth, float ViewportHeight, float WalkableTop, float WalkableBottom) GetSpawnContext()
+    {
+        var view = _getCameraView();
+        var walkableBounds = _level.MovementBounds;
+        return (view.X, view.Width, view.Height, walkableBounds.Y, walkableBounds.Bottom);
     }
 
     private static Vector2 ComputeSpawnPosition(
@@ -267,37 +272,28 @@ public class LevelDirector
     public void DrawDebug(DebugDrawContext context)
     {
         var waves = _level.WaveDefs;
-        float vh = GameCore.ViewportAdapter.VirtualHeight;
+        var (cameraLeftEdge, gameWidth, viewportHeight, walkableTop, walkableBottom) = GetSpawnContext();
 
         foreach (var wave in waves)
         {
-            context.SpriteBatch.DrawLine(wave.TriggerX, 0, wave.TriggerX, vh, Color.Cyan * 0.4f, 2f);
-            context.SpriteBatch.DrawLine(wave.EndX, 0, wave.EndX, vh, Color.Yellow * 0.4f, 2f);
+            context.SpriteBatch.DrawLine(wave.TriggerX, 0, wave.TriggerX, viewportHeight, Color.Cyan * 0.4f, 2f);
+            context.SpriteBatch.DrawLine(wave.EndX, 0, wave.EndX, viewportHeight, Color.Yellow * 0.4f, 2f);
         }
 
-        context.SpriteBatch.DrawLine(_level.EndTriggerX, 0, _level.EndTriggerX, vh, Color.Orange * 0.4f, 2f);
+        context.SpriteBatch.DrawLine(_level.EndTriggerX, 0, _level.EndTriggerX, viewportHeight, Color.Orange * 0.4f, 2f);
 
         float levelRight = _level.MovementBounds.Right;
         context.SpriteBatch.DrawLine(0, _level.WalkableTopY, levelRight, _level.WalkableTopY, Color.Lime * 0.5f, 2f);
 
         if (_isScrollLocked && WaveTriggerX.HasValue && WaveEndX.HasValue)
         {
-            context.SpriteBatch.DrawLine(WaveTriggerX.Value, 0, WaveTriggerX.Value, vh, Color.Cyan * 0.7f, 2f);
-            context.SpriteBatch.DrawLine(WaveEndX.Value, 0, WaveEndX.Value, vh, Color.Yellow * 0.7f, 2f);
+            context.SpriteBatch.DrawLine(WaveTriggerX.Value, 0, WaveTriggerX.Value, viewportHeight, Color.Cyan * 0.7f, 2f);
+            context.SpriteBatch.DrawLine(WaveEndX.Value, 0, WaveEndX.Value, viewportHeight, Color.Yellow * 0.7f, 2f);
         }
 
         if (_currentWaveIndex >= waves.Count) return;
         var nextWave = waves[_currentWaveIndex];
         if (_waveTriggered) return;
-
-        float cameraLeftEdge = GameCore.Camera?.Position.X ?? 0f;
-        float gameWidth = GameCore.Camera is not null
-            ? GameCore.ViewportAdapter.VirtualWidth
-            : 800;
-
-        var walkableBounds = _level.MovementBounds;
-        float walkableTop = walkableBounds.Y;
-        float walkableBottom = walkableBounds.Bottom;
 
         foreach (var def in nextWave.Enemies)
         {
