@@ -1,6 +1,6 @@
 # Uniform UI Scaling for GO Indicator, HUD, and Gum Menus
 
-**Status: NOT IMPLEMENTED**
+## Status: NOT IMPLEMENTED
 
 ## Problem
 
@@ -9,7 +9,7 @@ only the world and Gum menus do. On resolution change, all three UI layers
 behave differently:
 
 | Layer | Behavior | Reason |
-|---|---|---|
+| --- | --- | --- |
 | World (player, enemies) | Scales | `SpriteBatch.Begin(transformMatrix: Camera.GetViewMatrix())` maps virtual 800×600 → actual px (GameLoop.cs:227) |
 | Gum menus | Scales | `EnableExpandToWindow(1f)` (GumUiService.cs:22) |
 | GO indicator + SpriteBatch HUD | **Fixed pixel** | UI pass uses identity transform `SpriteBatch.Begin()` (GameLoop.cs:269); `SCALE = 0.3f` is a fixed pixel multiplier (GoIndicatorEntity.cs:20) |
