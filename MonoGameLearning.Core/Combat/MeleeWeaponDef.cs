@@ -1,6 +1,8 @@
+using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended.Graphics;
+using MonoGameLearning.Core.Movement;
 
 namespace MonoGameLearning.Core.Combat;
 
@@ -23,4 +25,21 @@ public class MeleeWeaponDef
         sprite.Origin = new Vector2(sprite.Size.X / 2f, sprite.Size.Y / 2f);
         return sprite;
     }
+
+    internal static (Vector2 anchor, int frame) ResolveWeaponAnchorAndFrame(
+        MeleeWeaponDef weapon, bool isAttacking, int frameIndex)
+    {
+        if (isAttacking && weapon.SwingAnchors.Length > 0)
+        {
+            int frame = Math.Clamp(frameIndex, 0, weapon.SwingAnchors.Length - 1);
+            return (weapon.SwingAnchors[frame], frame);
+        }
+        return (weapon.CarryAnchor, 0);
+    }
+
+    internal static Vector2 ApplyWeaponFacing(Vector2 anchor, FacingDirection direction) =>
+        direction == FacingDirection.Left ? new Vector2(-anchor.X, anchor.Y) : anchor;
+
+    internal static SpriteEffects WeaponFacingEffect(FacingDirection direction) =>
+        direction == FacingDirection.Left ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
 }

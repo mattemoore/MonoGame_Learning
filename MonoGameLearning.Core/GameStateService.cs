@@ -1,26 +1,6 @@
 using Stateless;
 
-namespace MonoGameLearning.Game.GameLoop;
-
-public enum GameState
-{
-    TitleScreen,
-    Playing,
-    Paused,
-    GameOver,
-    LevelComplete,
-    Settings
-}
-
-public enum GameTrigger
-{
-    StartGame,
-    PauseToggle,
-    PlayerDied,
-    CompleteLevel,
-    ReturnToTitle,
-    OpenSettings
-}
+namespace MonoGameLearning.Core;
 
 public class GameStateService
 {

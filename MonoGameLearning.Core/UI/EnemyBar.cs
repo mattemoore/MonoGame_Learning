@@ -25,7 +25,7 @@ public sealed class EnemyBar : UiBase
 
     private readonly SpriteFont _font;
 
-    public EnemyBar(SpriteFont font) : base("enemyBar", Vector2.Zero, 0, 0)
+    public EnemyBar(SpriteFont font)
     {
         _font = font;
     }

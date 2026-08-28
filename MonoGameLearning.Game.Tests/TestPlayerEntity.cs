@@ -2,24 +2,25 @@ using Microsoft.Xna.Framework;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.UI;
 using MonoGameLearning.Game.Entities.Player;
+using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Tests;
 
 class PlayerEntityTester(string name, Vector2 position, float scale)
     : PlayerEntity(name, position, scale, null!, null!)
 {
-    protected override PlayerStateController CreateStateController()
+    protected override StateMachineController<PlayerState, PlayerTrigger> CreateStateController()
     {
-        return new PlayerStateController(new()
+        return PlayerStateMachine.Create(new()
         {
-            OnAttackingExit = Callbacks.OnAttackingExit,
-            OnHurtEntry = Callbacks.OnHurtEntry,
-            OnHurtExit = Callbacks.OnHurtExit,
-            OnKnockdownEntry = Callbacks.OnKnockdownEntry,
-            OnKnockdownExit = Callbacks.OnKnockdownExit,
-            OnDyingEntry = Callbacks.OnDyingEntry,
-            OnDyingExit = Callbacks.OnDyingExit,
-            OnDeadEntry = Callbacks.OnDeadEntry,
+            OnAttackingExit = OnAttackingExitHook,
+            OnHurtEntry = OnHurtEntryHook,
+            OnHurtExit = OnHurtExitHook,
+            OnKnockdownEntry = OnKnockdownEntryHook,
+            OnKnockdownExit = OnKnockdownExitHook,
+            OnDyingEntry = OnDyingEntryHook,
+            OnDyingExit = OnDyingExitHook,
+            OnDeadEntry = OnDeadEntryHook,
         });
     }
 }

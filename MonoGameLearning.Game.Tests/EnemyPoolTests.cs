@@ -3,7 +3,7 @@ using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
-using MonoGameLearning.Core.Audio;
+using MonoGameLearning.Core.AI;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Levels;
 using MonoGameLearning.Game.Entities.Enemy;
@@ -52,8 +52,7 @@ public class EnemyPoolTests
     [Test]
     public void Rent_EmptyPoolForType_Throws()
     {
-        var director = new DirectorStub(_entityManager, _level, _player);
-        var pool = new EnemyPool(_entityManager, director, null!, MockFactory);
+        var pool = new EnemyPool(_entityManager, () => default, MockFactory);
         pool.Build(_level);
 
         Assert.That(() => pool.Rent("UnknownType", Vector2.Zero, _player),
@@ -63,8 +62,7 @@ public class EnemyPoolTests
     [Test]
     public void Rent_ReturnsAndRegistersInstance()
     {
-        var director = new DirectorStub(_entityManager, _level, _player);
-        var pool = new TestEnemyPool(_entityManager, director, null!);
+        var pool = new TestEnemyPool(_entityManager);
         pool.Build(_level);
 
         var pos = new Vector2(500, 300);
@@ -77,8 +75,7 @@ public class EnemyPoolTests
     [Test]
     public void Return_SetsPositionToSentinel()
     {
-        var director = new DirectorStub(_entityManager, _level, _player);
-        var pool = new TestEnemyPool(_entityManager, director, null!);
+        var pool = new TestEnemyPool(_entityManager);
         pool.Build(_level);
 
         var pos = new Vector2(500, 300);
@@ -95,8 +92,7 @@ public class EnemyPoolTests
     [Test]
     public void Return_ThenRent_GivesBackSameInstance()
     {
-        var director = new DirectorStub(_entityManager, _level, _player);
-        var pool = new TestEnemyPool(_entityManager, director, null!);
+        var pool = new TestEnemyPool(_entityManager);
         pool.Build(_level);
 
         var enemy = pool.Rent("Grunt", new Vector2(500, 300), _player);
@@ -109,16 +105,49 @@ public class EnemyPoolTests
         Assert.That(enemy2.GetHashCode(), Is.EqualTo(firstId));
     }
 
+    [Test]
+    public void Build_PassesInjectedWorldGetterToFactory()
+    {
+        var captured = new List<Func<WorldSnapshot>>();
+        var pool = new EnemyPool(_entityManager, () => default, (type, index, getWorld) =>
+        {
+            captured.Add(getWorld);
+            return new TestEnemyEntity($"test_enemy_{index}", Vector2.Zero);
+        });
+
+        pool.Build(_level);
+
+        Assert.That(captured, Is.Not.Empty);
+        foreach (var getWorld in captured)
+            Assert.That(getWorld(), Is.EqualTo(default(WorldSnapshot)));
+    }
+
+    [Test]
+    public void GenericCorePool_UsesRentReturnHooks_AndStaysTypeAgnostic()
+    {
+        var pool = new GenericHookPool(_entityManager);
+        pool.Build(_level);
+
+        var entity = pool.Rent("Grunt", new Vector2(500, 300), _player);
+        Assert.That(pool.RentCalls, Is.EqualTo(1));
+        Assert.That(entity.Position, Is.EqualTo(new Vector2(500, 300)), "Rent hook positions the entity.");
+        Assert.That(_entityManager.All, Does.Contain(entity));
+
+        pool.Return(entity);
+        Assert.That(pool.ReturnCalls, Is.EqualTo(1));
+        Assert.That(entity.Position, Is.EqualTo(new Vector2(-99999, -99999)), "Return parks the entity at the sentinel.");
+    }
+
     private static int _mockCounter;
 
-    private static EnemyEntity MockFactory(string type, int index)
+    private static EnemyEntity MockFactory(string type, int index, Func<WorldSnapshot> getWorld)
     {
         _mockCounter++;
         return new TestEnemyEntity($"test_enemy_{_mockCounter}", Vector2.Zero);
     }
 
-    private class TestEnemyPool(EntityService entityManager, LevelDirector director, AudioService audio)
-        : EnemyPool(entityManager, director, audio, (type, index) =>
+    private class TestEnemyPool(EntityService entityManager)
+        : EnemyPool(entityManager, () => default, (type, index, getWorld) =>
         {
             _mockCounter++;
             return new TestEnemyEntity($"test_enemy_{_mockCounter}", Vector2.Zero);
@@ -126,17 +155,24 @@ public class EnemyPoolTests
     {
     }
 
+    private class GenericHookPool(EntityService entityManager)
+        : EntityPool<EntityStub>(entityManager, () => default, (type, index, getWorld) =>
+            new EntityStub($"generic_{index}", Vector2.Zero, 10, 10))
+    {
+        public int RentCalls;
+        public int ReturnCalls;
+
+        protected override void OnRentEnemy(EntityStub enemy, Vector2 position, Entity target)
+        {
+            RentCalls++;
+            enemy.Position = position;
+        }
+
+        protected override void OnReturnEnemy(EntityStub enemy) => ReturnCalls++;
+    }
+
     private class EntityStub(string name, Vector2 position, int width, int height)
         : Entity(name, position, width, height)
     {
-    }
-
-    private class DirectorStub(EntityService entityManager, Level level, Entity player)
-        : LevelDirector(entityManager, level, player, null!)
-    {
-        protected override void InitializePool()
-        {
-            // No-op — these tests create and manage the pool directly without going through the director.
-        }
     }
 }

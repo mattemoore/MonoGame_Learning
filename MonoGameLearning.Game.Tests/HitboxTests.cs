@@ -223,8 +223,8 @@ public class HitboxTests
     public void SameFaction_NoHit()
     {
         var service = new HitboxService();
-        var owner = MakeActor(0, 0, faction: Faction.Player);
-        var target = MakeActor(35, 0, faction: Faction.Player);
+        var owner = new StubCombatActor("owner", Vector2.Zero, 50, 50, Faction.Player);
+        var target = new StubCombatActor("target", new Vector2(35, 0), 50, 50, Faction.Player);
         var move = MakeTestMove();
 
         service.RegisterFrameHitboxes(owner, owner.Faction, move, 0, FacingDirection.Right);
@@ -237,8 +237,8 @@ public class HitboxTests
     public void CrossFaction_Hits()
     {
         var service = new HitboxService();
-        var owner = MakeActor(0, 0, faction: Faction.Player);
-        var target = MakeActor(35, 0, faction: Faction.Enemy);
+        var owner = new StubCombatActor("owner", Vector2.Zero, 50, 50, Faction.Player);
+        var target = new StubCombatActor("target", new Vector2(35, 0), 50, 50, Faction.Enemy);
         var move = MakeTestMove();
 
         service.RegisterFrameHitboxes(owner, owner.Faction, move, 0, FacingDirection.Right);
@@ -305,9 +305,9 @@ public class HitboxTests
     public void PerAttackDedup_DifferentOwners_BothHit()
     {
         var service = new HitboxService();
-        var player1 = MakeActor(0, 0, faction: Faction.Player);
-        var player2 = MakeActor(0, 40, faction: Faction.Player);
-        var enemy = MakeActor(35, 0, faction: Faction.Enemy);
+        var player1 = new StubCombatActor("player1", Vector2.Zero, 50, 50, Faction.Player);
+        var player2 = new StubCombatActor("player2", new Vector2(0, 40), 50, 50, Faction.Player);
+        var enemy = new StubCombatActor("enemy", new Vector2(35, 0), 50, 50, Faction.Enemy);
         var move = MakeTestMove();
 
         // Player1 hits enemy

@@ -15,7 +15,7 @@ public sealed class PlayerBar : UiBase
 
     private static readonly Color MugshotColor = new(0.3f, 0.4f, 0.8f);
 
-    public PlayerBar(IHudPlayerData player, SpriteFont font) : base("playerBar", Vector2.Zero, 0, 0)
+    public PlayerBar(IHudPlayerData player, SpriteFont font)
     {
         _player = player;
         _font = font;

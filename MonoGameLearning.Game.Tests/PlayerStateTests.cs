@@ -1,14 +1,15 @@
 using MonoGameLearning.Game.Entities.Player;
+using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Tests;
 
 [TestFixture]
 public class PlayerStateTests
 {
-    private PlayerStateController _controller;
+    private StateMachineController<PlayerState, PlayerTrigger> _controller;
 
     [SetUp]
-    public void Setup() => _controller = new PlayerStateController();
+    public void Setup() => _controller = PlayerStateMachine.Create();
 
     [Test]
     public void InitialState_ShouldBeIdling() =>
@@ -138,7 +139,7 @@ public class PlayerStateTests
     public void EntryCallbacks_AreInvoked_OnStateEntry()
     {
         bool entryInvoked = false;
-        var controller = new PlayerStateController(new() { OnMovingEntry = () => entryInvoked = true });
+        var controller = PlayerStateMachine.Create(new() { OnMovingEntry = () => entryInvoked = true });
 
         controller.Fire(PlayerTrigger.MoveStart);
         Assert.That(entryInvoked, Is.True);
@@ -147,7 +148,7 @@ public class PlayerStateTests
     [Test]
     public void Attacking_IsInAttackingState()
     {
-        var controller = new PlayerStateController();
+        var controller = PlayerStateMachine.Create();
         controller.Fire(PlayerTrigger.AttackStart);
         Assert.That(controller.IsInState(PlayerState.Attacking), Is.True);
     }
@@ -266,7 +267,7 @@ public class PlayerStateTests
     public void HurtEntryCallback_IsInvoked_OnStateEntry()
     {
         bool entryInvoked = false;
-        var controller = new PlayerStateController(new() { OnHurtEntry = () => entryInvoked = true });
+        var controller = PlayerStateMachine.Create(new() { OnHurtEntry = () => entryInvoked = true });
         controller.Fire(PlayerTrigger.TakeDamage);
         Assert.That(entryInvoked, Is.True);
     }
@@ -275,7 +276,7 @@ public class PlayerStateTests
     public void DyingEntryCallback_IsInvoked_OnStateEntry()
     {
         bool entryInvoked = false;
-        var controller = new PlayerStateController(new() { OnDyingEntry = () => entryInvoked = true });
+        var controller = PlayerStateMachine.Create(new() { OnDyingEntry = () => entryInvoked = true });
         controller.Fire(PlayerTrigger.Die);
         Assert.That(entryInvoked, Is.True);
     }
@@ -284,7 +285,7 @@ public class PlayerStateTests
     public void DeadEntryCallback_IsInvoked_OnStateEntry()
     {
         bool entryInvoked = false;
-        var controller = new PlayerStateController(new()
+        var controller = PlayerStateMachine.Create(new()
         {
             OnDyingEntry = () => { },
             OnDeadEntry = () => entryInvoked = true
@@ -298,7 +299,7 @@ public class PlayerStateTests
     public void ExitCallbacks_AreInvoked_OnStateExit()
     {
         bool exitInvoked = false;
-        var controller = new PlayerStateController(new()
+        var controller = PlayerStateMachine.Create(new()
         {
             OnAttackingEntry = () => { },
             OnAttackingExit = () => exitInvoked = true
@@ -382,7 +383,7 @@ public class PlayerStateTests
     public void KnockdownEntryCallback_IsInvoked()
     {
         bool entryInvoked = false;
-        var controller = new PlayerStateController(new() { OnKnockdownEntry = () => entryInvoked = true });
+        var controller = PlayerStateMachine.Create(new() { OnKnockdownEntry = () => entryInvoked = true });
         controller.Fire(PlayerTrigger.TakeKnockdown);
         Assert.That(entryInvoked, Is.True);
     }
@@ -391,7 +392,7 @@ public class PlayerStateTests
     public void KnockdownExitCallback_IsInvoked()
     {
         bool exitInvoked = false;
-        var controller = new PlayerStateController(new()
+        var controller = PlayerStateMachine.Create(new()
         {
             OnKnockdownEntry = () => { },
             OnKnockdownExit = () => exitInvoked = true

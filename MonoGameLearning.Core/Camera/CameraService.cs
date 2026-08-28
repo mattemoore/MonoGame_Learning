@@ -6,8 +6,10 @@ using MonoGameLearning.Core.Entities;
 
 namespace MonoGameLearning.Core.Camera;
 
-public class CameraService(Entity player, int gameWidth, int gameHeight, RectangleF levelBounds)
+public class CameraService(Entity player, int gameWidth, int gameHeight, RectangleF levelBounds, Func<float?> getWaveEndX)
 {
+    private readonly Func<float?> _getWaveEndX = getWaveEndX;
+    private float? _lastWaveEndX = getWaveEndX();
     private bool _waveClearedPending;
     private float? _holdCameraCenter;
     private float _holdPlayerX;
@@ -15,9 +17,7 @@ public class CameraService(Entity player, int gameWidth, int gameHeight, Rectang
     public const float DEAD_ZONE_FRACTION = 0.25f;
     public const float CATCH_UP_RATE = 0.25f;
 
-    public float? WaveEndX { get; set; }
-
-    public void OnWaveCleared()
+    private void OnWaveCleared()
     {
         _waveClearedPending = true;
     }
@@ -49,14 +49,19 @@ public class CameraService(Entity player, int gameWidth, int gameHeight, Rectang
 
     public void Update(OrthographicCamera camera)
     {
+        var waveEndX = _getWaveEndX();
+        if (_lastWaveEndX is not null && waveEndX is null)
+            OnWaveCleared();
+        _lastWaveEndX = waveEndX;
+
         float halfWidth = gameWidth / 2f;
         float currentCenterX = camera.Position.X + halfWidth;
         float fullMinCenter = levelBounds.Left + halfWidth;
         float fullMaxCenter = levelBounds.Right - halfWidth;
 
         float maxCenter = fullMaxCenter;
-        if (WaveEndX.HasValue)
-            maxCenter = Math.Min(fullMaxCenter, WaveEndX.Value - halfWidth);
+        if (waveEndX.HasValue)
+            maxCenter = Math.Min(fullMaxCenter, waveEndX.Value - halfWidth);
 
         float deadZoneEdge = halfWidth * (1f - 2f * DEAD_ZONE_FRACTION);
 

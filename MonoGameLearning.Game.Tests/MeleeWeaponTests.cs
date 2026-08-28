@@ -227,8 +227,8 @@ public class MeleeWeaponTests
     public void ArmedSwing_ReachesFurtherThan_UnarmedAttack1()
     {
         var service = new HitboxService();
-        var armed = new TestSpatialEntity("armed", Vector2.Zero, 50, 50, Faction.Player);
-        var unarmed = new TestSpatialEntity("unarmed", new Vector2(0, 0), 50, 50, Faction.Player);
+        var armed = new StubCombatActor("armed", Vector2.Zero, 50, 50, Faction.Player);
+        var unarmed = new StubCombatActor("unarmed", new Vector2(0, 0), 50, 50, Faction.Player);
         var target = new TestSpatialEntity("target", new Vector2(75, 0), 10, 10, Faction.Enemy);
 
         service.RegisterFrameHitboxes(armed, armed.Faction, BatWeapon.Bat.SwingMove, 2, FacingDirection.Right);

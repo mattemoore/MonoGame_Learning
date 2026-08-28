@@ -8,7 +8,7 @@ public sealed class HudRoot : UiBase
     private readonly PlayerBar _playerBar;
     private readonly EnemyBar _enemyBar;
 
-    public HudRoot(PlayerBar playerBar, EnemyBar enemyBar) : base("hudRoot", Vector2.Zero, 0, 0)
+    public HudRoot(PlayerBar playerBar, EnemyBar enemyBar)
     {
         _playerBar = playerBar;
         _enemyBar = enemyBar;

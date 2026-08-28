@@ -1,19 +1,54 @@
+using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
+using MonoGameLearning.Core.AI;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Pickup;
 using MonoGameLearning.Core.Entities.Prop;
-using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Core.Levels;
+using MonoGameLearning.Core.Movement;
+using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Game.Entities.Enemy;
+using MonoGameLearning.Game.Entities.Pickups;
 using MonoGameLearning.Game.Levels;
+using MonoGameLearning.Game.Weapons;
 
 namespace MonoGameLearning.Game.Tests;
+
+public static class TestLevelContent
+{
+    public static readonly RectangleF CameraView = new(0, 0, 800, 600);
+
+    public static PropBase CreateProp(PropSpawnDef def) =>
+        throw new NotSupportedException("SpawnProps is not exercised in tests");
+
+    public static Entity CreatePickup(PickupSpawnDef def) => def.Type switch
+    {
+        LevelContent.Food => new FoodPickupEntity(def.Type, def.Position, null),
+        LevelContent.Bat => new WeaponPickupEntity(def.Type, def.Position, BatWeapon.Bat),
+        _ => throw new ArgumentException($"Unknown pickup type: {def.Type}", nameof(def)),
+    };
+
+    public static MeleeWeaponDef GetWeapon(string key) => key switch
+    {
+        LevelContent.Bat => BatWeapon.Bat,
+        _ => throw new ArgumentException($"Unknown weapon: {key}", nameof(key)),
+    };
+
+    public static EnemyEntity CreateEnemy(string type, int index, Func<WorldSnapshot> getWorld) =>
+        new TestEnemyEntity($"test_enemy_{index}", Vector2.Zero);
+
+    public static void OnEnemySpawned(EnemyEntity enemy, EnemySpawnDef def, FacingDirection facing, MeleeWeaponDef? weapon)
+    {
+        if (weapon is not null)
+            enemy.EquipWeapon(weapon);
+    }
+}
 
 public class TestPlayerEntity(string name, Vector2 position) : Entity(name, position, 10, 10)
 {
@@ -32,14 +67,20 @@ public class TestLevel(List<WaveDef> waveDefs, float endTriggerX, int gameWidth 
 
 #pragma warning disable CS9107 // Captured by base class — needed for InitializePool() called from base ctor
 public class TestLevelDirector(EntityService entityManager, Level level, Entity player)
-    : LevelDirector(entityManager, level, player, null!)
+    : LevelDirector(entityManager, level, player, null!,
+        TestLevelContent.CreateProp,
+        TestLevelContent.CreatePickup,
+        TestLevelContent.GetWeapon,
+        TestLevelContent.CreateEnemy,
+        TestLevelContent.OnEnemySpawned,
+        () => TestLevelContent.CameraView)
 #pragma warning restore CS9107
 {
     public List<Entity> SpawnedEnemies { get; } = [];
 
     protected override void InitializePool()
     {
-        EnemyPool = new TestEnemyPool(entityManager, this, SpawnedEnemies);
+        EnemyPool = new TestEnemyPool(entityManager, SpawnedEnemies);
         EnemyPool.Build(level);
     }
 
@@ -54,8 +95,8 @@ public class TestLevelDirector(EntityService entityManager, Level level, Entity 
     }
 }
 
-public class TestEnemyPool(EntityService entityManager, LevelDirector director, List<Entity> spawnedEnemies)
-    : EnemyPool(entityManager, director, null!, (type, i) => new TestEnemyEntity($"test_enemy_{i}", Vector2.Zero))
+public class TestEnemyPool(EntityService entityManager, List<Entity> spawnedEnemies)
+    : EnemyPool(entityManager, () => default, (type, i, getWorld) => new TestEnemyEntity($"test_enemy_{i}", Vector2.Zero))
 {
     public override EnemyEntity Rent(string type, Vector2 position, Entity target)
     {
@@ -64,6 +105,20 @@ public class TestEnemyPool(EntityService entityManager, LevelDirector director, 
         return enemy;
     }
 }
+
+#pragma warning disable CS9107 // Primary constructor params flow only to the base constructor
+public class CapturingHookLevelDirector(EntityService entityManager, Level level, Entity player,
+    List<(EnemyEntity Enemy, FacingDirection Facing, MeleeWeaponDef? Weapon)> captured)
+    : LevelDirector(entityManager, level, player, null!,
+        TestLevelContent.CreateProp,
+        TestLevelContent.CreatePickup,
+        TestLevelContent.GetWeapon,
+        TestLevelContent.CreateEnemy,
+        (enemy, def, facing, weapon) => captured.Add((enemy, facing, weapon)),
+        () => TestLevelContent.CameraView)
+{
+}
+#pragma warning restore CS9107
 
 [TestFixture]
 public class LevelDirectorTests
@@ -504,6 +559,42 @@ public class LevelDirectorTests
         _director.Update(new GameTime());
 
         Assert.That(completed, Is.True);
+    }
+
+    [Test]
+    public void SpawnWave_PositionsEnemyByItsOwnDimensions()
+    {
+        _player.Position = new Vector2(300, 0);
+        _director.Update(new GameTime());
+
+        var enemy = (EnemyEntity)_director.SpawnedEnemies[0]; // first wave def is SpawnSide.Left
+        float halfW = enemy.Width * 0.5f;
+        float expectedX = TestLevelContent.CameraView.X - halfW - 100f;
+        Assert.That(enemy.Position.X, Is.EqualTo(expectedX));
+        Assert.That(enemy.Position.Y, Is.EqualTo(300f)); // SpawnVertical.Middle → midline of walkable bounds (0..600)
+    }
+
+    [Test]
+    public void SpawnWave_InvokesSpawnedHook_WithInitialFacingAndResolvedWeapon()
+    {
+        var captured = new List<(EnemyEntity Enemy, FacingDirection Facing, MeleeWeaponDef? Weapon)>();
+        var level = new TestLevel(
+        [
+            new WaveDef(TriggerX: 300f, EndX: 1100f, Enemies:
+            [
+                new EnemySpawnDef("Grunt", SpawnSide.Left, SpawnVertical.Middle),
+                new EnemySpawnDef("Grunt", SpawnSide.Right, SpawnVertical.Middle, Weapon: "Bat"),
+            ])
+        ], endTriggerX: 1500f);
+        var director = new CapturingHookLevelDirector(_entityManager, level, _player, captured);
+
+        _player.Position = new Vector2(300, 0);
+        director.Update(new GameTime());
+
+        Assert.That(captured, Has.Count.EqualTo(2));
+        Assert.That(captured[0].Facing, Is.EqualTo(FacingDirection.Right), "Left-edge spawn must face right.");
+        Assert.That(captured[1].Facing, Is.EqualTo(FacingDirection.Left), "Right-edge spawn must face left.");
+        Assert.That(captured[1].Weapon, Is.SameAs(BatWeapon.Bat), "Weapon name must resolve through getWeapon.");
     }
 
     [Test]

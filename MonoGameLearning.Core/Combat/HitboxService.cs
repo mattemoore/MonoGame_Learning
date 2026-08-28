@@ -3,23 +3,13 @@ using System.Diagnostics;
 using MonoGame.Extended;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Entities;
+using MonoGameLearning.Core.Entities.Actor;
 using MonoGameLearning.Core.Movement;
 
 namespace MonoGameLearning.Core.Combat;
 
 public class HitboxService
 {
-    private readonly record struct ActiveHitbox
-    {
-        public IHitboxProvider Owner { get; init; }
-        public Faction OwnerFaction { get; init; }
-        public RectangleF Bounds { get; init; }
-        public int Damage { get; init; }
-        public bool Knockdown { get; init; }
-        public AttackStrength Strength { get; init; }
-        public SfxId? ImpactSfx { get; init; }
-    }
-
     private readonly List<ActiveHitbox> _activeHitboxes = [];
     private readonly Dictionary<IHitboxProvider, HashSet<IDamageable>> _attackDedup = [];
     private readonly List<DamageInfo> _resultBuffer = [];
@@ -69,7 +59,7 @@ public class HitboxService
                 }
                 if (!ownerDedup.Add(tgt)) continue;
 
-                if (active.OwnerFaction == tgt.Faction) continue;
+                if (tgt is CombatActorBase { Faction: var targetFaction } && active.OwnerFaction == targetFaction) continue;
 
                 _resultBuffer.Add(new()
                 {

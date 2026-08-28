@@ -1,4 +1,4 @@
-# Architecture Fixes Plan (phases 1-2 complete)
+# Architecture Fixes Plan (phases 1-6 complete)
 
 Goal: resolve the 17 architecture smells from the audit, phased by risk so each
 phase stays behavior-preserving (432 tests green + `dotnet build --warnaserror`
@@ -41,26 +41,31 @@ Bounds: Core must never reference `MonoGameLearning.Game`. Every phase ends with
    `"backgrounds/background1"` inside Core. Add a `string assetPath` parameter
    to `Create`, passed by `Level1.CreateBackgroundRenderer` (`Level1.cs:38`).
 
-## Phase 3 — Duplication collapses (mechanical, larger files)
+## Phase 3 — Duplication collapses (mechanical, larger files) [COMPLETE]
 
 1. **Generic state controller.** Collapse
    `MonoGameLearning.Game/Entities/Player/PlayerStateController.cs` and
    `.../Enemy/EnemyStateController.cs` into one generic
    `StateMachineController<TState, TTrigger>` (shared guarded `Fire`, the
    optional-callback ctor, post-build idle entry). Keep the two enum/config
-   tables. Delete the Enemy controller file; keep behavior identical (both use
-   the guarded `Fire`). Near-identical config DTOs collapse too.
-2. **Player/Enemy sprite de-duplication.** Both `PlayerSprite` and `EnemySprite`
-   load `"images/adventurer"` into a sheet named `"adventurer"` and define 6
-   identical `DefineFrames` calls. Extract one static "adventurer" sheet/anim
-   builder parameterized by which animations to define (player adds attack2/3),
-   so the atlas is loaded and defined once.
-3. **Texture sprite singletons.** `GoIndicatorSprite`, `BatPickupSprite`,
+   tables. Delete the Enemy controller file; near-identical config DTOs
+   collapse too. Guarded `Fire` must NOT be a silent swallow — when the trigger
+   is not permitted/ignored in the current state, emit
+   `Debug.WriteLine("...Ignored {trigger} in state {state}")` (project's
+   diagnostic-warning convention) so future illegal triggers surface during
+   development instead of crashing release builds. Note: this makes the enemy's
+   `Fire` guarded where it was previously unguarded (`EnemyStateController.cs:167-170`);
+   the only observable change is that an illegal trigger becomes a no-op instead
+   of `InvalidOperationException` — no illegal trigger is fired today (base
+   `OnAnimationCompleted` checks state first, and `CanFire` returns true for
+   `.Ignore`d triggers), so behavior is identical in practice and all tests stay
+   green.
+2. **Texture sprite singletons.** `GoIndicatorSprite`, `BatPickupSprite`,
    `FoodPickupSprite` are token-identical static `Texture2D` singers whose
    `_loaded` is set `true` before `content.Load` (failure poisons the flag).
    Collapse into one reusable `StaticTextureAsset` helper (name+path), and set
    the flag only after a successful load.
-4. **Damage-interface adapters.** In `Core/Combat/IDamageable.cs` drop `Faction`
+3. **Damage-interface adapters.** In `Core/Combat/IDamageable.cs` drop `Faction`
    (only consumed by same-faction hit filtering on actors) and remove the
    duplicated explicit-interface `IDamageable`/`IDamageResponse` adapter blocks
    in `CombatActorBase.cs:80-93` and `PropBase.cs:68-79` — give `IDamageResponse`
@@ -68,7 +73,7 @@ Bounds: Core must never reference `MonoGameLearning.Game`. Every phase ends with
    carrying dead hooks, and stop hard-coding `Faction.Neutral` on props
    (remove the `Faction` prop from `PropBase`).
 
-## Phase 4 — Coupling & circularity breaks
+## Phase 4 — Coupling & circularity breaks [COMPLETE]
 
 1. **EnemyEntity ↔ LevelDirector.** `EnemyEntity` only reads
    `_director.CurrentWorld` (`EnemyEntity.cs:171`). Replace the `LevelDirector
@@ -100,9 +105,23 @@ Bounds: Core must never reference `MonoGameLearning.Game`. Every phase ends with
    (Core enum) that each subclass maps from its state enum in one switch, and a
    single `FirePhaseCompleted()` where the base already fires. Re-wire
    `PlayerEntity`/`EnemyEntity` mappings and the test doubles
-   (`StubCombatActor`, `TestPlayerEntity`, `TestEnemyEntity`) to the new surface.
+    (`StubCombatActor`, `TestPlayerEntity`, `TestEnemyEntity`) to the new surface.
 
-## Phase 5 — God-class / registry cleanup
+**Phase 4 implementation notes:**
+
+- New Core files: `AI/AIUpdateResult.cs` (consolidated `EnemyAI` result struct),
+  `Entities/Actor/ActorPhase.cs` (Core phase enum), `Settings/ResolutionSetting.cs`
+  (record split out of the deleted `ResolutionSettings.cs`).
+- Deleted: `Entities/Actor/CombatActorCallbacks.cs`, `Settings/ResolutionSettings.cs`.
+- `EnemyAI.Update` returns `AIUpdateResult` (public `MovementDirection`/`FacingChanged`/
+  `NewFacingX`/`Force` knobs removed); idle cooldown decay moved to `EnemyAI.UpdateIdle`.
+  Weapon-render helpers now live on `MeleeWeaponDef`. `CombatActorBase` exposes 8
+  `protected virtual` hooks plus `Phase`/`FirePhaseCompleted` (2 abstract members
+  replacing the former 5 predicates + 3 `Fire*` methods).
+- Validation: `dotnet build --warnaserror` clean; 447 tests pass (3 skipped);
+  no `MonoGameLearning.Game` references under `MonoGameLearning.Core/`.
+
+## Phase 5 — God-class / registry cleanup [COMPLETE]
 
 1. **EntityService.** Remove the hidden `IHitboxProvider.HitboxService` settable
    slot property-injection (`EntityService.cs:175`); assign `HitboxService` at
@@ -127,7 +146,34 @@ Bounds: Core must never reference `MonoGameLearning.Game`. Every phase ends with
    factories/consts injected, and de-duplicate the camera-edge + spawn-position
    computation shared between `SpawnWave` and `DrawDebug`.
 
-## Phase 6 — Structural (largest; later milestone)
+**Phase 5 implementation notes:**
+
+- `EntityService` now takes `HitboxService?` via its constructor (the settable
+  property-injection slot is gone) and no longer routes `IScreenRenderable`s —
+  UI widgets register through `GameLoop`'s dedicated `_screenRenderables` list.
+  `RenderableYComparer` moved to `Core/Entities/RenderableYComparer.cs`;
+  `HitboxService.ActiveHitbox` moved to `Core/Combat/ActiveHitbox.cs`.
+- `UiBase` is now a plain widget base (`IUpdatable` + `IScreenRenderable` +
+  `IDebugDrawable`, `Visible` + `Position`), no longer an `Entity`;
+  `IsScreenSpace` deleted. `GoIndicatorEntity` takes a `Func<Point> getViewportSize`
+  instead of reading `GameCore.ViewportAdapter`.
+- `GameState`/`GameTrigger` enums moved to Core (`Core/GameState.cs`,
+  `Core/GameTrigger.cs`) so `AudioService.OnGameStateChanged(previous, current)`
+  can own the per-state music/pause mapping. `CameraService` now owns
+  `WaveEndX`/wave-cleared via an injected `Func<float?>` getter, detecting the
+  non-null→null transition inside `Update` (GameLoop's manual copy-back deleted).
+- `LevelDirector` receives injected content factories (`createProp`,
+  `createPickup`, `getWeapon`, `createEnemy`) and a `Func<RectangleF> getCameraView`;
+  `EnemyPool` takes `Func<WorldSnapshot>` + a factory that receives the
+  world-getter. Stringly-typed dispatch lives in `GameLoop` (composition root)
+  and `LevelContent` consts; `SpawnWave`/`DrawDebug` share `GetSpawnContext()`.
+- Test doubles updated (`TestLevelDirector`, `TestEnemyPool`, `DirectorStub`,
+  `TestUiEntity`, `StubCombatActor` ctor paths); new tests cover
+  `AudioService.OnGameStateChanged` mapping and pool world-getter injection.
+- Validation: `dotnet build --warnaserror` clean; 446 tests pass (3 skipped);
+  no `MonoGameLearning.Game` references under `MonoGameLearning.Core/`.
+
+## Phase 6 — Structural (largest; later milestone) [COMPLETE]
 
 1. **GameCore de-static (single injected context).** Remove the 7 static
    singletons and the `new GraphicsDevice`/`new Content` shadowing
@@ -144,6 +190,52 @@ Bounds: Core must never reference `MonoGameLearning.Game`. Every phase ends with
 4. **Promote `LevelDirector` encounter core** to Core, keeping game content
    instantiation (drums/pickups/weapons) behind an injected factory/delegate so
    Core never references Game.
+
+**Phase 6 implementation notes:**
+
+- **#1 was NOT done as the plan literally described.** MonoGame's own `Game`
+  class IS the context object (`Game.GraphicsDevice` throws
+  `InvalidOperationException` until `base.Initialize()` creates it; `Game.Content`
+  is constructed by the base class from `Services`; `base.Initialize()` triggers
+  `LoadContent()` at its end). A ctor-injected "context bundle" would be a
+  partially-null mutable bag that is invalid outside the lifecycle and has no
+  real consumer. Instead: `GameCore` keeps every resource as an **instance
+  member** (`Graphics`/`SpriteBatch`/`Camera`/`ViewportAdapter` instance props,
+  `GraphicsDevice`/`Content` inherited from `Game`), the `s_instance` singleton
+  and the `static new` shadowing are deleted; `MenuService` receives the
+  `GraphicsDeviceManager` by ctor (2 `GameCore.Graphics` static reads removed);
+  `GameLoop`'s `GameCore.Camera` read is now the instance member. No `GameCore.X`
+  static reads remain.
+- **#2:** `GameStateService` moved to `Core/GameStateService.cs`
+  (`MonoGameLearning.Core` namespace); Core now references Stateless 5.20.0
+  (the plan's "no deps change" was imprecise — Core gained the package ref).
+- **#3:** Generic `EntityPool<TEnemy>` (`where TEnemy : Entity`) in
+  `Core/Levels/EntityPool.cs` — rent/return/sentinel/per-type stacks; sprite
+  warmup moved OUT of the pool into the Game composition-root `createEnemy`
+  factory (`GameLoop.CreateEnemy`); reset (rent) and hitbox cleanup (return)
+  are now `protected abstract` hooks implemented by the thin Game subclass
+  `Game/Levels/EnemyPool.cs`.
+- **#4:** `LevelDirectorCore<TEnemy>` (`where TEnemy : CombatActorBase,
+  IPickupDropper`) in `Core/Levels/LevelDirectorCore.cs` — wave gating,
+  scroll-lock, snapshots, prop/pickup/drop spawning, debug draw, pool rent/
+  return all in Core; `IPickupDropper` gained a settable `Drops` property so
+  the core can assign per-`EnemySpawnDef` drops generically. Game content stays
+  injected: `createProp`/`createPickup`/`getWeapon`/`createEnemy`/`getCameraView`
+  plus a new `onEnemySpawned` delegate (`Action<TEnemy, EnemySpawnDef,
+  FacingDirection, MeleeWeaponDef?>` — weapon equip, facing, sprite effect,
+  spawn-walk) wired by `GameLoop.ConfigureSpawnedEnemy`. The hard-coded `24f`/
+  `30f` spawn sizing now derives from the enemy's own `Width`/`Height`.
+  `InitializePool` is `protected abstract` — the no-op default was removed after
+  review so a hook-less pool can never be silently used.
+  Game's `LevelDirector` is a thin subclass overriding `InitializePool` to
+  install the Game `EnemyPool`.
+- Test doubles updated (`TestLevelDirector`, `CapturingHookLevelDirector`,
+  `TestEnemyPool`, `TestEnemyEntity` untouched); new tests cover the
+  `onEnemySpawned` injected seam (facing + weapon resolution), dimension-based
+  spawn positioning, and the generic `EntityPool<TEnemy>` hooks.
+- Validation: `dotnet build --warnaserror` clean; **449 tests pass (3 skipped)**;
+  `grep -rn "MonoGameLearning.Game" MonoGameLearning.Core --include=*.cs`
+  (excluding `obj/`) returns nothing; no `GameCore.X` static reads remain.
 
 Each promotion must keep the invariant "Core never references Game" (verify with
 a grep for `MonoGameLearning.Game` under `MonoGameLearning.Core/`).
@@ -175,7 +267,7 @@ a grep for `MonoGameLearning.Game` under `MonoGameLearning.Core/`).
 ## Open decisions (finalize during implementation, keep behavior identical)
 
 - Exact `Func<WorldSnapshot>` vs a small `IWorldSnapshotProvider` — default to the
-  `Func` to avoid a new type.
+  `Func` to avoid a new type. *(Resolved in Phase 4: `Func<WorldSnapshot>` chosen.)*
 - `ActorPhase` enum member set — derive from the union of the five current
   predicates (`Idle/Moving/Attacking/Hurt/KnockedDown/Dying/Dead`), mapped once in
-  each subclass.
+  each subclass. *(Resolved in Phase 4: implemented as specified.)*

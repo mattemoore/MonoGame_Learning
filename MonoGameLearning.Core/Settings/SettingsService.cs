@@ -1,7 +1,9 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using Microsoft.Xna.Framework;
 
@@ -10,15 +12,17 @@ namespace MonoGameLearning.Core.Settings;
 public static class SettingsService
 {
     public static AudioSettings AudioSettings { get; private set; } = AudioSettings.Default;
+    public static ResolutionSetting CurrentResolution { get; private set; } = new(1024, 768);
+    public static IReadOnlyList<ResolutionSetting> AvailableResolutions { get; } = GetCommon4to3Resolutions();
 
-public static string GetSettingsPath()
-{
-    var overrideDir = Environment.GetEnvironmentVariable("MGL_SETTINGS_DIR");
-    if (overrideDir is not null)
-        return Path.Combine(overrideDir, "settings.json");
-    var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-    return Path.Combine(appData, "MonoGameLearning", "settings.json");
-}
+    public static string GetSettingsPath()
+    {
+        var overrideDir = Environment.GetEnvironmentVariable("MGL_SETTINGS_DIR");
+        if (overrideDir is not null)
+            return Path.Combine(overrideDir, "settings.json");
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        return Path.Combine(appData, "MonoGameLearning", "settings.json");
+    }
 
     public static void Apply(GraphicsDeviceManager graphics, ResolutionSetting setting)
     {
@@ -28,27 +32,22 @@ public static string GetSettingsPath()
         graphics.ApplyChanges();
     }
 
-    internal static SettingsData? LoadSettings()
+    internal static SettingsData LoadSettings()
     {
         var path = GetSettingsPath();
         if (!File.Exists(path))
-            return null;
+            return new SettingsData();
 
         try
         {
             var json = File.ReadAllText(path);
-
-            // New wrapper format
-            var wrapper = JsonSerializer.Deserialize<SettingsData>(json);
-            if (wrapper?.Resolution is not null)
-                return wrapper;
+            return JsonSerializer.Deserialize<SettingsData>(json) ?? new SettingsData();
         }
         catch (Exception ex) when (ex is IOException or JsonException)
         {
             Debug.WriteLine($"[SettingsService] Failed to load settings: {ex.Message}");
+            return new SettingsData();
         }
-
-        return null;
     }
 
     internal static void SaveSettings()
@@ -61,7 +60,7 @@ public static string GetSettingsPath()
 
             var wrapper = new SettingsData
             {
-                Resolution = ResolutionSettings.Current,
+                Resolution = CurrentResolution,
                 Audio = AudioSettings
             };
             var json = JsonSerializer.Serialize(wrapper);
@@ -76,7 +75,7 @@ public static string GetSettingsPath()
     public static void LoadAudio()
     {
         var data = LoadSettings();
-        AudioSettings = data?.Audio?.Clamped() ?? AudioSettings.Default;
+        AudioSettings = data.Audio?.Clamped() ?? AudioSettings.Default;
     }
 
     public static void SaveAudio(AudioSettings settings)
@@ -84,4 +83,36 @@ public static string GetSettingsPath()
         AudioSettings = settings.Clamped();
         SaveSettings();
     }
+
+    public static ResolutionSetting LoadResolution()
+    {
+        var data = LoadSettings();
+        if (data.Resolution is { } res && AvailableResolutions.Any(r => r == res))
+        {
+            CurrentResolution = res;
+            return res;
+        }
+
+        if (data.Audio is { } audio)
+            AudioSettings = audio.Clamped();
+        CurrentResolution = new(1024, 768);
+        SaveSettings();
+        return CurrentResolution;
+    }
+
+    public static void SaveResolution(ResolutionSetting setting)
+    {
+        CurrentResolution = setting;
+        SaveSettings();
+    }
+
+    private static List<ResolutionSetting> GetCommon4to3Resolutions() =>
+    [
+        new(640, 480),
+        new(800, 600),
+        new(1024, 768),
+        new(1280, 960),
+        new(1400, 1050),
+        new(1600, 1200),
+    ];
 }

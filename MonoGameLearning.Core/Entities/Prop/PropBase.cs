@@ -62,7 +62,6 @@ public abstract class PropBase : Entity, IRenderable, IDebugDrawable, ICollision
     protected readonly SpriteRenderer SpriteRenderer;
     protected readonly Health HealthComponent;
 
-    public Faction Faction => Faction.Neutral;
     public event EventHandler Died = null!;
 
     int IDamageable.Health => HealthComponent.Value;
@@ -70,11 +69,8 @@ public abstract class PropBase : Entity, IRenderable, IDebugDrawable, ICollision
     bool IDamageable.IsAlive => HealthComponent.IsAlive;
 
     bool IDamageResponse.IsAlive => HealthComponent.IsAlive;
-    bool IDamageResponse.CanTakeDamage() => HealthComponent.IsAlive;
     void IDamageResponse.ReduceHealth(int amount) => HealthComponent.Subtract(amount);
     void IDamageResponse.OnDeath() => OnDestroyed();
-    void IDamageResponse.OnKnockdown(DamageInfo info) { }
-    void IDamageResponse.OnHit(DamageInfo info) { }
 
     void IDamageable.Heal(int amount) { }
 

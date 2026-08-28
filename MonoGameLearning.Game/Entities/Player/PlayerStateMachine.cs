@@ -1,22 +1,9 @@
 using System;
+using System.Diagnostics;
+using MonoGameLearning.Game.StateMachines;
 using Stateless;
 
 namespace MonoGameLearning.Game.Entities.Player;
-
-public class PlayerStateControllerConfig
-{
-    public Action OnIdleEntry { get; init; }
-    public Action OnMovingEntry { get; init; }
-    public Action OnAttackingEntry { get; init; }
-    public Action OnAttackingExit { get; init; }
-    public Action OnHurtEntry { get; init; }
-    public Action OnHurtExit { get; init; }
-    public Action OnKnockdownEntry { get; init; }
-    public Action OnKnockdownExit { get; init; }
-    public Action OnDyingEntry { get; init; }
-    public Action OnDyingExit { get; init; }
-    public Action OnDeadEntry { get; init; }
-}
 
 public enum PlayerState
 {
@@ -43,17 +30,23 @@ public enum PlayerTrigger
     DeathCompleted
 }
 
-public class PlayerStateController
+public static class PlayerStateMachine
 {
-    public StateMachine<PlayerState, PlayerTrigger> StateMachine { get; }
-    public PlayerState State => StateMachine.State;
-
-    public PlayerStateController(PlayerStateControllerConfig config = null)
+    public static StateMachineController<PlayerState, PlayerTrigger> Create(ActorStateMachineCallbacks callbacks = null)
     {
-        StateMachine = new(PlayerState.Idling);
+        callbacks ??= new ActorStateMachineCallbacks();
+        Debug.Assert(callbacks.OnChasingEntry is null && callbacks.OnEnteringEntry is null && callbacks.OnEnteringExit is null,
+            "PlayerStateMachine: enemy-only callbacks (OnChasingEntry/OnEnteringEntry/OnEnteringExit) are not wired by the player machine");
+        return new StateMachineController<PlayerState, PlayerTrigger>(
+            PlayerState.Idling,
+            sm => Configure(sm, callbacks),
+            () => callbacks.OnIdleEntry?.Invoke());
+    }
 
-        StateMachine.Configure(PlayerState.Idling)
-            .OnEntry(_ => config?.OnIdleEntry?.Invoke())
+    private static void Configure(StateMachine<PlayerState, PlayerTrigger> sm, ActorStateMachineCallbacks c)
+    {
+        sm.Configure(PlayerState.Idling)
+            .OnEntry(_ => c.OnIdleEntry?.Invoke())
             .Permit(PlayerTrigger.MoveStart, PlayerState.Moving)
             .Permit(PlayerTrigger.AttackStart, PlayerState.Attacking)
             .Permit(PlayerTrigger.TakeDamage, PlayerState.Hurt)
@@ -62,8 +55,8 @@ public class PlayerStateController
             .Ignore(PlayerTrigger.AttackCompleted)
             .Ignore(PlayerTrigger.MoveStop);
 
-        StateMachine.Configure(PlayerState.Moving)
-            .OnEntry(_ => config?.OnMovingEntry?.Invoke())
+        sm.Configure(PlayerState.Moving)
+            .OnEntry(_ => c.OnMovingEntry?.Invoke())
             .Permit(PlayerTrigger.MoveStop, PlayerState.Idling)
             .Permit(PlayerTrigger.AttackStart, PlayerState.Attacking)
             .Permit(PlayerTrigger.TakeDamage, PlayerState.Hurt)
@@ -72,9 +65,9 @@ public class PlayerStateController
             .Ignore(PlayerTrigger.MoveStart)
             .Ignore(PlayerTrigger.AttackCompleted);
 
-        StateMachine.Configure(PlayerState.Attacking)
-            .OnEntry(_ => config?.OnAttackingEntry?.Invoke())
-            .OnExit(_ => config?.OnAttackingExit?.Invoke())
+        sm.Configure(PlayerState.Attacking)
+            .OnEntry(_ => c.OnAttackingEntry?.Invoke())
+            .OnExit(_ => c.OnAttackingExit?.Invoke())
             .Permit(PlayerTrigger.AttackCompleted, PlayerState.Idling)
             .Permit(PlayerTrigger.TakeDamage, PlayerState.Hurt)
             .Permit(PlayerTrigger.TakeKnockdown, PlayerState.KnockedDown)
@@ -83,9 +76,9 @@ public class PlayerStateController
             .Ignore(PlayerTrigger.MoveStop)
             .Ignore(PlayerTrigger.AttackStart);
 
-        StateMachine.Configure(PlayerState.Hurt)
-            .OnEntry(_ => config?.OnHurtEntry?.Invoke())
-            .OnExit(_ => config?.OnHurtExit?.Invoke())
+        sm.Configure(PlayerState.Hurt)
+            .OnEntry(_ => c.OnHurtEntry?.Invoke())
+            .OnExit(_ => c.OnHurtExit?.Invoke())
             .Permit(PlayerTrigger.HurtCompleted, PlayerState.Idling)
             .Permit(PlayerTrigger.TakeKnockdown, PlayerState.KnockedDown)
             .Permit(PlayerTrigger.Die, PlayerState.Dying)
@@ -95,9 +88,9 @@ public class PlayerStateController
             .Ignore(PlayerTrigger.MoveStop)
             .Ignore(PlayerTrigger.AttackCompleted);
 
-        StateMachine.Configure(PlayerState.KnockedDown)
-            .OnEntry(_ => config?.OnKnockdownEntry?.Invoke())
-            .OnExit(_ => config?.OnKnockdownExit?.Invoke())
+        sm.Configure(PlayerState.KnockedDown)
+            .OnEntry(_ => c.OnKnockdownEntry?.Invoke())
+            .OnExit(_ => c.OnKnockdownExit?.Invoke())
             .Permit(PlayerTrigger.KnockdownCompleted, PlayerState.Idling)
             .Permit(PlayerTrigger.Die, PlayerState.Dying)
             .Ignore(PlayerTrigger.TakeDamage)
@@ -108,9 +101,9 @@ public class PlayerStateController
             .Ignore(PlayerTrigger.MoveStop)
             .Ignore(PlayerTrigger.HurtCompleted);
 
-        StateMachine.Configure(PlayerState.Dying)
-            .OnEntry(_ => config?.OnDyingEntry?.Invoke())
-            .OnExit(_ => config?.OnDyingExit?.Invoke())
+        sm.Configure(PlayerState.Dying)
+            .OnEntry(_ => c.OnDyingEntry?.Invoke())
+            .OnExit(_ => c.OnDyingExit?.Invoke())
             .Permit(PlayerTrigger.DeathCompleted, PlayerState.Dead)
             .Ignore(PlayerTrigger.TakeDamage)
             .Ignore(PlayerTrigger.Die)
@@ -122,8 +115,8 @@ public class PlayerStateController
             .Ignore(PlayerTrigger.TakeKnockdown)
             .Ignore(PlayerTrigger.KnockdownCompleted);
 
-        StateMachine.Configure(PlayerState.Dead)
-            .OnEntry(_ => config?.OnDeadEntry?.Invoke())
+        sm.Configure(PlayerState.Dead)
+            .OnEntry(_ => c.OnDeadEntry?.Invoke())
             .Ignore(PlayerTrigger.TakeDamage)
             .Ignore(PlayerTrigger.Die)
             .Ignore(PlayerTrigger.HurtCompleted)
@@ -134,17 +127,5 @@ public class PlayerStateController
             .Ignore(PlayerTrigger.AttackCompleted)
             .Ignore(PlayerTrigger.TakeKnockdown)
             .Ignore(PlayerTrigger.KnockdownCompleted);
-
-        config?.OnIdleEntry?.Invoke();
-    }
-
-    public bool IsInState(PlayerState state) => StateMachine.IsInState(state);
-
-    public bool CanFire(PlayerTrigger trigger) => StateMachine.CanFire(trigger);
-
-    public void Fire(PlayerTrigger trigger)
-    {
-        if (StateMachine.CanFire(trigger))
-            StateMachine.Fire(trigger);
     }
 }

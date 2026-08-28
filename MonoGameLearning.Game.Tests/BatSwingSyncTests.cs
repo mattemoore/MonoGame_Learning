@@ -2,7 +2,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Combat;
-using MonoGameLearning.Core.Entities.Actor;
 using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Game.Weapons;
 
@@ -49,7 +48,7 @@ public class BatSwingSyncTests
     [Test]
     public void AnchorSelection_NotAttacking_ReturnsCarryAnchor()
     {
-        var (anchor, frame) = CombatActorBase.ResolveWeaponAnchorAndFrame(BatWeapon.Bat, isAttacking: false, frameIndex: 0);
+        var (anchor, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(BatWeapon.Bat, isAttacking: false, frameIndex: 0);
 
         Assert.That(anchor, Is.EqualTo(BatWeapon.Bat.CarryAnchor));
         Assert.That(frame, Is.Zero);
@@ -58,7 +57,7 @@ public class BatSwingSyncTests
     [Test]
     public void AnchorSelection_Attacking_ReturnsPerFrameAnchor()
     {
-        var (anchor, frame) = CombatActorBase.ResolveWeaponAnchorAndFrame(BatWeapon.Bat, isAttacking: true, frameIndex: 2);
+        var (anchor, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(BatWeapon.Bat, isAttacking: true, frameIndex: 2);
 
         Assert.That(anchor, Is.EqualTo(BatWeapon.Bat.SwingAnchors[2]));
         Assert.That(frame, Is.EqualTo(2));
@@ -67,7 +66,7 @@ public class BatSwingSyncTests
     [Test]
     public void AnchorSelection_OutOfRangeFrame_ClampsToLastAnchor()
     {
-        var (anchor, frame) = CombatActorBase.ResolveWeaponAnchorAndFrame(BatWeapon.Bat, isAttacking: true, frameIndex: 99);
+        var (anchor, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(BatWeapon.Bat, isAttacking: true, frameIndex: 99);
 
         Assert.That(anchor, Is.EqualTo(BatWeapon.Bat.SwingAnchors[3]));
         Assert.That(frame, Is.EqualTo(3));
@@ -80,15 +79,15 @@ public class BatSwingSyncTests
     {
         var anchor = new Vector2(20, 5);
 
-        Assert.That(CombatActorBase.ApplyWeaponFacing(anchor, FacingDirection.Left), Is.EqualTo(new Vector2(-20, 5)));
-        Assert.That(CombatActorBase.ApplyWeaponFacing(anchor, FacingDirection.Right), Is.EqualTo(anchor));
+        Assert.That(MeleeWeaponDef.ApplyWeaponFacing(anchor, FacingDirection.Left), Is.EqualTo(new Vector2(-20, 5)));
+        Assert.That(MeleeWeaponDef.ApplyWeaponFacing(anchor, FacingDirection.Right), Is.EqualTo(anchor));
     }
 
     [Test]
     public void FacingLeft_FlipsSpriteHorizontally()
     {
-        Assert.That(CombatActorBase.WeaponFacingEffect(FacingDirection.Left), Is.EqualTo(SpriteEffects.FlipHorizontally));
-        Assert.That(CombatActorBase.WeaponFacingEffect(FacingDirection.Right), Is.EqualTo(SpriteEffects.None));
+        Assert.That(MeleeWeaponDef.WeaponFacingEffect(FacingDirection.Left), Is.EqualTo(SpriteEffects.FlipHorizontally));
+        Assert.That(MeleeWeaponDef.WeaponFacingEffect(FacingDirection.Right), Is.EqualTo(SpriteEffects.None));
     }
 
     // --- Apex-only hitbox timing ---

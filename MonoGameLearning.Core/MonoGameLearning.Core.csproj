@@ -13,5 +13,6 @@
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.*">
       <PrivateAssets>All</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Stateless" Version="5.20.0" />
   </ItemGroup>
 </Project>

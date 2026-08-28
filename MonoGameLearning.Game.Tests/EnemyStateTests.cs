@@ -1,14 +1,15 @@
 using MonoGameLearning.Game.Entities.Enemy;
+using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Tests;
 
 [TestFixture]
 public class EnemyStateTests
 {
-    private EnemyStateController _controller;
+    private StateMachineController<EnemyState, EnemyTrigger> _controller;
 
     [SetUp]
-    public void Setup() => _controller = new EnemyStateController();
+    public void Setup() => _controller = EnemyStateMachine.Create();
 
     [Test]
     public void InitialState_ShouldBeIdle() =>
@@ -295,7 +296,7 @@ public class EnemyStateTests
     public void EntryCallbacks_AreInvoked_OnStateEntry()
     {
         bool entryInvoked = false;
-        var controller = new EnemyStateController(new() { OnChasingEntry = () => entryInvoked = true });
+        var controller = EnemyStateMachine.Create(new() { OnChasingEntry = () => entryInvoked = true });
 
         controller.Fire(EnemyTrigger.StartChase);
         Assert.That(entryInvoked, Is.True);
@@ -304,7 +305,7 @@ public class EnemyStateTests
     [Test]
     public void Attacking_IsInAttackingState()
     {
-        var controller = new EnemyStateController();
+        var controller = EnemyStateMachine.Create();
         controller.Fire(EnemyTrigger.AttackStart);
         Assert.That(controller.IsInState(EnemyState.Attacking), Is.True);
     }
@@ -313,7 +314,7 @@ public class EnemyStateTests
     public void HurtEntryCallback_IsInvoked_OnStateEntry()
     {
         bool entryInvoked = false;
-        var controller = new EnemyStateController(new() { OnHurtEntry = () => entryInvoked = true });
+        var controller = EnemyStateMachine.Create(new() { OnHurtEntry = () => entryInvoked = true });
         controller.Fire(EnemyTrigger.TakeDamage);
         Assert.That(entryInvoked, Is.True);
     }
@@ -322,7 +323,7 @@ public class EnemyStateTests
     public void DyingEntryCallback_IsInvoked_OnStateEntry()
     {
         bool entryInvoked = false;
-        var controller = new EnemyStateController(new() { OnDyingEntry = () => entryInvoked = true });
+        var controller = EnemyStateMachine.Create(new() { OnDyingEntry = () => entryInvoked = true });
         controller.Fire(EnemyTrigger.Die);
         Assert.That(entryInvoked, Is.True);
     }
@@ -331,7 +332,7 @@ public class EnemyStateTests
     public void DeadEntryCallback_IsInvoked_OnStateEntry()
     {
         bool entryInvoked = false;
-        var controller = new EnemyStateController(new()
+        var controller = EnemyStateMachine.Create(new()
         {
             OnDyingEntry = () => { },
             OnDeadEntry = () => entryInvoked = true
@@ -345,7 +346,7 @@ public class EnemyStateTests
     public void ExitCallbacks_AreInvoked_OnStateExit()
     {
         bool exitInvoked = false;
-        var controller = new EnemyStateController(new()
+        var controller = EnemyStateMachine.Create(new()
         {
             OnAttackingEntry = () => { },
             OnAttackingExit = () => exitInvoked = true
@@ -360,7 +361,7 @@ public class EnemyStateTests
     public void KnockdownEntryCallback_IsInvoked()
     {
         bool entryInvoked = false;
-        var controller = new EnemyStateController(new() { OnKnockdownEntry = () => entryInvoked = true });
+        var controller = EnemyStateMachine.Create(new() { OnKnockdownEntry = () => entryInvoked = true });
         controller.Fire(EnemyTrigger.TakeKnockdown);
         Assert.That(entryInvoked, Is.True);
     }
@@ -369,7 +370,7 @@ public class EnemyStateTests
     public void KnockdownExitCallback_IsInvoked()
     {
         bool exitInvoked = false;
-        var controller = new EnemyStateController(new()
+        var controller = EnemyStateMachine.Create(new()
         {
             OnKnockdownEntry = () => { },
             OnKnockdownExit = () => exitInvoked = true
@@ -383,7 +384,7 @@ public class EnemyStateTests
     public void Constructor_StartsInIdle_AndInvokesOnIdleEntry()
     {
         bool entryInvoked = false;
-        var controller = new EnemyStateController(new() { OnIdleEntry = () => entryInvoked = true });
+        var controller = EnemyStateMachine.Create(new() { OnIdleEntry = () => entryInvoked = true });
         Assert.Multiple(() =>
         {
             Assert.That(controller.State, Is.EqualTo(EnemyState.Idle));
@@ -440,7 +441,7 @@ public class EnemyStateTests
     public void EnteringEntryCallback_IsInvoked_OnStateEntry()
     {
         bool entryInvoked = false;
-        var controller = new EnemyStateController(new() { OnEnteringEntry = () => entryInvoked = true });
+        var controller = EnemyStateMachine.Create(new() { OnEnteringEntry = () => entryInvoked = true });
         controller.Fire(EnemyTrigger.StartEntering);
         Assert.That(entryInvoked, Is.True);
     }
@@ -449,7 +450,7 @@ public class EnemyStateTests
     public void EnteringExitCallback_IsInvoked_OnStateExit()
     {
         bool exitInvoked = false;
-        var controller = new EnemyStateController(new()
+        var controller = EnemyStateMachine.Create(new()
         {
             OnEnteringEntry = () => { },
             OnEnteringExit = () => exitInvoked = true
