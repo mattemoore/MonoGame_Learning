@@ -33,11 +33,13 @@ reusability problem is the **content paths**, not the enum identifiers.
 ## Tasks
 
 1. Change `AudioService.LoadContent` to take the manifest instead of hardcoding it:
+
    ```csharp
    public void LoadContent(ContentManager content,
        IReadOnlyList<(SfxId Id, string Path)> sfxAssets,
        IReadOnlyList<(MusicId Id, string Path)> musicAssets)
    ```
+
    Loop over the supplied lists in the existing `LoadSfxGroup`/`LoadMusic` spots.
 2. Add `MonoGameLearning.Game/Audio/AudioManifest.cs` (static class) that owns the
    17 SFX + 3 music `(Id, Path)` entries currently hardcoded in Core.

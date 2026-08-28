@@ -28,10 +28,12 @@ rather than putting multiple types in one file.
    `OilDrumEntity` (private members). Delete `OilDrumBehavior.cs`.
 2. **Remove `OilDrumDamage.cs`.** In `OilDrumEntity.TakeDamage`, replace the
    strength translation with the direct amount:
+
    ```csharp
    if (IsHitStunned) return;          // former CanTakeDamage guard
    HealthComponent.Subtract(info.Amount);
    ```
+
    (Preserve the existing stun-on-surviving-hit and `PropExplosion`/`HitMetal` SFX.)
 3. **Raise health to preserve current feel.** Current tiers (heavy 6 / med 3 /
    light 2 vs maxHP 6) = heavy 1-hit, medium 2-hit, light 3-hit. With direct
