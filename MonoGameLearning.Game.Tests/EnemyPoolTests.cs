@@ -4,7 +4,6 @@ using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Collisions.Layers;
 using MonoGame.Extended.Collisions.QuadTree;
 using MonoGameLearning.Core.AI;
-using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Levels;
 using MonoGameLearning.Game.Entities.Enemy;
@@ -53,7 +52,6 @@ public class EnemyPoolTests
     [Test]
     public void Rent_EmptyPoolForType_Throws()
     {
-        var director = new DirectorStub(_entityManager, _level, _player);
         var pool = new EnemyPool(_entityManager, () => default, MockFactory);
         pool.Build(_level);
 
@@ -64,7 +62,6 @@ public class EnemyPoolTests
     [Test]
     public void Rent_ReturnsAndRegistersInstance()
     {
-        var director = new DirectorStub(_entityManager, _level, _player);
         var pool = new TestEnemyPool(_entityManager);
         pool.Build(_level);
 
@@ -78,7 +75,6 @@ public class EnemyPoolTests
     [Test]
     public void Return_SetsPositionToSentinel()
     {
-        var director = new DirectorStub(_entityManager, _level, _player);
         var pool = new TestEnemyPool(_entityManager);
         pool.Build(_level);
 
@@ -96,7 +92,6 @@ public class EnemyPoolTests
     [Test]
     public void Return_ThenRent_GivesBackSameInstance()
     {
-        var director = new DirectorStub(_entityManager, _level, _player);
         var pool = new TestEnemyPool(_entityManager);
         pool.Build(_level);
 
@@ -113,7 +108,6 @@ public class EnemyPoolTests
     [Test]
     public void Build_PassesInjectedWorldGetterToFactory()
     {
-        var director = new DirectorStub(_entityManager, _level, _player);
         var captured = new List<Func<WorldSnapshot>>();
         var pool = new EnemyPool(_entityManager, () => default, (type, index, getWorld) =>
         {
@@ -148,19 +142,5 @@ public class EnemyPoolTests
     private class EntityStub(string name, Vector2 position, int width, int height)
         : Entity(name, position, width, height)
     {
-    }
-
-    private class DirectorStub(EntityService entityManager, Level level, Entity player)
-        : LevelDirector(entityManager, level, player, null!,
-            TestLevelContent.CreateProp,
-            TestLevelContent.CreatePickup,
-            TestLevelContent.GetWeapon,
-            TestLevelContent.CreateEnemy,
-            () => TestLevelContent.CameraView)
-    {
-        protected override void InitializePool()
-        {
-            // No-op — these tests create and manage the pool directly without going through the director.
-        }
     }
 }

@@ -425,8 +425,11 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _ => throw new ArgumentException($"Unknown pickup type: {def.Type}", nameof(def)),
     };
 
-    private EnemyEntity CreateEnemy(string type, int index, Func<WorldSnapshot> getWorld) =>
-        new EnemyEntity($"grunt_pool_{index}", Vector2.Zero, 2.0f, EnemySprite.Create(), _audio, getWorld);
+    private EnemyEntity CreateEnemy(string type, int index, Func<WorldSnapshot> getWorld) => type switch
+    {
+        LevelContent.Grunt => new EnemyEntity($"grunt_pool_{index}", Vector2.Zero, 2.0f, EnemySprite.Create(), _audio, getWorld),
+        _ => throw new ArgumentException($"Unknown enemy type: {type}", nameof(type)),
+    };
 
     private RectangleF GetCameraView() =>
         new(Camera.Position.X, 0, ViewportAdapter.VirtualWidth, ViewportAdapter.VirtualHeight);

@@ -28,14 +28,14 @@ public static class TestLevelContent
 
     public static Entity CreatePickup(PickupSpawnDef def) => def.Type switch
     {
-        "Food" => new FoodPickupEntity(def.Type, def.Position, null),
-        "Bat" => new WeaponPickupEntity(def.Type, def.Position, BatWeapon.Bat),
+        LevelContent.Food => new FoodPickupEntity(def.Type, def.Position, null),
+        LevelContent.Bat => new WeaponPickupEntity(def.Type, def.Position, BatWeapon.Bat),
         _ => throw new ArgumentException($"Unknown pickup type: {def.Type}", nameof(def)),
     };
 
     public static MeleeWeaponDef GetWeapon(string key) => key switch
     {
-        "Bat" => BatWeapon.Bat,
+        LevelContent.Bat => BatWeapon.Bat,
         _ => throw new ArgumentException($"Unknown weapon: {key}", nameof(key)),
     };
 

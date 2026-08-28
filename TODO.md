@@ -1,6 +1,13 @@
 
 1. Manually make a bat and animation and have it swing realistically to make sure the weapon overlay logic works
 1. Replace all placholder sprites with double dragon sprites if that is legal
+1. AudioService refers to content in Content
+1. Food and Weapon entities in core?
+1. Oildrum is in 3 files in game. Can we merge and also can we drop the effective damage thing by just giving it a health number larger like everything else?
+1. _levelDirector creation in GameLoop.cs looks weird.  Passing in Weapon.Get and passing in parameterless method calls?
+1. GameStateService hoisted to Core?
+1. ActorStateMachine callbacks still needed after adding phases?  What about StateMachineController...should that be in Core?
+1. MenuService hoisted to Core?
 
 TODO
 
