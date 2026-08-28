@@ -101,7 +101,7 @@ public sealed class EnemyBar : UiBase
 
         var sb = context.SpriteBatch;
         float left = HudLayoutConstants.MARGIN;
-        float top = HudLayoutConstants.MARGIN + HudLayoutConstants.MUGSHOT_SIZE + 6f + HudLayoutConstants.PLAYER_BAR_HEIGHT + HudLayoutConstants.MARGIN;
+        float top = HudLayoutConstants.MARGIN + HudLayoutConstants.MUGSHOT_SIZE + HudLayoutConstants.ENEMY_BAR_TEXT_OFFSET + HudLayoutConstants.PLAYER_BAR_HEIGHT + HudLayoutConstants.MARGIN;
 
         float mugSize = HudLayoutConstants.ENEMY_MUGSHOT_SIZE;
         var mugshotRect = new RectangleF(left, top, mugSize, mugSize);
@@ -142,7 +142,7 @@ public sealed class EnemyBar : UiBase
     {
         var sb = context.SpriteBatch;
         float left = HudLayoutConstants.MARGIN;
-        float top = HudLayoutConstants.MARGIN + HudLayoutConstants.MUGSHOT_SIZE + 6f + HudLayoutConstants.PLAYER_BAR_HEIGHT + HudLayoutConstants.MARGIN;
+        float top = HudLayoutConstants.MARGIN + HudLayoutConstants.MUGSHOT_SIZE + HudLayoutConstants.ENEMY_BAR_TEXT_OFFSET + HudLayoutConstants.PLAYER_BAR_HEIGHT + HudLayoutConstants.MARGIN;
 
         sb.DrawRectangle(new RectangleF(left, top, HudLayoutConstants.ENEMY_BAR_WIDTH, HudLayoutConstants.ENEMY_BAR_HEIGHT), Color.Orange, 1f);
         string label = _displayTarget is not null

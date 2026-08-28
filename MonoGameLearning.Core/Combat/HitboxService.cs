@@ -22,7 +22,7 @@ public class HitboxService
 
     private readonly List<ActiveHitbox> _activeHitboxes = [];
     private readonly Dictionary<IHitboxProvider, HashSet<IDamageable>> _attackDedup = [];
-    private readonly List<HitResult> _resultBuffer = [];
+    private readonly List<DamageInfo> _resultBuffer = [];
     private readonly List<RectangleF> _boundsBuffer = [];
 
     public void RegisterFrameHitboxes(Entity owner, Faction ownerFaction, MoveData move, int frameIndex, FacingDirection facing)
@@ -49,7 +49,7 @@ public class HitboxService
         }
     }
 
-    public List<HitResult> ResolveHits(IReadOnlyList<Entity> targets)
+    public List<DamageInfo> ResolveHits(IReadOnlyList<Entity> targets)
     {
         _resultBuffer.Clear();
 
@@ -74,7 +74,7 @@ public class HitboxService
                 _resultBuffer.Add(new()
                 {
                     Target = tgt,
-                    Damage = active.Damage,
+                    Amount = active.Damage,
                     Knockdown = active.Knockdown,
                     Strength = active.Strength,
                     ImpactSfx = active.ImpactSfx,

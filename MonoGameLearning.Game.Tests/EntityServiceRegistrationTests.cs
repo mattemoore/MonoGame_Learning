@@ -53,9 +53,9 @@ public class EntityServiceRegistrationTests
     {
         var world = new CollisionWorld2D();
         var bb = new BoundingBox2D(new Vector2(0, 0), new Vector2(2000, 600));
-        world.AddLayer("actors", new Layer(new QuadTreeSpace(bb)));
-        world.AddLayer("props", new Layer(new QuadTreeSpace(bb)));
-        world.EnableCollisionBetweenLayers("actors", "props");
+        world.AddLayer(CollisionLayers.Actors, new Layer(new QuadTreeSpace(bb)));
+        world.AddLayer(CollisionLayers.Props, new Layer(new QuadTreeSpace(bb)));
+        world.EnableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Props);
         return world;
     }
 
@@ -69,8 +69,8 @@ public class EntityServiceRegistrationTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(mgr.GetCollidables("actors"), Does.Contain(actor));
-            Assert.That(mgr.GetCollidables("props"), Is.Empty);
+            Assert.That(mgr.GetCollidables(CollisionLayers.Actors), Does.Contain(actor));
+            Assert.That(mgr.GetCollidables(CollisionLayers.Props), Is.Empty);
         });
     }
 
@@ -82,7 +82,7 @@ public class EntityServiceRegistrationTests
 
         mgr.Register(actor);
 
-        Assert.That(mgr.GetCollidables("props"), Is.Empty);
+        Assert.That(mgr.GetCollidables(CollisionLayers.Props), Is.Empty);
     }
 
     [Test]
@@ -95,8 +95,8 @@ public class EntityServiceRegistrationTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(mgr.GetCollidables("actors"), Is.Empty);
-            Assert.That(mgr.GetCollidables("props"), Is.Empty);
+            Assert.That(mgr.GetCollidables(CollisionLayers.Actors), Is.Empty);
+            Assert.That(mgr.GetCollidables(CollisionLayers.Props), Is.Empty);
         });
     }
 
@@ -110,7 +110,7 @@ public class EntityServiceRegistrationTests
         mgr.Register(a1);
         mgr.Register(a2);
 
-        Assert.That(mgr.GetCollidables("actors"), Has.Count.EqualTo(2));
+        Assert.That(mgr.GetCollidables(CollisionLayers.Actors), Has.Count.EqualTo(2));
     }
 
     [Test]
@@ -163,7 +163,7 @@ public class EntityServiceRegistrationTests
 
         mgr.Clear();
 
-        Assert.That(mgr.GetCollidables("actors"), Does.Not.Contain(actor));
+        Assert.That(mgr.GetCollidables(CollisionLayers.Actors), Does.Not.Contain(actor));
     }
 
     [Test]
@@ -188,7 +188,7 @@ public class EntityServiceRegistrationTests
         mgr.Destroy(actor);
         mgr.ProcessPending();
 
-        Assert.That(mgr.GetCollidables("actors"), Does.Not.Contain(actor));
+        Assert.That(mgr.GetCollidables(CollisionLayers.Actors), Does.Not.Contain(actor));
     }
 
     [Test]
@@ -218,8 +218,8 @@ public class EntityServiceRegistrationTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(mgr.GetCollidables("actors"), Has.Count.EqualTo(1));
-            Assert.That(mgr.GetCollidables("actors"), Does.Contain(a2));
+            Assert.That(mgr.GetCollidables(CollisionLayers.Actors), Has.Count.EqualTo(1));
+            Assert.That(mgr.GetCollidables(CollisionLayers.Actors), Does.Contain(a2));
         });
     }
 
@@ -232,7 +232,7 @@ public class EntityServiceRegistrationTests
         mgr.Register(actor);
         mgr.Register(actor);
 
-        Assert.That(mgr.GetCollidables("actors"), Has.Count.EqualTo(1));
+        Assert.That(mgr.GetCollidables(CollisionLayers.Actors), Has.Count.EqualTo(1));
     }
 
     // --- HitboxService assignment tests ---

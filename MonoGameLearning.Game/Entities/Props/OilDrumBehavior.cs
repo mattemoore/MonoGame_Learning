@@ -26,10 +26,4 @@ public class OilDrumBehavior
         }
         return false;
     }
-
-    public void Reset()
-    {
-        _isHitStunned = false;
-        _hitStunTimer = 0;
-    }
 }

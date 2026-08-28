@@ -33,12 +33,12 @@ public class CollisionLayerTests
         var world = new CollisionWorld2D();
         var bb = new BoundingBox2D(new Vector2(Bounds.X, Bounds.Y), new Vector2(Bounds.Right, Bounds.Bottom));
         var actorSpace = new QuadTreeSpace(bb);
-        world.AddLayer("actors", new Layer(actorSpace));
-        world.DisableCollisionBetweenLayers("actors", "actors");
+        world.AddLayer(CollisionLayers.Actors, new Layer(actorSpace));
+        world.DisableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Actors);
         var propSpace = new QuadTreeSpace(bb);
-        world.AddLayer("props", new Layer(propSpace));
-        world.DisableCollisionBetweenLayers("props", "props");
-        world.EnableCollisionBetweenLayers("actors", "props");
+        world.AddLayer(CollisionLayers.Props, new Layer(propSpace));
+        world.DisableCollisionBetweenLayers(CollisionLayers.Props, CollisionLayers.Props);
+        world.EnableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Props);
         return world;
     }
 
@@ -55,14 +55,14 @@ public class CollisionLayerTests
         var a1 = new PassThroughActor("actor", new Vector2(100, 100), EntitySize, EntitySize);
         var a2 = new PassThroughActor("actor", new Vector2(110, 100), EntitySize, EntitySize);
 
-        world.Insert(a1, "actors");
-        world.Insert(a2, "actors");
+        world.Insert(a1, CollisionLayers.Actors);
+        world.Insert(a2, CollisionLayers.Actors);
 
         var pos1 = a1.Position;
         var pos2 = a2.Position;
 
         world.RebuildDynamicLayers();
-        var pairs = world.QueryCollisionPairs("actors", "actors").ToList();
+        var pairs = world.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Actors).ToList();
 
         Assert.That(a1.Position, Is.EqualTo(pos1));
         Assert.That(a2.Position, Is.EqualTo(pos2));
@@ -75,13 +75,13 @@ public class CollisionLayerTests
         var actor = MakeActor(100, 100);
         var prop = MakeProp(110, 100);
 
-        world.Insert(actor, "actors");
-        world.Insert(prop, "props");
+        world.Insert(actor, CollisionLayers.Actors);
+        world.Insert(prop, CollisionLayers.Props);
 
         var propPos = prop.Position;
 
         world.RebuildDynamicLayers();
-        foreach (var pair in world.QueryCollisionPairs("actors", "props"))
+        foreach (var pair in world.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Props))
         {
             if (pair.First is Entity entity)
                 entity.Position += pair.FirstResult.MinimumTranslationVector;
@@ -98,13 +98,13 @@ public class CollisionLayerTests
         var enemy = MakeActor(100, 100);
         var prop = MakeProp(110, 100);
 
-        world.Insert(enemy, "actors");
-        world.Insert(prop, "props");
+        world.Insert(enemy, CollisionLayers.Actors);
+        world.Insert(prop, CollisionLayers.Props);
 
         var propPos = prop.Position;
 
         world.RebuildDynamicLayers();
-        foreach (var pair in world.QueryCollisionPairs("actors", "props"))
+        foreach (var pair in world.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Props))
         {
             if (pair.First is Entity entity)
                 entity.Position += pair.FirstResult.MinimumTranslationVector;
@@ -121,14 +121,14 @@ public class CollisionLayerTests
         var p1 = MakeProp(100, 100);
         var p2 = MakeProp(110, 100);
 
-        world.Insert(p1, "props");
-        world.Insert(p2, "props");
+        world.Insert(p1, CollisionLayers.Props);
+        world.Insert(p2, CollisionLayers.Props);
 
         var pos1 = p1.Position;
         var pos2 = p2.Position;
 
         world.RebuildDynamicLayers();
-        var pairs = world.QueryCollisionPairs("props", "props").ToList();
+        var pairs = world.QueryCollisionPairs(CollisionLayers.Props, CollisionLayers.Props).ToList();
 
         Assert.That(p1.Position, Is.EqualTo(pos1));
         Assert.That(p2.Position, Is.EqualTo(pos2));
@@ -141,11 +141,11 @@ public class CollisionLayerTests
         var actor = MakeActor(100, 100);
         var prop = MakeProp(110, 100);
 
-        world.Insert(actor, "actors");
-        world.Insert(prop, "props");
+        world.Insert(actor, CollisionLayers.Actors);
+        world.Insert(prop, CollisionLayers.Props);
 
         world.RebuildDynamicLayers();
-        foreach (var pair in world.QueryCollisionPairs("actors", "props"))
+        foreach (var pair in world.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Props))
         {
             if (pair.First is Entity entity)
                 entity.Position += pair.FirstResult.MinimumTranslationVector;

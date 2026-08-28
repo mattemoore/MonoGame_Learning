@@ -117,11 +117,11 @@ public class OilDrumCollisionTests
     {
         var world = new CollisionWorld2D();
         var bb = new BoundingBox2D(new Vector2(0, 0), new Vector2(2000, 2000));
-        world.AddLayer("actors", new Layer(new QuadTreeSpace(bb)));
-        world.DisableCollisionBetweenLayers("actors", "actors");
-        world.AddLayer("props", new Layer(new QuadTreeSpace(bb)));
-        world.DisableCollisionBetweenLayers("props", "props");
-        world.EnableCollisionBetweenLayers("actors", "props");
+        world.AddLayer(CollisionLayers.Actors, new Layer(new QuadTreeSpace(bb)));
+        world.DisableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Actors);
+        world.AddLayer(CollisionLayers.Props, new Layer(new QuadTreeSpace(bb)));
+        world.DisableCollisionBetweenLayers(CollisionLayers.Props, CollisionLayers.Props);
+        world.EnableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Props);
         return world;
     }
 
@@ -158,11 +158,11 @@ public class OilDrumCollisionTests
         var actor = MakeActor(300, FloorY);                     // bottom = 380 = drum bottom
         var drum = MakeDrum(300, 300);                          // drum at (300,300)
 
-        world.Insert(actor, "actors");
-        world.Insert(drum, "props");
+        world.Insert(actor, CollisionLayers.Actors);
+        world.Insert(drum, CollisionLayers.Props);
         world.RebuildDynamicLayers();
 
-        var pairs = world.QueryCollisionPairs("actors", "props").ToList();
+        var pairs = world.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Props).ToList();
         // Actor's full frame overlaps drum's full frame, but collision shape
         // only covers top 80px — actor bottom is at 380, drum collision bottom is at 340.
         // No collision expected.
@@ -179,11 +179,11 @@ public class OilDrumCollisionTests
         var actor = MakeActor(300, 260);
         var drum = MakeDrum(300, 300);
 
-        world.Insert(actor, "actors");
-        world.Insert(drum, "props");
+        world.Insert(actor, CollisionLayers.Actors);
+        world.Insert(drum, CollisionLayers.Props);
         world.RebuildDynamicLayers();
 
-        var pairs = world.QueryCollisionPairs("actors", "props").ToList();
+        var pairs = world.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Props).ToList();
         Assert.That(pairs, Has.Count.EqualTo(1));
     }
 
@@ -196,11 +196,11 @@ public class OilDrumCollisionTests
         var actor = MakeActor(300, 340);
         var drum = MakeDrum(300, 300);
 
-        world.Insert(actor, "actors");
-        world.Insert(drum, "props");
+        world.Insert(actor, CollisionLayers.Actors);
+        world.Insert(drum, CollisionLayers.Props);
         world.RebuildDynamicLayers();
 
-        var pairs = world.QueryCollisionPairs("actors", "props").ToList();
+        var pairs = world.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Props).ToList();
         Assert.That(pairs, Is.Empty);
     }
 
@@ -213,11 +213,11 @@ public class OilDrumCollisionTests
         var actor = MakeActor(300, 180);
         var drum = MakeDrum(300, 300);
 
-        world.Insert(actor, "actors");
-        world.Insert(drum, "props");
+        world.Insert(actor, CollisionLayers.Actors);
+        world.Insert(drum, CollisionLayers.Props);
         world.RebuildDynamicLayers();
 
-        var pairs = world.QueryCollisionPairs("actors", "props").ToList();
+        var pairs = world.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Props).ToList();
         Assert.That(pairs, Is.Empty);
     }
 
@@ -229,11 +229,11 @@ public class OilDrumCollisionTests
         var actor = MakeActor(260, 260); // frame overlaps drum collision band
         var drum = MakeDrum(300, 300);
 
-        world.Insert(actor, "actors");
-        world.Insert(drum, "props");
+        world.Insert(actor, CollisionLayers.Actors);
+        world.Insert(drum, CollisionLayers.Props);
         world.RebuildDynamicLayers();
 
-        var pairs = world.QueryCollisionPairs("actors", "props").ToList();
+        var pairs = world.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Props).ToList();
         Assert.That(pairs, Has.Count.EqualTo(1));
     }
 
@@ -245,11 +245,11 @@ public class OilDrumCollisionTests
         var drum = MakeDrum(300, 300);
         var drumPos = drum.Position;
 
-        world.Insert(actor, "actors");
-        world.Insert(drum, "props");
+        world.Insert(actor, CollisionLayers.Actors);
+        world.Insert(drum, CollisionLayers.Props);
         world.RebuildDynamicLayers();
 
-        foreach (var pair in world.QueryCollisionPairs("actors", "props"))
+        foreach (var pair in world.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Props))
         {
             if (pair.First is Entity entity)
                 entity.Position += pair.FirstResult.MinimumTranslationVector;

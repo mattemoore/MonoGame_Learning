@@ -20,7 +20,7 @@ public enum KnockdownPhase { Falling, GettingUp }
 
 public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, ICollisionLayer, IDamageable, IDamageResponse, IHitboxProvider, IMoveable, IAnimated, IWeaponWielder
 {
-    public string LayerName => "actors";
+    public string LayerName => CollisionLayers.Actors;
     public int Id => GetHashCode();
     public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
 

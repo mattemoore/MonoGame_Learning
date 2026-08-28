@@ -14,7 +14,7 @@ namespace MonoGameLearning.Core.Entities.Prop;
 
 public abstract class PropBase : Entity, IRenderable, IDebugDrawable, ICollisionActor, ICollisionLayer, IDamageable, IDamageResponse, IPickupDropper
 {
-    public string LayerName => "props";
+    public string LayerName => CollisionLayers.Props;
     protected PropBase(string name, Vector2 position, AnimatedSprite sprite, float scale, int maxHealth, CollisionAnchor anchor)
         : base(name, position, (int)(sprite.Size.X * scale), (int)(sprite.Size.Y * scale))
     {

@@ -8,8 +8,6 @@ public class WeaponPickupEntity(string name, Vector2 position, MeleeWeaponDef we
 {
     private readonly MeleeWeaponDef _weapon = weapon;
 
-    public MeleeWeaponDef Weapon => _weapon;
-
     public override void OnPickup(IDamageable target)
     {
         if (target is IWeaponWielder wielder)
