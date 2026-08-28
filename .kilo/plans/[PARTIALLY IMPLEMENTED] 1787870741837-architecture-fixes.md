@@ -1,4 +1,4 @@
-# Architecture Fixes Plan (not implemented)
+# Architecture Fixes Plan (phases 1-2 complete)
 
 Goal: resolve the 17 architecture smells from the audit, phased by risk so each
 phase stays behavior-preserving (432 tests green + `dotnet build --warnaserror`
@@ -9,7 +9,7 @@ Bounds: Core must never reference `MonoGameLearning.Game`. Every phase ends with
 
 ---
 
-## Phase 1 — Dead-code removal (no behavior change)
+## Phase 1 — Dead-code removal (no behavior change) [COMPLETE]
 
 1. Delete `MonoGameLearning.Game/Entities/Pickups/WeaponPickupEntity.cs:11`
    (`public MeleeWeaponDef Weapon` property) — no reader in Game or Tests.
@@ -21,7 +21,7 @@ Bounds: Core must never reference `MonoGameLearning.Game`. Every phase ends with
    surviving named constant (or a new `ENEMY_BAR_TEXT_OFFSET`) so the layout has
    one source of truth.
 
-## Phase 2 — Low-risk localized refactors (behavior-preserving)
+## Phase 2 — Low-risk localized refactors (behavior-preserving) [COMPLETE]
 
 1. **IMoveable : ISpatial.** Change `MonoGameLearning.Core/Movement/IMoveable.cs:6`
    to `public interface IMoveable : ISpatial`. Delete the two `(ISpatial)`
