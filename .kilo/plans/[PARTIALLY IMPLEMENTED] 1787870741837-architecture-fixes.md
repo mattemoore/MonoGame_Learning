@@ -48,8 +48,18 @@ Bounds: Core must never reference `MonoGameLearning.Game`. Every phase ends with
    `.../Enemy/EnemyStateController.cs` into one generic
    `StateMachineController<TState, TTrigger>` (shared guarded `Fire`, the
    optional-callback ctor, post-build idle entry). Keep the two enum/config
-   tables. Delete the Enemy controller file; keep behavior identical (both use
-   the guarded `Fire`). Near-identical config DTOs collapse too.
+   tables. Delete the Enemy controller file; near-identical config DTOs
+   collapse too. Guarded `Fire` must NOT be a silent swallow — when the trigger
+   is not permitted/ignored in the current state, emit
+   `Debug.WriteLine("...Ignored {trigger} in state {state}")` (project's
+   diagnostic-warning convention) so future illegal triggers surface during
+   development instead of crashing release builds. Note: this makes the enemy's
+   `Fire` guarded where it was previously unguarded (`EnemyStateController.cs:167-170`);
+   the only observable change is that an illegal trigger becomes a no-op instead
+   of `InvalidOperationException` — no illegal trigger is fired today (base
+   `OnAnimationCompleted` checks state first, and `CanFire` returns true for
+   `.Ignore`d triggers), so behavior is identical in practice and all tests stay
+   green.
 2. **Player/Enemy sprite de-duplication.** Both `PlayerSprite` and `EnemySprite`
    load `"images/adventurer"` into a sheet named `"adventurer"` and define 6
    identical `DefineFrames` calls. Extract one static "adventurer" sheet/anim
