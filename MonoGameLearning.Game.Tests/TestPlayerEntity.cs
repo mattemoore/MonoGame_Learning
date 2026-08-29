@@ -1,8 +1,8 @@
 using Microsoft.Xna.Framework;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.UI;
+using MonoGameLearning.Core.StateMachines;
 using MonoGameLearning.Game.Entities.Player;
-using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Tests;
 

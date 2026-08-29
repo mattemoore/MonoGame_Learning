@@ -6,8 +6,8 @@ using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities.Actor;
 using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Core.UI;
+using MonoGameLearning.Core.StateMachines;
 using MonoGameLearning.Game.AnimatedSprites;
-using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Entities.Player;
 

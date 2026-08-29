@@ -1,8 +1,7 @@
 using Microsoft.Xna.Framework;
-using MonoGameLearning.Core.AI;
+using MonoGameLearning.Core.StateMachines;
 using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.Levels;
-using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Tests;
 
