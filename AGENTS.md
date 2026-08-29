@@ -18,7 +18,7 @@ The solution is structured into two main projects:
   * **`Input`**: Contains `InputManager` to abstract raw input into game actions (e.g., `Action1Pressed`).
   * **`Entities`**: Defines base entity classes.
   * **`Drawing`**: Basic shape drawing utilities.
-  * **`GameStateService`**: Core-level arcade-shell FSM (`GameState`/`GameTrigger` via Stateless), owned by `GameLoop`.
+  * **`GameStateMachine`**: Core-level arcade-shell FSM factory (`GameState`/`GameTrigger` via Stateless + `StateMachineController`), owned by `GameLoop`.
   * **`Levels.EntityPool<TEnemy>`**: Generic rent/return/sentinel pool (per-type stacks). Game behavior (entity reset, hitbox cleanup) comes from subclasses overriding `OnRentEnemy`/`OnReturnEnemy`; sprite warmup happens in the Game-side createEnemy factory.
   * **`Levels.LevelDirectorCore<TEnemy>`** (where `TEnemy : CombatActorBase, IPickupDropper`): Encounter core — wave gating, scroll-lock, snapshots, prop/pickup/drop spawning, debug draw. Game content (drums, pickups, weapons, enemy visuals, spawn-walk) is injected via `createProp`/`createPickup`/`getWeapon`/`createEnemy`/`onEnemySpawned` delegates; enemy spawning sizes off the enemy's own dimensions.
 

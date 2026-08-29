@@ -22,14 +22,17 @@ public class GoIndicatorEntity(Texture2D texture, Func<Point> getViewportSize)
     public const int MARGIN = 20;
     public const float FLASH_PERIOD = 0.8f;
 
+    public static Vector2 ComputeAnchorPosition(int virtualWidth, int virtualHeight, float textureWidth, float scale, float margin)
+    {
+        float scaledWidth = textureWidth * scale;
+        return new Vector2(virtualWidth - scaledWidth / 2f - margin, virtualHeight / 2f);
+    }
+
     public override void Update(GameTime gameTime)
     {
         if (!Visible) return;
         var vp = _getViewportSize();
-        float scaledWidth = _texture.Width * SCALE;
-        Position = new Vector2(
-            vp.X - scaledWidth / 2f - MARGIN,
-            vp.Y / 2f);
+        Position = ComputeAnchorPosition(vp.X, vp.Y, _texture.Width, SCALE, MARGIN);
 
         _flashTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
         _flashAlpha = 0.3f + (MathF.Sin(_flashTimer * MathF.PI / FLASH_PERIOD * 2f) + 1f) * 0.35f;

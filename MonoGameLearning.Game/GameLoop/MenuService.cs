@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework;
 using MonoGameLearning.Core;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Settings;
+using MonoGameLearning.Core.StateMachines;
 using MonoGameLearning.Core.UI;
 using RenderingLibrary.Graphics;
 using HorizontalAlignment = RenderingLibrary.Graphics.HorizontalAlignment;
@@ -15,7 +16,7 @@ namespace MonoGameLearning.Game.GameLoop;
 
 public class MenuService
 {
-    private readonly GameStateService _gameState;
+    private readonly StateMachineController<GameState, GameTrigger> _gameState;
     private readonly Action _exitGame;
     private readonly Action<SfxId> _playSfx;
     private readonly Func<AudioSettings> _getAudioSettings;
@@ -32,7 +33,7 @@ public class MenuService
     private TextRuntime _sfxCursor, _sfxLabel, _sfxValue;
     private TextRuntime _musicCursor, _musicLabel, _musicValue;
 
-    public MenuService(GameStateService gameState, Action exitGame, GumUiService gum,
+    public MenuService(StateMachineController<GameState, GameTrigger> gameState, Action exitGame, GumUiService gum,
         Action<SfxId> playSfx, Func<AudioSettings> getAudioSettings, Action<AudioSettings> setAudioSettings,
         GraphicsDeviceManager graphics)
     {

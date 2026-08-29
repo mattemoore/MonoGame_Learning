@@ -22,6 +22,7 @@ using MonoGameLearning.Core.Levels;
 using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Core.Settings;
+using MonoGameLearning.Core.StateMachines;
 using MonoGameLearning.Core.UI;
 using MonoGameLearning.Game.Entities.GoIndicator;
 using MonoGameLearning.Game.Entities.Player;
@@ -48,7 +49,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private InputService _input;
     private int _numBackgroundsDrawn, _numEntitiesDrawn;
 
-    private GameStateService _gameState;
+    private StateMachineController<GameState, GameTrigger> _gameState;
     private CameraService _cameraController;
     private MenuService _menuManager;
     private HitboxService _hitboxService;
@@ -86,7 +87,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _audio.MusicVolume = SettingsService.AudioSettings.MusicVolume;
         _hitboxService = new();
 
-        _gameState = new GameStateService();
+        _gameState = GameStateMachine.Create();
         _gameState.StateMachine.OnTransitioned(t =>
         {
             _menuManager.OnGameStateChanged(t.Source);
@@ -151,7 +152,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         };
 
         ReinitLevel();
-        _goIndicator = new GoIndicatorEntity(GoIndicatorTexture.Texture, () => new Point(ViewportAdapter.ViewportWidth, ViewportAdapter.ViewportHeight));
+        _goIndicator = new GoIndicatorEntity(GoIndicatorTexture.Texture, () => new Point(ViewportAdapter.VirtualWidth, ViewportAdapter.VirtualHeight));
         _screenRenderables.Add(_goIndicator);
     }
 
@@ -266,7 +267,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             }
             SpriteBatch.End();
 
-            SpriteBatch.Begin();
+            SpriteBatch.Begin(transformMatrix: ViewportAdapter.GetScaleMatrix());
             var uiRenderCtx = new RenderContext(SpriteBatch, Camera);
             var screenRenderables = _screenRenderables;
             for (int i = 0; i < screenRenderables.Count; i++)
