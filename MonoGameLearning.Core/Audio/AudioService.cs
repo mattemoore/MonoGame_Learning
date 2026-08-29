@@ -48,49 +48,35 @@ public class AudioService
     internal bool IsPausedForTest => _isPaused;
     internal float RawMusicVolumeForTest => _musicVolume;
 
-    public void LoadContent(ContentManager content)
+    public void LoadContent(ContentManager content,
+        IReadOnlyList<(SfxId Id, string Path)> sfxAssets,
+        IReadOnlyList<(MusicId Id, string Path)> musicAssets)
     {
         _content = content;
 
-        LoadSfxGroup(
-            (SfxId.AttackSwing1, "audio/attack_swing1"),
-            (SfxId.AttackSwing2, "audio/attack_swing2"),
-            (SfxId.AttackSwing3, "audio/attack_swing3"),
-            (SfxId.EnemyAttackSwing, "audio/enemy_attack_swing"),
-            (SfxId.HitLight, "audio/hit_light"),
-            (SfxId.HitHeavy, "audio/hit_heavy"),
-            (SfxId.HitMetal, "audio/hit_metal"),
-            (SfxId.Knockdown, "audio/knockdown"),
-            (SfxId.PlayerHurt, "audio/player_hurt"),
-            (SfxId.EnemyHurt, "audio/enemy_hurt"),
-            (SfxId.EnemyDeath, "audio/enemy_death"),
-            (SfxId.PlayerDeath, "audio/player_death"),
-            (SfxId.PropExplosion, "audio/prop_explosion"),
-            (SfxId.MenuNavigate, "audio/menu_navigate"),
-            (SfxId.MenuConfirm, "audio/menu_confirm"),
-            (SfxId.GoPromptBell, "audio/go_prompt_bell"),
-            (SfxId.PickupHeal, "audio/pickup_heal"));
-
-        LoadMusic(MusicId.TitleMenu, "audio/music_titlemenu");
-        LoadMusic(MusicId.Gameplay, "audio/music_gameplay");
-        LoadMusic(MusicId.LevelComplete, "audio/music_levelcomplete");
+        LoadSfxGroup(sfxAssets);
+        LoadMusicGroup(musicAssets);
     }
 
-    private void LoadMusic(MusicId id, string path)
+    private void LoadMusicGroup(IReadOnlyList<(MusicId Id, string Path)> entries)
     {
-        try
+        for (int i = 0; i < entries.Count; i++)
         {
-            _musicEffects[id] = _content!.Load<SoundEffect>(path);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[AudioService] Failed to load music '{path}': {ex.Message}");
+            var (id, path) = entries[i];
+            try
+            {
+                _musicEffects[id] = _content!.Load<SoundEffect>(path);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[AudioService] Failed to load music '{path}': {ex.Message}");
+            }
         }
     }
 
-    private void LoadSfxGroup(params (SfxId id, string path)[] entries)
+    private void LoadSfxGroup(IReadOnlyList<(SfxId Id, string Path)> entries)
     {
-        for (int i = 0; i < entries.Length; i++)
+        for (int i = 0; i < entries.Count; i++)
         {
             var (id, path) = entries[i];
             try

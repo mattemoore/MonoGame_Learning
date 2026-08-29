@@ -31,6 +31,7 @@ using MonoGameLearning.Game.Entities.Props;
 using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.AnimatedSprites;
 using MonoGameLearning.Game.Weapons;
+using MonoGameLearning.Game.Audio;
 
 namespace MonoGameLearning.Game.GameLoop;
 
@@ -114,7 +115,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
         _debugFont = Content.Load<SpriteFont>("fonts/DebugFont");
 
-        _audio.LoadContent(Content);
+        _audio.LoadContent(Content, AudioManifest.SfxAssets, AudioManifest.MusicAssets);
 
         // Play music for the initial state (OnTransitioned never fires for the starting state)
         _audio.PlayMusic(MusicId.TitleMenu);
