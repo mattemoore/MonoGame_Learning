@@ -1,14 +1,15 @@
 using MonoGameLearning.Core;
+using MonoGameLearning.Core.StateMachines;
 
 namespace MonoGameLearning.Game.Tests
 {
     [TestFixture]
     public class GameStateTests
     {
-        private GameStateService _controller;
+        private StateMachineController<GameState, GameTrigger> _controller;
 
         [SetUp]
-        public void Setup() => _controller = new GameStateService();
+        public void Setup() => _controller = GameStateMachine.Create();
 
         [Test]
         public void InitialState_ShouldBeTitleScreen() =>

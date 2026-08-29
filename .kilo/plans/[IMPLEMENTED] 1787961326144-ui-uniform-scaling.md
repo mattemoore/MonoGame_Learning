@@ -1,6 +1,6 @@
 # Uniform UI Scaling for GO Indicator, HUD, and Gum Menus
 
-## Status: NOT IMPLEMENTED
+## Status: IMPLEMENTED
 
 ## Problem
 

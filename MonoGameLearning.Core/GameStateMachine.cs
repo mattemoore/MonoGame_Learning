@@ -1,47 +1,38 @@
+using MonoGameLearning.Core.StateMachines;
 using Stateless;
 
 namespace MonoGameLearning.Core;
 
-public class GameStateService
+public static class GameStateMachine
 {
-    public StateMachine<GameState, GameTrigger> StateMachine { get; }
-    public GameState State => StateMachine.State;
+    public static StateMachineController<GameState, GameTrigger> Create() =>
+        new(GameState.TitleScreen, Configure);
 
-    public GameStateService()
+    private static void Configure(StateMachine<GameState, GameTrigger> sm)
     {
-        StateMachine = new StateMachine<GameState, GameTrigger>(GameState.TitleScreen);
-
-        StateMachine.Configure(GameState.TitleScreen)
+        sm.Configure(GameState.TitleScreen)
             .Permit(GameTrigger.StartGame, GameState.Playing)
             .Permit(GameTrigger.OpenSettings, GameState.Settings);
 
-        StateMachine.Configure(GameState.Playing)
+        sm.Configure(GameState.Playing)
             .Permit(GameTrigger.PauseToggle, GameState.Paused)
             .Permit(GameTrigger.PlayerDied, GameState.GameOver)
             .Permit(GameTrigger.CompleteLevel, GameState.LevelComplete);
 
-        StateMachine.Configure(GameState.Paused)
+        sm.Configure(GameState.Paused)
             .Permit(GameTrigger.PauseToggle, GameState.Playing)
             .Permit(GameTrigger.ReturnToTitle, GameState.TitleScreen)
             .Permit(GameTrigger.OpenSettings, GameState.Settings);
 
-        StateMachine.Configure(GameState.GameOver)
+        sm.Configure(GameState.GameOver)
             .Permit(GameTrigger.StartGame, GameState.Playing)
             .Permit(GameTrigger.ReturnToTitle, GameState.TitleScreen);
 
-        StateMachine.Configure(GameState.LevelComplete)
+        sm.Configure(GameState.LevelComplete)
             .Permit(GameTrigger.ReturnToTitle, GameState.TitleScreen);
 
-        StateMachine.Configure(GameState.Settings)
+        sm.Configure(GameState.Settings)
             .Permit(GameTrigger.ReturnToTitle, GameState.TitleScreen)
             .Permit(GameTrigger.PauseToggle, GameState.Paused);
-    }
-
-    public void Fire(GameTrigger trigger)
-    {
-        if (StateMachine.CanFire(trigger))
-        {
-            StateMachine.Fire(trigger);
-        }
     }
 }
