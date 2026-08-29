@@ -1,5 +1,5 @@
+using MonoGameLearning.Core.StateMachines;
 using MonoGameLearning.Game.Entities.Enemy;
-using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Tests;
 

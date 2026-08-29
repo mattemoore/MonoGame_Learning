@@ -11,8 +11,8 @@ using MonoGameLearning.Core.Entities.Actor;
 using MonoGameLearning.Core.Entities.Pickup;
 using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Core.Rendering;
+using MonoGameLearning.Core.StateMachines;
 using MonoGameLearning.Game.AnimatedSprites;
-using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Entities.Enemy;
 

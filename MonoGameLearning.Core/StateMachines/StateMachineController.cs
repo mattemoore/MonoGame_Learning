@@ -2,14 +2,14 @@ using System;
 using System.Diagnostics;
 using Stateless;
 
-namespace MonoGameLearning.Game.StateMachines;
+namespace MonoGameLearning.Core.StateMachines;
 
 public sealed class StateMachineController<TState, TTrigger>
 {
     public StateMachine<TState, TTrigger> StateMachine { get; }
     public TState State => StateMachine.State;
 
-    public StateMachineController(TState initialState, Action<StateMachine<TState, TTrigger>> configure, Action onInitialEntry = null)
+    public StateMachineController(TState initialState, Action<StateMachine<TState, TTrigger>> configure, Action? onInitialEntry = null)
     {
         StateMachine = new(initialState);
         configure(StateMachine);
