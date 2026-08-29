@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using MonoGameLearning.Core.StateMachines;
 using MonoGameLearning.Game.StateMachines;
 using Stateless;
@@ -35,18 +34,16 @@ public enum EnemyTrigger
 
 public static class EnemyStateMachine
 {
-    public static StateMachineController<EnemyState, EnemyTrigger> Create(ActorStateMachineCallbacks callbacks = null)
+    public static StateMachineController<EnemyState, EnemyTrigger> Create(EnemyStateMachineCallbacks callbacks = null)
     {
-        callbacks ??= new ActorStateMachineCallbacks();
-        Debug.Assert(callbacks.OnMovingEntry is null,
-            "EnemyStateMachine: player-only callback (OnMovingEntry) is not wired by the enemy machine");
+        callbacks ??= new EnemyStateMachineCallbacks();
         return new StateMachineController<EnemyState, EnemyTrigger>(
             EnemyState.Idle,
             sm => Configure(sm, callbacks),
             () => callbacks.OnIdleEntry?.Invoke());
     }
 
-    private static void Configure(StateMachine<EnemyState, EnemyTrigger> sm, ActorStateMachineCallbacks c)
+    private static void Configure(StateMachine<EnemyState, EnemyTrigger> sm, EnemyStateMachineCallbacks c)
     {
         sm.Configure(EnemyState.Entering)
             .OnEntry(_ => c.OnEnteringEntry?.Invoke())

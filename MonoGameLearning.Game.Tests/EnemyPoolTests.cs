@@ -1,8 +1,6 @@
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
-using MonoGame.Extended.Collisions.Layers;
-using MonoGame.Extended.Collisions.QuadTree;
 using MonoGameLearning.Core.AI;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Levels;
@@ -19,15 +17,7 @@ public class EnemyPoolTests
     private Entity _player;
     private Level _level;
 
-    private static CollisionWorld2D CreateTestWorld()
-    {
-        var world = new CollisionWorld2D();
-        var bb = new BoundingBox2D(new Vector2(Bounds.X, Bounds.Y), new Vector2(Bounds.Right, Bounds.Bottom));
-        world.AddLayer(CollisionLayers.Actors, new Layer(new QuadTreeSpace(bb)));
-        world.AddLayer(CollisionLayers.Props, new Layer(new QuadTreeSpace(bb)));
-        world.EnableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Props);
-        return world;
-    }
+    private static CollisionWorld2D CreateTestWorld() => CollisionWorldFactory.Create(Bounds);
 
     [SetUp]
     public void Setup()

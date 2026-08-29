@@ -8,7 +8,6 @@ using MonoGameLearning.Core;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Settings;
 using MonoGameLearning.Core.StateMachines;
-using MonoGameLearning.Core.UI;
 using RenderingLibrary.Graphics;
 using HorizontalAlignment = RenderingLibrary.Graphics.HorizontalAlignment;
 
@@ -24,22 +23,21 @@ public class MenuService
     private readonly GraphicsDeviceManager _graphics;
 
     private ContainerRuntime _titleScreen, _pauseScreen, _gameOverScreen, _levelCompleteScreen, _settingsScreen;
+    private List<TextRuntime> _titleOptions, _pauseOptions, _gameOverOptions, _levelCompleteOptions;
     private int _menuIndex;
     private List<TextRuntime> _activeMenuItems;
-    private readonly GumUiService _gum;
     private GameState _previousState;
 
     private TextRuntime _resCursor, _resLabel, _resValue;
     private TextRuntime _sfxCursor, _sfxLabel, _sfxValue;
     private TextRuntime _musicCursor, _musicLabel, _musicValue;
 
-    public MenuService(StateMachineController<GameState, GameTrigger> gameState, Action exitGame, GumUiService gum,
+    public MenuService(StateMachineController<GameState, GameTrigger> gameState, Action exitGame,
         Action<SfxId> playSfx, Func<AudioSettings> getAudioSettings, Action<AudioSettings> setAudioSettings,
         GraphicsDeviceManager graphics)
     {
         _gameState = gameState;
         _exitGame = exitGame;
-        _gum = gum;
         _playSfx = playSfx;
         _getAudioSettings = getAudioSettings;
         _setAudioSettings = setAudioSettings;
@@ -48,11 +46,79 @@ public class MenuService
 
     public void BuildScreens()
     {
-        _titleScreen = _gum.CreateScreen("BEAT 'EM UP", new Color(10, 15, 40), Color.Gold, ["Start Game", "Settings", "Exit"]);
-        _pauseScreen = _gum.CreateScreen("PAUSED", new Color(0, 0, 0, 180), Color.White, ["Resume", "Settings", "Quit to Title"]);
-        _gameOverScreen = _gum.CreateScreen("GAME OVER", new Color(60, 5, 5, 220), Color.Red, ["Retry", "Quit to Title"]);
-        _levelCompleteScreen = _gum.CreateScreen("LEVEL COMPLETE!", new Color(20, 40, 10, 220), Color.Gold, ["Return to Title"]);
+        (_titleScreen, _titleOptions) = BuildMenuScreen("BEAT 'EM UP", new Color(10, 15, 40), Color.Gold, ["Start Game", "Settings", "Exit"]);
+        (_pauseScreen, _pauseOptions) = BuildMenuScreen("PAUSED", new Color(0, 0, 0, 180), Color.White, ["Resume", "Settings", "Quit to Title"]);
+        (_gameOverScreen, _gameOverOptions) = BuildMenuScreen("GAME OVER", new Color(60, 5, 5, 220), Color.Red, ["Retry", "Quit to Title"]);
+        (_levelCompleteScreen, _levelCompleteOptions) = BuildMenuScreen("LEVEL COMPLETE!", new Color(20, 40, 10, 220), Color.Gold, ["Return to Title"]);
         BuildSettingsScreen();
+    }
+
+    private static (ContainerRuntime Container, List<TextRuntime> Options) BuildMenuScreen(string title, Color bgColor, Color titleColor, string[] options)
+    {
+        var container = new ContainerRuntime
+        {
+            WidthUnits = DimensionUnitType.RelativeToParent,
+            Width = 0,
+            HeightUnits = DimensionUnitType.RelativeToParent,
+            Height = 0,
+            Visible = false
+        };
+        container.AddToRoot();
+
+        var bg = new RectangleRuntime
+        {
+            WidthUnits = DimensionUnitType.RelativeToParent,
+            Width = 0,
+            HeightUnits = DimensionUnitType.RelativeToParent,
+            Height = 0,
+            IsFilled = true,
+            StrokeWidth = 0,
+            FillColor = bgColor
+        };
+        container.Children.Add(bg);
+
+        var titleText = new TextRuntime
+        {
+            Text = title,
+            X = 0,
+            Y = -80,
+            XOrigin = HorizontalAlignment.Center,
+            YOrigin = VerticalAlignment.Center,
+            XUnits = GeneralUnitType.PixelsFromMiddle,
+            YUnits = GeneralUnitType.PixelsFromMiddle,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            FontScale = 3f,
+            Red = titleColor.R,
+            Green = titleColor.G,
+            Blue = titleColor.B
+        };
+        container.Children.Add(titleText);
+
+        var optionItems = new List<TextRuntime>(options.Length);
+        float yOffset = 0;
+        foreach (var option in options)
+        {
+            var item = new TextRuntime
+            {
+                Text = "  " + option,
+                X = 0,
+                Y = yOffset,
+                XOrigin = HorizontalAlignment.Center,
+                YOrigin = VerticalAlignment.Center,
+                XUnits = GeneralUnitType.PixelsFromMiddle,
+                YUnits = GeneralUnitType.PixelsFromMiddle,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                FontScale = 1.5f,
+                Red = 220,
+                Green = 220,
+                Blue = 220
+            };
+            container.Children.Add(item);
+            optionItems.Add(item);
+            yOffset += 40;
+        }
+
+        return (container, optionItems);
     }
 
     public void OnGameStateChanged(GameState previousState)
@@ -68,10 +134,10 @@ public class MenuService
 
         _activeMenuItems = _gameState.State switch
         {
-            GameState.TitleScreen => [(TextRuntime)_titleScreen.Children[2], (TextRuntime)_titleScreen.Children[3], (TextRuntime)_titleScreen.Children[4]],
-            GameState.Paused => [(TextRuntime)_pauseScreen.Children[2], (TextRuntime)_pauseScreen.Children[3], (TextRuntime)_pauseScreen.Children[4]],
-            GameState.GameOver => [(TextRuntime)_gameOverScreen.Children[2], (TextRuntime)_gameOverScreen.Children[3]],
-            GameState.LevelComplete => [(TextRuntime)_levelCompleteScreen.Children[2]],
+            GameState.TitleScreen => _titleOptions,
+            GameState.Paused => _pauseOptions,
+            GameState.GameOver => _gameOverOptions,
+            GameState.LevelComplete => _levelCompleteOptions,
             GameState.Settings => [_resValue, _sfxValue, _musicValue],
             _ => []
         };

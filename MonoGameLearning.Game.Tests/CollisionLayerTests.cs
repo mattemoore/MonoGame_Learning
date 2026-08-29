@@ -1,8 +1,6 @@
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
-using MonoGame.Extended.Collisions.Layers;
-using MonoGame.Extended.Collisions.QuadTree;
 using MonoGameLearning.Core.Entities;
 
 namespace MonoGameLearning.Game.Tests;
@@ -28,19 +26,7 @@ public class CollisionLayerTests
 
     private static RectangleF Bounds => new(0, 0, 2000, 2000);
 
-    private static CollisionWorld2D CreateCollisionWorld()
-    {
-        var world = new CollisionWorld2D();
-        var bb = new BoundingBox2D(new Vector2(Bounds.X, Bounds.Y), new Vector2(Bounds.Right, Bounds.Bottom));
-        var actorSpace = new QuadTreeSpace(bb);
-        world.AddLayer(CollisionLayers.Actors, new Layer(actorSpace));
-        world.DisableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Actors);
-        var propSpace = new QuadTreeSpace(bb);
-        world.AddLayer(CollisionLayers.Props, new Layer(propSpace));
-        world.DisableCollisionBetweenLayers(CollisionLayers.Props, CollisionLayers.Props);
-        world.EnableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Props);
-        return world;
-    }
+    private static CollisionWorld2D CreateCollisionWorld() => CollisionWorldFactory.Create(Bounds);
 
     private static TestActorEntity MakeActor(float x, float y) =>
         new("actor", new Vector2(x, y), EntitySize, EntitySize);

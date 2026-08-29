@@ -1,9 +1,9 @@
 using System;
 using MonoGame.Extended.Graphics;
 
-namespace MonoGameLearning.Game.AnimatedSprites;
+namespace MonoGameLearning.Core.Rendering;
 
-internal static class SpriteSheetAnimationExtensions
+public static class SpriteSheetAnimationExtensions
 {
     /// <summary>
     /// Defines an animation from a run of atlas regions named <c>{prefix}-{index:00}</c>.

@@ -8,18 +8,16 @@ using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Core.UI;
 using MonoGameLearning.Core.StateMachines;
 using MonoGameLearning.Game.AnimatedSprites;
+using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Entities.Player;
 
 public class PlayerEntity : CombatActorBase, IHudPlayerData
 {
-    public const int InitialLives = 3;
-
     private StateMachineController<PlayerState, PlayerTrigger> _stateController;
     private float _invincibilityTimer;
     private MoveData _pendingMove;
 
-    public int Lives { get; set; } = InitialLives;
     public bool IsInvincible => _invincibilityTimer > 0;
     string IHudPlayerData.Name => Name;
     int IHudPlayerData.Health => HealthComponent.Value;
@@ -115,7 +113,7 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
         _stateController.Fire(PlayerTrigger.TakeDamage);
     }
 
-    protected virtual StateMachineController<PlayerState, PlayerTrigger> CreateStateController() => PlayerStateMachine.Create(new()
+    protected virtual StateMachineController<PlayerState, PlayerTrigger> CreateStateController() => PlayerStateMachine.Create(new PlayerStateMachineCallbacks
     {
         OnIdleEntry = () => SpriteRenderer.SetAnimation(Animations.Idle),
         OnMovingEntry = () => SpriteRenderer.SetAnimation(Animations.Run),
@@ -127,33 +125,30 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
             if (_pendingMove.AttackSfx.HasValue)
                 Audio.PlaySfx(_pendingMove.AttackSfx.Value);
         },
-        OnAttackingExit = OnAttackingExitHook,
+        OnAttackingExit = AttackingExitImpl,
         OnHurtEntry = () =>
         {
-            PlayAnimation(Animations.Hurt);
+            HurtEntryImpl();
             if (LastImpactSfx.HasValue)
                 Audio.PlaySfx(LastImpactSfx.Value);
             Audio.PlaySfx(SfxId.PlayerHurt);
         },
-        OnHurtExit = OnHurtExitHook,
+        OnHurtExit = HurtExitImpl,
         OnKnockdownEntry = () =>
         {
-            KnockdownPhase = KnockdownPhase.Falling;
-            UnequipWeapon();
-            PlayAnimation(Animations.Fall);
+            KnockdownEntryImpl();
             if (LastImpactSfx.HasValue)
                 Audio.PlaySfx(LastImpactSfx.Value);
             Audio.PlaySfx(SfxId.Knockdown);
         },
-        OnKnockdownExit = OnKnockdownExitHook,
+        OnKnockdownExit = KnockdownExitImpl,
         OnDyingEntry = () =>
         {
-            UnequipWeapon();
-            PlayAnimation(Animations.Die);
+            DyingEntryImpl();
             Audio.PlaySfx(SfxId.PlayerDeath);
         },
-        OnDyingExit = OnDyingExitHook,
-        OnDeadEntry = OnDeadEntryHook,
+        OnDyingExit = DyingExitImpl,
+        OnDeadEntry = DeadEntryImpl,
     });
 
     public override void Update(GameTime gameTime)

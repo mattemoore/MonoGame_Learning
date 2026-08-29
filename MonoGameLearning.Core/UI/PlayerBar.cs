@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
@@ -8,6 +9,7 @@ namespace MonoGameLearning.Core.UI;
 public sealed class PlayerBar : UiBase
 {
     private readonly IHudPlayerData _player;
+    private readonly Func<int> _getLives;
     private readonly SpriteFont _font;
     private readonly string _initialStr;
     private string _label = "";
@@ -15,21 +17,23 @@ public sealed class PlayerBar : UiBase
 
     private static readonly Color MugshotColor = new(0.3f, 0.4f, 0.8f);
 
-    public PlayerBar(IHudPlayerData player, SpriteFont font)
+    public PlayerBar(IHudPlayerData player, SpriteFont font, Func<int> getLives)
     {
         _player = player;
+        _getLives = getLives;
         _font = font;
         char initial = player.Name.Length > 0 ? char.ToUpper(player.Name[0]) : '?';
         _initialStr = initial.ToString();
-        _label = $"{player.Name}  ={player.Lives}";
+        _label = $"{player.Name}  ={getLives()}";
     }
 
     public override void Update(GameTime gameTime)
     {
-        if (_player.Lives != _lastLives)
+        int lives = _getLives();
+        if (lives != _lastLives)
         {
-            _lastLives = _player.Lives;
-            _label = $"{_player.Name}  ={_player.Lives}";
+            _lastLives = lives;
+            _label = $"{_player.Name}  ={lives}";
         }
     }
 
@@ -68,6 +72,6 @@ public sealed class PlayerBar : UiBase
         float top = HudLayoutConstants.MARGIN;
 
         sb.DrawRectangle(new RectangleF(left, top, HudLayoutConstants.HEALTH_BAR_WIDTH, HudLayoutConstants.PLAYER_BAR_HEIGHT), Color.Cyan, 1f);
-        sb.DrawString(context.Font, $"HP:{_player.Health}/{_player.MaxHealth} Inv:{_player.IsInvincible} Lives:{_player.Lives}", new Vector2(left, top + HudLayoutConstants.PLAYER_BAR_HEIGHT + 4f), Color.Cyan);
+        sb.DrawString(context.Font, $"HP:{_player.Health}/{_player.MaxHealth} Inv:{_player.IsInvincible} Lives:{_getLives()}", new Vector2(left, top + HudLayoutConstants.PLAYER_BAR_HEIGHT + 4f), Color.Cyan);
     }
 }

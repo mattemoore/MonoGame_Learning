@@ -12,7 +12,7 @@ using MonoGameLearning.Core.Rendering;
 
 namespace MonoGameLearning.Core.Entities.Prop;
 
-public abstract class PropBase : Entity, IRenderable, IDebugDrawable, ICollisionActor, ICollisionLayer, IDamageable, IDamageResponse, IPickupDropper
+public abstract class PropBase : Entity, IRenderable, IDebugDrawable, ICollisionActor, ICollisionLayer, IDamageable, IPickupDropper
 {
     public string LayerName => CollisionLayers.Props;
     protected PropBase(string name, Vector2 position, AnimatedSprite sprite, float scale, int maxHealth, CollisionAnchor anchor)
@@ -67,10 +67,6 @@ public abstract class PropBase : Entity, IRenderable, IDebugDrawable, ICollision
     int IDamageable.Health => HealthComponent.Value;
     int IDamageable.MaxHealth => HealthComponent.MaxHealth;
     bool IDamageable.IsAlive => HealthComponent.IsAlive;
-
-    bool IDamageResponse.IsAlive => HealthComponent.IsAlive;
-    void IDamageResponse.ReduceHealth(int amount) => HealthComponent.Subtract(amount);
-    void IDamageResponse.OnDeath() => OnDestroyed();
 
     void IDamageable.Heal(int amount) { }
 

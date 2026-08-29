@@ -13,17 +13,7 @@ public class CollisionWorld2DTests
     private const int EntitySize = 50;
     private static RectangleF Bounds => new(0, 0, 2000, 2000);
 
-    private static CollisionWorld2D CreateWorld()
-    {
-        var world = new CollisionWorld2D();
-        var bb = new BoundingBox2D(new Vector2(Bounds.X, Bounds.Y), new Vector2(Bounds.Right, Bounds.Bottom));
-        world.AddLayer(CollisionLayers.Actors, new Layer(new QuadTreeSpace(bb)));
-        world.DisableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Actors);
-        world.AddLayer(CollisionLayers.Props, new Layer(new QuadTreeSpace(bb)));
-        world.DisableCollisionBetweenLayers(CollisionLayers.Props, CollisionLayers.Props);
-        world.EnableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Props);
-        return world;
-    }
+    private static CollisionWorld2D CreateWorld() => CollisionWorldFactory.Create(Bounds);
 
     private static TestActorEntity MakeActor(float x, float y) =>
         new("actor", new Vector2(x, y), EntitySize, EntitySize);

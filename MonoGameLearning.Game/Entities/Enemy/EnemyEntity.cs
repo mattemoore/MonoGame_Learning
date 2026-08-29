@@ -13,6 +13,7 @@ using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Core.StateMachines;
 using MonoGameLearning.Game.AnimatedSprites;
+using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Entities.Enemy;
 
@@ -100,7 +101,7 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
         _stateController.Fire(EnemyTrigger.TakeDamage);
     }
 
-    protected virtual StateMachineController<EnemyState, EnemyTrigger> CreateStateController() => EnemyStateMachine.Create(new()
+    protected virtual StateMachineController<EnemyState, EnemyTrigger> CreateStateController() => EnemyStateMachine.Create(new EnemyStateMachineCallbacks
     {
         OnIdleEntry = () => SpriteRenderer.SetAnimation(Animations.Idle),
         OnChasingEntry = () => SpriteRenderer.SetAnimation(Animations.Run),
@@ -112,33 +113,30 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
             if (AttackMove.AttackSfx.HasValue)
                 Audio.PlaySfx(AttackMove.AttackSfx.Value);
         },
-        OnAttackingExit = OnAttackingExitHook,
+        OnAttackingExit = AttackingExitImpl,
         OnHurtEntry = () =>
         {
-            PlayAnimation(Animations.Hurt);
+            HurtEntryImpl();
             if (LastImpactSfx.HasValue)
                 Audio.PlaySfx(LastImpactSfx.Value);
             Audio.PlaySfx(SfxId.EnemyHurt);
         },
-        OnHurtExit = OnHurtExitHook,
+        OnHurtExit = HurtExitImpl,
         OnKnockdownEntry = () =>
         {
-            KnockdownPhase = KnockdownPhase.Falling;
-            UnequipWeapon();
-            PlayAnimation(Animations.Fall);
+            KnockdownEntryImpl();
             if (LastImpactSfx.HasValue)
                 Audio.PlaySfx(LastImpactSfx.Value);
             Audio.PlaySfx(SfxId.Knockdown);
         },
-        OnKnockdownExit = OnKnockdownExitHook,
+        OnKnockdownExit = KnockdownExitImpl,
         OnDyingEntry = () =>
         {
-            UnequipWeapon();
-            PlayAnimation(Animations.Die);
+            DyingEntryImpl();
             Audio.PlaySfx(SfxId.EnemyDeath);
         },
-        OnDyingExit = OnDyingExitHook,
-        OnDeadEntry = OnDeadEntryHook,
+        OnDyingExit = DyingExitImpl,
+        OnDeadEntry = DeadEntryImpl,
         OnEnteringEntry = () =>
         {
             SpriteRenderer.SetAnimation(Animations.Run);

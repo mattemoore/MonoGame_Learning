@@ -139,32 +139,6 @@ public class AudioService
         ApplyMusicVolume();
     }
 
-    public void OnGameStateChanged(GameState previous, GameState current)
-    {
-        if (previous == GameState.Paused && current != GameState.Paused)
-            SetPaused(false);
-
-        switch (current)
-        {
-            case GameState.TitleScreen:
-            case GameState.Settings:
-                PlayMusic(MusicId.TitleMenu);
-                break;
-            case GameState.Playing:
-                PlayMusic(MusicId.Gameplay);
-                break;
-            case GameState.LevelComplete:
-                PlayMusic(MusicId.LevelComplete);
-                break;
-            case GameState.Paused:
-                SetPaused(true);
-                break;
-            case GameState.GameOver:
-                PlayMusic(null);
-                break;
-        }
-    }
-
     public void Update()
     {
         if (_musicInstance is null)

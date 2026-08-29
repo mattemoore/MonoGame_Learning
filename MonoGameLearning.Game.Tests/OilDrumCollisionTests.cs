@@ -1,8 +1,6 @@
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
-using MonoGame.Extended.Collisions.Layers;
-using MonoGame.Extended.Collisions.QuadTree;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Prop;
 
@@ -113,17 +111,8 @@ public class OilDrumCollisionTests
     private const float DrumCollisionFraction = 0.5f;
     private const float DrumCollisionHeight = DrumHeight * DrumCollisionFraction; // 80
 
-    private static CollisionWorld2D CreateWorld()
-    {
-        var world = new CollisionWorld2D();
-        var bb = new BoundingBox2D(new Vector2(0, 0), new Vector2(2000, 2000));
-        world.AddLayer(CollisionLayers.Actors, new Layer(new QuadTreeSpace(bb)));
-        world.DisableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Actors);
-        world.AddLayer(CollisionLayers.Props, new Layer(new QuadTreeSpace(bb)));
-        world.DisableCollisionBetweenLayers(CollisionLayers.Props, CollisionLayers.Props);
-        world.EnableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Props);
-        return world;
-    }
+    private static CollisionWorld2D CreateWorld() =>
+        CollisionWorldFactory.Create(new RectangleF(0, 0, 2000, 2000));
 
     /// <summary>
     /// Creates a test prop whose collision shape is top-anchored at 50% height,

@@ -5,8 +5,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
-using MonoGame.Extended.Collisions.Layers;
-using MonoGame.Extended.Collisions.QuadTree;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core;
 using MonoGameLearning.Core.AI;
@@ -59,8 +57,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private CollisionWorld2D _collisionWorld;
     private Dictionary<InputAction, Action> _actionHandlers;
     private AudioService _audio;
+    private Action<SfxId> _playSfx;
     private GoIndicatorEntity _goIndicator;
     private HudService _hudService;
+    private int _lives;
     private readonly List<IScreenRenderable> _screenRenderables = [];
 
     private static readonly StaticTextureAsset GoIndicatorTexture = new("images/arrow");
@@ -82,6 +82,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _input = new InputService();
         _input.ActionTriggered += OnActionTriggered;
         _audio = new AudioService();
+        _playSfx = _audio.PlaySfx;
         SettingsService.LoadAudio();
         _audio.SfxVolume = SettingsService.AudioSettings.SfxVolume;
         _audio.MusicVolume = SettingsService.AudioSettings.MusicVolume;
@@ -94,10 +95,10 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             if (t.Destination == GameState.Playing && t.Source != GameState.Paused)
                 ResetGame();
 
-            _audio.OnGameStateChanged(t.Source, t.Destination);
+            ApplyMusicForState(_audio, t.Source, t.Destination);
         });
 
-        _menuManager = new MenuService(_gameState, Exit, Gum, _audio.PlaySfx, () => SettingsService.AudioSettings, settings =>
+        _menuManager = new MenuService(_gameState, Exit, _playSfx, () => SettingsService.AudioSettings, settings =>
         {
             SettingsService.SaveAudio(settings);
             _audio.SfxVolume = settings.SfxVolume;
@@ -131,7 +132,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         BatWeapon.Load(Content);
 
         _player.Died += OnPlayerDied;
-        _hudService = new HudService(_player, _debugFont);
+        _hudService = new HudService(_player, _debugFont, () => _lives);
 
         GoIndicatorTexture.Load(Content);
 
@@ -197,8 +198,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                     _hudService.OnEnemyHit(damageable);
             }
 
-            ResolveCollisions();
-            ResolvePickupOverlaps();
+            CollisionWorldFactory.ResolveActorPropCollisions(_collisionWorld);
+            PickupService.ResolveOverlaps(_entityManager, _player, _playSfx);
 
             _hudService.SetProximityTarget(_entityManager.FindNearestAliveEnemy(_player.Position));
 
@@ -289,57 +290,50 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         base.Draw(gameTime);
     }
 
-    // Separate from ResolvePickupOverlaps:
-    //   - ResolveCollisions: quad-tree MTV pushback (actor-into-prop)
-    //   - ResolvePickupOverlaps: manual AABB overlap, side-effect trigger (heal + destroy), no position correction
-    private void ResolveCollisions()
-    {
-        _collisionWorld.RebuildDynamicLayers();
-
-        foreach (var pair in _collisionWorld.QueryCollisionPairs(CollisionLayers.Actors, CollisionLayers.Props))
-        {
-            var actor = pair.First;
-            var result = pair.FirstResult;
-            if (!result.Intersects) continue;
-            if (actor is not ISpatial positionable) continue;
-            positionable.Position += result.MinimumTranslationVector;
-        }
-    }
-
-    private void ResolvePickupOverlaps()
-    {
-        if (_player is not IDamageable { IsAlive: true }) return;
-
-        var playerFrame = _player.Frame;
-        var pickups = _entityManager.PickupCollidables;
-        for (int i = 0; i < pickups.Count; i++)
-        {
-            var pickup = pickups[i];
-            if (pickup is not Entity { } pickupEntity) continue;
-            if (!playerFrame.Intersects(pickupEntity.Frame)) continue;
-            if (pickup is not IPickup pickupInterface) continue;
-
-            pickupInterface.OnPickup(_player);
-            _audio.PlaySfx(SfxId.PickupHeal);
-            _entityManager.Destroy(pickupEntity);
-        }
-    }
-
     private void OnPlayerDied(object sender, EventArgs e)
     {
-        if (_player.Lives > 0)
-        {
-            _player.Lives--;
+        if (TryConsumeLife(ref _lives))
             RespawnPlayer();
-        }
         else
-        {
             _gameState.Fire(GameTrigger.PlayerDied);
-        }
+    }
+
+    internal static bool TryConsumeLife(ref int lives)
+    {
+        if (lives <= 0) return false;
+        lives--;
+        return true;
     }
 
     private const float SPAWN_BUFFER_X = 60f;
     private const float LEVEL_EDGE_BUFFER = 10f;
+    private const int INITIAL_LIVES = 3;
+
+    internal static void ApplyMusicForState(AudioService audio, GameState previous, GameState current)
+    {
+        if (previous == GameState.Paused && current != GameState.Paused)
+            audio.SetPaused(false);
+
+        switch (current)
+        {
+            case GameState.TitleScreen:
+            case GameState.Settings:
+                audio.PlayMusic(MusicId.TitleMenu);
+                break;
+            case GameState.Playing:
+                audio.PlayMusic(MusicId.Gameplay);
+                break;
+            case GameState.LevelComplete:
+                audio.PlayMusic(MusicId.LevelComplete);
+                break;
+            case GameState.Paused:
+                audio.SetPaused(true);
+                break;
+            case GameState.GameOver:
+                audio.PlayMusic(null);
+                break;
+        }
+    }
 
     internal static Vector2 ComputeRespawnPosition(float cameraX, RectangleF movementBounds, float walkableTopY)
     {
@@ -378,7 +372,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private void ResetGame()
     {
         _hitboxService.ClearAll();
-        _player.Lives = PlayerEntity.InitialLives;
+        _lives = INITIAL_LIVES;
         _player.Reset(new Vector2(100, 450));
         _entityManager.Clear();
         _hudService?.ClearTargetState();
@@ -390,7 +384,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     {
         _currentLevel = new Level1(GAME_WIDTH, GAME_HEIGHT);
         _backgroundRenderer = _currentLevel.CreateBackgroundRenderer(Content);
-        _collisionWorld = CreateCollisionWorld(_currentLevel.MovementBounds);
+        _collisionWorld = CollisionWorldFactory.Create(_currentLevel.MovementBounds);
         _entityManager = new EntityService(_collisionWorld, _hitboxService);
 
         _screenRenderables.Clear();
@@ -476,22 +470,4 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
     private RectangleF GetCameraView() =>
         new(Camera.Position.X, 0, ViewportAdapter.VirtualWidth, ViewportAdapter.VirtualHeight);
-
-    private static CollisionWorld2D CreateCollisionWorld(RectangleF bounds)
-    {
-        var world = new CollisionWorld2D();
-        var bb = new BoundingBox2D(new Vector2(bounds.X, bounds.Y), new Vector2(bounds.Right, bounds.Bottom));
-        var actorSpace = new QuadTreeSpace(bb);
-        world.AddLayer(CollisionLayers.Actors, new Layer(actorSpace));
-        world.DisableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Actors);
-        var propSpace = new QuadTreeSpace(bb);
-        world.AddLayer(CollisionLayers.Props, new Layer(propSpace));
-        world.DisableCollisionBetweenLayers(CollisionLayers.Props, CollisionLayers.Props);
-        world.EnableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Props);
-        var pickupSpace = new QuadTreeSpace(bb);
-        world.AddLayer(CollisionLayers.Pickups, new Layer(pickupSpace));
-        world.DisableCollisionBetweenLayers(CollisionLayers.Pickups, CollisionLayers.Pickups);
-        world.EnableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Pickups);
-        return world;
-    }
 }
