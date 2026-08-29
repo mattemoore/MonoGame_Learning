@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGameLearning.Core.Combat;
 
@@ -14,9 +15,9 @@ public class HudService
     public IDamageable? EnemyBarTarget => _enemyBar.DisplayTarget;
     public bool IsDeathLinger => _enemyBar.IsDeathLinger;
 
-    public HudService(IHudPlayerData player, SpriteFont font)
+    public HudService(IHudPlayerData player, SpriteFont font, Func<int> getLives)
     {
-        var playerBar = new PlayerBar(player, font);
+        var playerBar = new PlayerBar(player, font, getLives);
         _enemyBar = new EnemyBar(font);
         _root = new HudRoot(playerBar, _enemyBar);
     }

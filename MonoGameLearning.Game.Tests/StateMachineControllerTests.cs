@@ -30,7 +30,7 @@ public class StateMachineControllerTests
     public void Constructor_InvokesInitialStateEntryCallback()
     {
         bool idleEntryInvoked = false;
-        var controller = PlayerStateMachine.Create(new ActorStateMachineCallbacks
+        var controller = PlayerStateMachine.Create(new PlayerStateMachineCallbacks
         {
             OnIdleEntry = () => idleEntryInvoked = true,
         });

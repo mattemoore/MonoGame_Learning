@@ -3,6 +3,7 @@ using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.UI;
 using MonoGameLearning.Core.StateMachines;
 using MonoGameLearning.Game.Entities.Player;
+using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Tests;
 
@@ -11,16 +12,16 @@ class PlayerEntityTester(string name, Vector2 position, float scale)
 {
     protected override StateMachineController<PlayerState, PlayerTrigger> CreateStateController()
     {
-        return PlayerStateMachine.Create(new()
+        return PlayerStateMachine.Create(new PlayerStateMachineCallbacks
         {
-            OnAttackingExit = OnAttackingExitHook,
-            OnHurtEntry = OnHurtEntryHook,
-            OnHurtExit = OnHurtExitHook,
-            OnKnockdownEntry = OnKnockdownEntryHook,
-            OnKnockdownExit = OnKnockdownExitHook,
-            OnDyingEntry = OnDyingEntryHook,
-            OnDyingExit = OnDyingExitHook,
-            OnDeadEntry = OnDeadEntryHook,
+            OnAttackingExit = AttackingExitImpl,
+            OnHurtEntry = HurtEntryImpl,
+            OnHurtExit = HurtExitImpl,
+            OnKnockdownEntry = KnockdownEntryImpl,
+            OnKnockdownExit = KnockdownExitImpl,
+            OnDyingEntry = DyingEntryImpl,
+            OnDyingExit = DyingExitImpl,
+            OnDeadEntry = DeadEntryImpl,
         });
     }
 }
@@ -28,7 +29,6 @@ class PlayerEntityTester(string name, Vector2 position, float scale)
 class StubHudPlayerData : IHudPlayerData
 {
     public string Name { get; set; } = "Cody";
-    public int Lives { get; set; } = 3;
     public bool IsInvincible { get; set; }
     public int Health { get; set; } = 100;
     public int MaxHealth { get; set; } = 100;

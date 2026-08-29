@@ -21,7 +21,6 @@ public class EntityService(CollisionWorld2D world, HitboxService? hitboxService 
         _updatables.Clear();
         _renderables.Clear();
         _collidablesByLayer.Clear();
-        _damageables.Clear();
         _hitboxProviders.Clear();
         _movables.Clear();
         _debugDrawables.Clear();
@@ -35,7 +34,6 @@ public class EntityService(CollisionWorld2D world, HitboxService? hitboxService 
     private readonly List<IUpdatable> _updatables = [];
     private readonly List<IRenderable> _renderables = [];
     private readonly Dictionary<string, List<ICollisionActor>> _collidablesByLayer = [];
-    private readonly List<IDamageable> _damageables = [];
     private readonly List<IHitboxProvider> _hitboxProviders = [];
     private readonly List<IMoveable> _movables = [];
     private readonly List<IDebugDrawable> _debugDrawables = [];
@@ -120,7 +118,6 @@ public class EntityService(CollisionWorld2D world, HitboxService? hitboxService 
         TryAdd<IRenderable>(entity, _renderables);
         if (entity is ICollisionLayer { } layer && entity is ICollisionActor c)
             AddToCollidables(c, layer.LayerName);
-        TryAdd<IDamageable>(entity, _damageables);
         if (TryAdd<IHitboxProvider>(entity, _hitboxProviders))
             TryInjectHitboxService(entity);
         TryAdd<IMoveable>(entity, _movables);
@@ -147,7 +144,6 @@ public class EntityService(CollisionWorld2D world, HitboxService? hitboxService 
         }
         TryRemove<IUpdatable>(entity, _updatables);
         TryRemove<IRenderable>(entity, _renderables);
-        TryRemove<IDamageable>(entity, _damageables);
         TryRemove<IHitboxProvider>(entity, _hitboxProviders);
         TryRemove<IMoveable>(entity, _movables);
         TryRemove<IDebugDrawable>(entity, _debugDrawables);

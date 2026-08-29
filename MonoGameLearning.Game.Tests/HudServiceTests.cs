@@ -21,7 +21,7 @@ public class HudServiceTests
     public void Setup()
     {
         _player = new StubHudPlayerData();
-        _hud = new HudService(_player, null!);
+        _hud = new HudService(_player, null!, () => 3);
         _enemy = new TestEnemyEntity("testEnemy", Vector2.Zero);
     }
 

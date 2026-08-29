@@ -204,18 +204,8 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     // --- Knockdown phase ---
     protected KnockdownPhase KnockdownPhase { get; set; }
 
-    // --- Shared state controller hooks (overridable by subclasses wiring their state machines) ---
-    protected virtual void OnAttackingExitHook() => AttackingExitImpl();
-    protected virtual void OnHurtEntryHook() => HurtEntryImpl();
-    protected virtual void OnHurtExitHook() => UnsubscribeFromAnimationEvent();
-    protected virtual void OnKnockdownEntryHook() => KnockdownEntryImpl();
-    protected virtual void OnKnockdownExitHook() => KnockdownExitImpl();
-    protected virtual void OnDyingEntryHook() => DyingEntryImpl();
-    protected virtual void OnDyingExitHook() => UnsubscribeFromAnimationEvent();
-    protected virtual void OnDeadEntryHook() => DeadEntryImpl();
-
-    // --- Shared state controller callback implementations ---
-    private void AttackingExitImpl()
+    // --- Shared state controller steps (single source of truth; subclasses call these and add audio) ---
+    protected void AttackingExitImpl()
     {
         UnsubscribeFromAnimationEvent();
         CurrentMove = null;
@@ -223,28 +213,32 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         HitboxService?.ClearAttackDedup(this);
     }
 
-    private void HurtEntryImpl() => PlayAnimation(Animations.Hurt);
+    protected void HurtEntryImpl() => PlayAnimation(Animations.Hurt);
 
-    private void KnockdownEntryImpl()
+    protected void HurtExitImpl() => UnsubscribeFromAnimationEvent();
+
+    protected void KnockdownEntryImpl()
     {
         KnockdownPhase = KnockdownPhase.Falling;
         UnequipWeapon();
         PlayAnimation(Animations.Fall);
     }
 
-    private void KnockdownExitImpl()
+    protected void KnockdownExitImpl()
     {
         UnsubscribeFromAnimationEvent();
         KnockdownPhase = KnockdownPhase.Falling;
     }
 
-    private void DyingEntryImpl()
+    protected void DyingEntryImpl()
     {
         UnequipWeapon();
         PlayAnimation(Animations.Die);
     }
 
-    private void DeadEntryImpl() => RaiseDied();
+    protected void DyingExitImpl() => UnsubscribeFromAnimationEvent();
+
+    protected void DeadEntryImpl() => RaiseDied();
 
     // --- Shared Update early-return ---
     protected bool TryHandleIncapacitatedUpdate(GameTime gameTime)

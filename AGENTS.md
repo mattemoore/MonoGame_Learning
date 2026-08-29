@@ -27,9 +27,9 @@ The solution is structured into two main projects:
   * **`Program.cs`**: The entry point, using C# top-level statements to bootstrap `GameLoop`.
   * **`Entities`**: Game-specific entities, such as `PlayerEntity`.
   * **`Levels.LevelDirector` / `Levels.EnemyPool`**: Thin Game-side subclasses of `LevelDirectorCore<EnemyEntity>` / `EntityPool<EnemyEntity>` — they only assemble the Game-specific pools and pass content factories through.
-*   **`Weapons`**: Static melee weapon defs (e.g., `BatWeapon`) built from `Core.Combat.MeleeWeaponDef` that swap `Attack1Move`/`AttackMove` while armed. Swing rendering uses a 4-frame `bat-texture.png`/`bat.json` atlas via `AnimatedSprites.BatSprite`, positioned per `attack` frame via `SwingAnchors`/`CarryAnchor`; hitboxes fire at swing apex (frames 2–3) only. The swing is frame-stepped (see the `SetFrame()`/`TextureRegion` pitfall below) so it stays in sync with the player's attack animation. `AnimatedSprites.BatPickupSprite` owns the separate static `bat-pickup.png` texture used by `WeaponPickupEntity` for the dropped-pickup icon (same pattern as `FoodPickupSprite`/`apple-pickup.png`).
-  * **`Sprites`**: Sprite management and animation logic (e.g., `PlayerSprite`).
-  * **`Content`**: Contains game assets (images, fonts, etc.) processed by the MonoGame Content Pipeline (`.mgcb`).
+* **`Weapons`**: Static melee weapon defs (e.g., `BatWeapon`) built from `Core.Combat.MeleeWeaponDef` that swap `Attack1Move`/`AttackMove` while armed. Swing rendering uses a 4-frame `bat-texture.png`/`bat.json` atlas via `AnimatedSprites.BatSprite`, positioned per `attack` frame via `SwingAnchors`/`CarryAnchor`; hitboxes fire at swing apex (frames 2–3) only. The swing is frame-stepped (see the `SetFrame()`/`TextureRegion` pitfall below) so it stays in sync with the player's attack animation. `AnimatedSprites.BatPickupSprite` owns the separate static `bat-pickup.png` texture used by `WeaponPickupEntity` for the dropped-pickup icon (same pattern as `FoodPickupSprite`/`apple-pickup.png`).
+* **`Sprites`**: Sprite management and animation logic (e.g., `PlayerSprite`).
+* **`Content`**: Contains game assets (images, fonts, etc.) processed by the MonoGame Content Pipeline (`.mgcb`).
 
 ## Key Technologies
 
@@ -74,7 +74,11 @@ dotnet test
 * **Modern C#**: Always use the latest C# features (e.g., primary constructors, collection expressions, raw string literals) to ensure the codebase remains modern and idiomatic.
 * **Solution Simplification**: Before proposing a solution, ALWAYS include a consideration step to see if the proposed architecture or implementation can be further simplified, refactored, or streamlined. When creating plans, prioritize simplicity — actively seek out and suggest simplifying constraints that reduce code surface area, remove unnecessary abstractions, or collapse parallel structures. Every plan should explicitly consider what can be removed or constrained, not just what needs to be built.
 * **Build Verification**: Always run `dotnet build --warnaserror` to ensure the project compiles successfully and produces zero warnings after any code modifications.
+* **Markdown Lint**: Whenever any `.md` file is created or modified (including plan files under `.kilo/plans/`), run the markdown linter (`.markdownlint-cli2.jsonc` config) and fix all warnings it reports before the change is complete.
 * **Testing**: Always run `dotnet test` to execute unit tests after making any changes to verify no regressions were introduced.
+* **Manual Testing**: `MANUAL_TESTING.md` at the repo root is the authoritative catalog of behavior that **cannot** be covered by `dotnet test` (needs a live window: rendering/animation quality, audio, real input feel, window/resize behavior, advanced debug tools). Comments that cite "not covered by tests" are acceptable; a "covered by tests" conclusion is NOT. When implementing features or fixing bugs that touch any area listed in the manual plan, update `MANUAL_TESTING.md` as needed — add, remove, or update rows so the plan stays a current source of truth for what a human must verify by hand.
+* **Learning Reference (`LEARNING.md`)**: `LEARNING.md` at the repo root is the living study guide of the design patterns used in the code and the architecture-analysis vocabulary used in reviews. When a session introduces a new pattern, adds a review term, or restructures the code in a way that invalidates an existing entry, update `LEARNING.md` in the same change so it stays a current, accurate guide.
+* **Architecture Smells**: When implementing or reviewing, watch for architecture smells and resolve them with minimal fixes that move responsibility to the right owner — do not invent new abstractions for a single value. The catalog of common smells and their minimal resolutions lives in `LEARNING.md` under "Common architecture smells & minimal resolutions". When a session introduces a new smell or resolution, add it to that catalog in the same change.
 * **Mandatory Pre-Completion Checklist**: Before marking any implementation task as complete, the following steps MUST be performed in order:
   1. Write unit/integration tests covering all new or modified logic.
   2. Run `dotnet build --warnaserror` to verify compilation with zero warnings.
@@ -123,9 +127,11 @@ dotnet test
 
 * Driving frames manually via `SetFrame()` without calling `Sprite.Update()` leaves the sprite stuck on the first frame's texture region — the frame *index* is correct (so anchor/hitbox math works), but the *drawn texture* never changes. See `CombatActorBase.RenderWeaponOverlay` for the weapon swing.
 * The fix is to sync the region yourself, mirroring what `AnimatedSprite.SetAnimation()` does internally:
+
   ```csharp
   sprite.Controller.SetFrame(frame);
   if (weapon.Sheet is not null)
       sprite.TextureRegion = weapon.Sheet.TextureAtlas[sprite.Controller.CurrentFrame];
   ```
+
 * All other sprites in the codebase (player, enemy, oil drum) are time-driven via `Sprite.Update(gameTime)`, so they never hit this. The weapon overlay is the only frame-stepped sprite.

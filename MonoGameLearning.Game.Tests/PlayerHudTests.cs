@@ -9,36 +9,12 @@ namespace MonoGameLearning.Game.Tests;
 public class PlayerHudTests
 {
     [Test]
-    public void PlayerHud_StartsWithThreeLives()
-    {
-        var player = new PlayerEntityTester("test", Vector2.Zero, 1f);
-        Assert.That(player.Lives, Is.EqualTo(PlayerEntity.InitialLives));
-    }
-
-    [Test]
-    public void PlayerHud_LivesDecremented()
-    {
-        var player = new PlayerEntityTester("test", Vector2.Zero, 1f);
-        player.Lives--;
-        Assert.That(player.Lives, Is.EqualTo(PlayerEntity.InitialLives - 1));
-    }
-
-    [Test]
     public void PlayerHud_Respawn_GrantsInvincibility()
     {
         var player = new PlayerEntityTester("test", Vector2.Zero, 1f);
         Assert.That(player.IsInvincible, Is.False);
         player.Respawn();
         Assert.That(player.IsInvincible, Is.True);
-    }
-
-    [Test]
-    public void PlayerHud_Respawn_DoesNotChangeLives()
-    {
-        var player = new PlayerEntityTester("test", Vector2.Zero, 1f);
-        int initialLives = player.Lives;
-        player.Respawn();
-        Assert.That(player.Lives, Is.EqualTo(initialLives));
     }
 
     [Test]
@@ -53,14 +29,6 @@ public class PlayerHudTests
     {
         var player = new PlayerEntityTester("test", Vector2.Zero, 1f);
         Assert.That(player, Is.InstanceOf<IHudPlayerData>());
-    }
-
-    [Test]
-    public void PlayerHud_IHudPlayerData_ReportsLives()
-    {
-        var player = new PlayerEntityTester("test", Vector2.Zero, 1f);
-        var hudData = (IHudPlayerData)player;
-        Assert.That(hudData.Lives, Is.EqualTo(PlayerEntity.InitialLives));
     }
 
     [Test]

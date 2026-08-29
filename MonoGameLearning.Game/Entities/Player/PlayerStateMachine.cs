@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using MonoGameLearning.Core.StateMachines;
 using MonoGameLearning.Game.StateMachines;
 using Stateless;
@@ -32,18 +31,16 @@ public enum PlayerTrigger
 
 public static class PlayerStateMachine
 {
-    public static StateMachineController<PlayerState, PlayerTrigger> Create(ActorStateMachineCallbacks callbacks = null)
+    public static StateMachineController<PlayerState, PlayerTrigger> Create(PlayerStateMachineCallbacks callbacks = null)
     {
-        callbacks ??= new ActorStateMachineCallbacks();
-        Debug.Assert(callbacks.OnChasingEntry is null && callbacks.OnEnteringEntry is null && callbacks.OnEnteringExit is null,
-            "PlayerStateMachine: enemy-only callbacks (OnChasingEntry/OnEnteringEntry/OnEnteringExit) are not wired by the player machine");
+        callbacks ??= new PlayerStateMachineCallbacks();
         return new StateMachineController<PlayerState, PlayerTrigger>(
             PlayerState.Idling,
             sm => Configure(sm, callbacks),
             () => callbacks.OnIdleEntry?.Invoke());
     }
 
-    private static void Configure(StateMachine<PlayerState, PlayerTrigger> sm, ActorStateMachineCallbacks c)
+    private static void Configure(StateMachine<PlayerState, PlayerTrigger> sm, PlayerStateMachineCallbacks c)
     {
         sm.Configure(PlayerState.Idling)
             .OnEntry(_ => c.OnIdleEntry?.Invoke())
