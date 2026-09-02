@@ -82,67 +82,14 @@ public static class EnemyStateMachine
             .Ignore(EnemyTrigger.StartChase)
             .Ignore(EnemyTrigger.AttackCompleted);
 
-        sm.Configure(EnemyState.Attacking)
-            .OnEntry(_ => c.OnAttackingEntry?.Invoke())
-            .OnExit(_ => c.OnAttackingExit?.Invoke())
-            .Permit(EnemyTrigger.AttackCompleted, EnemyState.Idle)
-            .Permit(EnemyTrigger.TakeDamage, EnemyState.Hurt)
-            .Permit(EnemyTrigger.TakeKnockdown, EnemyState.KnockedDown)
-            .Permit(EnemyTrigger.Die, EnemyState.Dying)
-            .Ignore(EnemyTrigger.StartChase)
-            .Ignore(EnemyTrigger.StopChase)
-            .Ignore(EnemyTrigger.AttackStart);
-
-        sm.Configure(EnemyState.Hurt)
-            .OnEntry(_ => c.OnHurtEntry?.Invoke())
-            .OnExit(_ => c.OnHurtExit?.Invoke())
-            .Permit(EnemyTrigger.HurtCompleted, EnemyState.Idle)
-            .Permit(EnemyTrigger.TakeKnockdown, EnemyState.KnockedDown)
-            .Permit(EnemyTrigger.Die, EnemyState.Dying)
-            .Ignore(EnemyTrigger.TakeDamage)
-            .Ignore(EnemyTrigger.AttackStart)
-            .Ignore(EnemyTrigger.StartChase)
-            .Ignore(EnemyTrigger.StopChase)
-            .Ignore(EnemyTrigger.AttackCompleted);
-
-        sm.Configure(EnemyState.KnockedDown)
-            .OnEntry(_ => c.OnKnockdownEntry?.Invoke())
-            .OnExit(_ => c.OnKnockdownExit?.Invoke())
-            .Permit(EnemyTrigger.KnockdownCompleted, EnemyState.Idle)
-            .Permit(EnemyTrigger.Die, EnemyState.Dying)
-            .Ignore(EnemyTrigger.TakeDamage)
-            .Ignore(EnemyTrigger.TakeKnockdown)
-            .Ignore(EnemyTrigger.AttackStart)
-            .Ignore(EnemyTrigger.AttackCompleted)
-            .Ignore(EnemyTrigger.StartChase)
-            .Ignore(EnemyTrigger.StopChase)
-            .Ignore(EnemyTrigger.HurtCompleted);
-
-        sm.Configure(EnemyState.Dying)
-            .OnEntry(_ => c.OnDyingEntry?.Invoke())
-            .OnExit(_ => c.OnDyingExit?.Invoke())
-            .Permit(EnemyTrigger.DeathCompleted, EnemyState.Dead)
-            .Ignore(EnemyTrigger.TakeDamage)
-            .Ignore(EnemyTrigger.Die)
-            .Ignore(EnemyTrigger.HurtCompleted)
-            .Ignore(EnemyTrigger.AttackStart)
-            .Ignore(EnemyTrigger.StartChase)
-            .Ignore(EnemyTrigger.StopChase)
-            .Ignore(EnemyTrigger.AttackCompleted)
-            .Ignore(EnemyTrigger.TakeKnockdown)
-            .Ignore(EnemyTrigger.KnockdownCompleted);
-
-        sm.Configure(EnemyState.Dead)
-            .OnEntry(_ => c.OnDeadEntry?.Invoke())
-            .Ignore(EnemyTrigger.TakeDamage)
-            .Ignore(EnemyTrigger.Die)
-            .Ignore(EnemyTrigger.HurtCompleted)
-            .Ignore(EnemyTrigger.DeathCompleted)
-            .Ignore(EnemyTrigger.AttackStart)
-            .Ignore(EnemyTrigger.StartChase)
-            .Ignore(EnemyTrigger.StopChase)
-            .Ignore(EnemyTrigger.AttackCompleted)
-            .Ignore(EnemyTrigger.TakeKnockdown)
-            .Ignore(EnemyTrigger.KnockdownCompleted);
+        CombatStateMachineConfigurator.ConfigureCombatStates(
+            sm,
+            c,
+            returnState: EnemyState.Idle,
+            states: new(EnemyState.Attacking, EnemyState.Hurt, EnemyState.KnockedDown, EnemyState.Dying, EnemyState.Dead),
+            triggers: new(EnemyTrigger.AttackStart, EnemyTrigger.AttackCompleted, EnemyTrigger.TakeDamage, EnemyTrigger.TakeKnockdown,
+                EnemyTrigger.KnockdownCompleted, EnemyTrigger.HurtCompleted, EnemyTrigger.Die, EnemyTrigger.DeathCompleted),
+            movementStart: EnemyTrigger.StartChase,
+            movementStop: EnemyTrigger.StopChase);
     }
 }
