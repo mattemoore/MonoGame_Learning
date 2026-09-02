@@ -15,7 +15,7 @@ public class EnemyPoolTests
     private static readonly RectangleF Bounds = new(0, 0, 2000, 600);
     private EntityService _entityManager;
     private Entity _player;
-    private Level _level;
+    private TestLevel _level;
 
     private static CollisionWorld2D CreateTestWorld() => CollisionWorldFactory.Create(Bounds);
 

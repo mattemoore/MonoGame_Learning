@@ -62,8 +62,6 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
 
     public virtual bool CanTakeDamage() => HealthComponent.IsAlive;
     public virtual void OnDeath() { }
-    public virtual void OnKnockdown(DamageInfo info) { }
-    public virtual void OnHit(DamageInfo info) { }
 
     public void EquipWeapon(MeleeWeaponDef weapon)
     {
@@ -208,6 +206,15 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     protected void AttackingExitImpl()
     {
         UnsubscribeFromAnimationEvent();
+        ClearCombatState();
+    }
+
+    /// <summary>
+    /// Clears per-life combat state (active move, hitboxes, attack dedup). Called on attack exit
+    /// and by pool return so retired enemies cannot leak hitboxes back into HitboxService.
+    /// </summary>
+    public void ClearCombatState()
+    {
         CurrentMove = null;
         HitboxService?.Clear(this);
         HitboxService?.ClearAttackDedup(this);

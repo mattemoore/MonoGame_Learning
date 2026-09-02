@@ -13,7 +13,7 @@ using MonoGameLearning.Game.Entities.Enemy;
 namespace MonoGameLearning.Game.Levels;
 
 #pragma warning disable CS9107 // Primary constructor params are used only by the base call
-public class LevelDirector(EntityService entityManager, Level level, Entity player, AudioService audio,
+public class LevelDirector(EntityService entityManager, LevelData level, Entity player, AudioService audio,
     Func<PropSpawnDef, PropBase> createProp, Func<PickupSpawnDef, Entity> createPickup,
     Func<string, MeleeWeaponDef> getWeapon, Func<string, int, Func<WorldSnapshot>, EnemyEntity> createEnemy,
     Action<EnemyEntity, EnemySpawnDef, FacingDirection, MeleeWeaponDef> onEnemySpawned,

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.AI;
@@ -17,7 +18,7 @@ using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Entities.Enemy;
 
-public class EnemyEntity : CombatActorBase, IPickupDropper
+public class EnemyEntity : CombatActorBase, IDamageResponse, IPickupDropper
 {
     private StateMachineController<EnemyState, EnemyTrigger> _stateController;
     private readonly EnemyAI _ai;
@@ -89,13 +90,13 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
 
     public override void OnDeath() => _stateController.Fire(EnemyTrigger.Die);
 
-    public override void OnKnockdown(DamageInfo info)
+    public void OnKnockdown(DamageInfo info)
     {
         LastImpactSfx = info.ImpactSfx;
         _stateController.Fire(EnemyTrigger.TakeKnockdown);
     }
 
-    public override void OnHit(DamageInfo info)
+    public void OnHit(DamageInfo info)
     {
         LastImpactSfx = info.ImpactSfx;
         _stateController.Fire(EnemyTrigger.TakeDamage);
@@ -148,9 +149,13 @@ public class EnemyEntity : CombatActorBase, IPickupDropper
         }
     });
 
-    public void SetSpawnWalkData(Vector2 direction, float targetX)
+    public void PrepareSpawn(FacingDirection initialFacing, float targetX)
     {
-        _spawnWalkDirection = direction;
+        Direction = initialFacing;
+        SpriteRenderer.SetEffect(initialFacing == FacingDirection.Left
+            ? SpriteEffects.FlipHorizontally
+            : SpriteEffects.None);
+        _spawnWalkDirection = initialFacing == FacingDirection.Left ? new Vector2(-1, 0) : new Vector2(1, 0);
         _spawnWalkTargetX = targetX;
         _stateController?.Fire(EnemyTrigger.StartEntering);
     }
