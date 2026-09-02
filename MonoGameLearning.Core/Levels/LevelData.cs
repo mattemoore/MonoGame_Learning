@@ -1,35 +1,31 @@
 using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.Xna.Framework.Content;
 using MonoGame.Extended;
 using MonoGameLearning.Core.Entities.Pickup;
-using MonoGameLearning.Core.Rendering;
 
 namespace MonoGameLearning.Core.Levels;
 
-public abstract class Level
+public sealed record LevelData(
+    int BackgroundCount,
+    int GameWidth,
+    int GameHeight,
+    float EndTriggerX,
+    float WalkableTopY,
+    IReadOnlyList<PropSpawnDef> Props,
+    IReadOnlyList<PickupSpawnDef> Pickups,
+    IReadOnlyList<WaveDef> WaveDefs)
 {
-    public List<WaveDef> WaveDefs { get; }
-    public abstract int BackgroundCount { get; }
-    public abstract float EndTriggerX { get; }
-    public abstract List<PropSpawnDef> Props { get; }
-    public abstract List<PickupSpawnDef> Pickups { get; }
-    public abstract float WalkableTopY { get; }
+    public RectangleF MovementBounds =>
+        new(0, WalkableTopY, BackgroundCount * GameWidth, GameHeight - WalkableTopY);
 
-    public RectangleF MovementBounds { get; }
-
-    protected Level(List<WaveDef> waveDefs, int gameWidth, int gameHeight)
+    public static void Validate(LevelData level)
     {
-        WaveDefs = waveDefs;
-        MovementBounds = new RectangleF(0, WalkableTopY, BackgroundCount * gameWidth, gameHeight - WalkableTopY);
-        Debug.Assert(BackgroundCount >= 1, "Level must have at least one background.");
-        ValidateWaveDefs(waveDefs, MovementBounds.Right);
-    }
+        Debug.Assert(level.BackgroundCount >= 1, "Level must have at least one background.");
 
-    private static void ValidateWaveDefs(List<WaveDef> waveDefs, float levelRightEdge)
-    {
+        var waveDefs = level.WaveDefs;
+        float levelRightEdge = level.MovementBounds.Right;
+
         Debug.Assert(waveDefs.Count > 0, "Level must have at least one wave.");
-
         for (int i = 0; i < waveDefs.Count; i++)
         {
             var wave = waveDefs[i];
@@ -48,6 +44,4 @@ public abstract class Level
             }
         }
     }
-
-    public abstract BackgroundRenderer CreateBackgroundRenderer(ContentManager content);
 }

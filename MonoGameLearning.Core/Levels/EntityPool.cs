@@ -20,7 +20,7 @@ public abstract class EntityPool<TEnemy>(
     protected readonly Dictionary<string, Stack<TEnemy>> Free = [];
     protected readonly Dictionary<TEnemy, string> EntityType = [];
 
-    public void Build(Level level)
+    public void Build(LevelData level)
     {
         var maxPerType = new Dictionary<string, int>();
         foreach (var wave in level.WaveDefs)

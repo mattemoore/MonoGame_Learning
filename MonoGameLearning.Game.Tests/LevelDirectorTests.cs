@@ -52,19 +52,26 @@ public class TestPlayerEntity(string name, Vector2 position) : Entity(name, posi
 {
 }
 
-public class TestLevel(List<WaveDef> waveDefs, float endTriggerX, int gameWidth = 800, int gameHeight = 600)
-    : Level(waveDefs, gameWidth, gameHeight)
+public sealed class TestLevel(List<WaveDef> waveDefs, float endTriggerX, int gameWidth = 800, int gameHeight = 600)
 {
-    public override int BackgroundCount => 3;
-    public override float EndTriggerX { get; } = endTriggerX;
-    public override float WalkableTopY => 0f;
-    public override List<PropSpawnDef> Props => [];
-    public override List<PickupSpawnDef> Pickups => [];
-    public override BackgroundRenderer CreateBackgroundRenderer(ContentManager content) => null!;
+    public LevelData Data { get; } = Create(waveDefs, endTriggerX, gameWidth, gameHeight);
+
+    public static implicit operator LevelData(TestLevel level) => level.Data;
+
+    private static LevelData Create(List<WaveDef> waveDefs, float endTriggerX, int gameWidth, int gameHeight) =>
+        new(
+            BackgroundCount: 3,
+            GameWidth: gameWidth,
+            GameHeight: gameHeight,
+            EndTriggerX: endTriggerX,
+            WalkableTopY: 0f,
+            Props: [],
+            Pickups: [],
+            WaveDefs: waveDefs);
 }
 
 #pragma warning disable CS9107 // Captured by base class — needed for InitializePool() called from base ctor
-public class TestLevelDirector(EntityService entityManager, Level level, Entity player)
+public class TestLevelDirector(EntityService entityManager, LevelData level, Entity player)
     : LevelDirector(entityManager, level, player, null!,
         TestLevelContent.CreateProp,
         TestLevelContent.CreatePickup,
@@ -105,7 +112,7 @@ public class TestEnemyPool(EntityService entityManager, List<Entity> spawnedEnem
 }
 
 #pragma warning disable CS9107 // Primary constructor params flow only to the base constructor
-public class CapturingHookLevelDirector(EntityService entityManager, Level level, Entity player,
+public class CapturingHookLevelDirector(EntityService entityManager, LevelData level, Entity player,
     List<(EnemyEntity Enemy, FacingDirection Facing, MeleeWeaponDef? Weapon)> captured)
     : LevelDirector(entityManager, level, player, null!,
         TestLevelContent.CreateProp,

@@ -21,7 +21,7 @@ public abstract class LevelDirectorCore<TEnemy>
     where TEnemy : CombatActorBase, IPickupDropper
 {
     protected readonly EntityService EntityManager;
-    protected readonly Level Level;
+    protected readonly LevelData Level;
     protected readonly Func<string, int, Func<WorldSnapshot>, TEnemy> CreateEnemy;
 
     private readonly Entity _player;
@@ -58,7 +58,7 @@ public abstract class LevelDirectorCore<TEnemy>
 
     public LevelDirectorCore(
         EntityService entityManager,
-        Level level,
+        LevelData level,
         Entity player,
         AudioService audio,
         Func<PropSpawnDef, PropBase> createProp,
@@ -87,7 +87,7 @@ public abstract class LevelDirectorCore<TEnemy>
 
     protected abstract void InitializePool();
 
-    public void SpawnProps(List<PropSpawnDef> propDefs)
+    public void SpawnProps(IReadOnlyList<PropSpawnDef> propDefs)
     {
         foreach (var prop in propDefs)
         {

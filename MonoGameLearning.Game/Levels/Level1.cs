@@ -8,35 +8,43 @@ using MonoGameLearning.Core.Rendering;
 
 namespace MonoGameLearning.Game.Levels;
 
-#pragma warning disable CS9107 // Primary constructor params are used by EndTriggerX and CreateBackgroundRenderer
-public class Level1(int gameWidth, int gameHeight) : Level(CreateWaveDefs(), gameWidth, gameHeight)
-#pragma warning restore CS9107
+public static class Level1
 {
-    public override int BackgroundCount => 3;
-    public override float WalkableTopY => 420f;
-    public override float EndTriggerX => BackgroundCount * gameWidth - 100f;
+    public const string BackgroundAsset = "backgrounds/background1";
 
-    public override List<PropSpawnDef> Props =>
-    [
-        new(LevelContent.OilDrum, new Vector2(200, 560), Anchor: CollisionAnchor.Bottom),
-        new(LevelContent.OilDrum, new Vector2(400, 560), Anchor: CollisionAnchor.Bottom),
-        new(LevelContent.OilDrum, new Vector2(600, 560), Anchor: CollisionAnchor.Bottom),
-        new(LevelContent.OilDrum, new Vector2(800, 460)),
-        new(LevelContent.OilDrum, new Vector2(1000, 460), Drops:
-        [
-            new PickupSpawnDef(LevelContent.Food, default),
-        ]),
-        new(LevelContent.OilDrum, new Vector2(1200, 460)),
-    ];
+    public static LevelData Create(int gameWidth, int gameHeight)
+    {
+        var data = new LevelData(
+            BackgroundCount: 3,
+            GameWidth: gameWidth,
+            GameHeight: gameHeight,
+            EndTriggerX: 3 * gameWidth - 100f,
+            WalkableTopY: 420f,
+            Props:
+            [
+                new PropSpawnDef(LevelContent.OilDrum, new Vector2(200, 560), Anchor: CollisionAnchor.Bottom),
+                new PropSpawnDef(LevelContent.OilDrum, new Vector2(400, 560), Anchor: CollisionAnchor.Bottom),
+                new PropSpawnDef(LevelContent.OilDrum, new Vector2(600, 560), Anchor: CollisionAnchor.Bottom),
+                new PropSpawnDef(LevelContent.OilDrum, new Vector2(800, 460)),
+                new PropSpawnDef(LevelContent.OilDrum, new Vector2(1000, 460), Drops:
+                [
+                    new PickupSpawnDef(LevelContent.Food, default),
+                ]),
+                new PropSpawnDef(LevelContent.OilDrum, new Vector2(1200, 460)),
+            ],
+            Pickups:
+            [
+                new PickupSpawnDef(LevelContent.Bat, new Vector2(350f, 556f)),
+                new PickupSpawnDef(LevelContent.Food, new Vector2(1400f, 556f)),
+            ],
+            WaveDefs: CreateWaveDefs());
 
-    public override List<PickupSpawnDef> Pickups =>
-    [
-        new PickupSpawnDef(LevelContent.Bat, new Vector2(350f, 556f)),
-        new PickupSpawnDef(LevelContent.Food, new Vector2(1400f, 556f)),
-    ];
+        LevelData.Validate(data);
+        return data;
+    }
 
-    public override BackgroundRenderer CreateBackgroundRenderer(ContentManager content) =>
-        BackgroundRenderer.Create(content, gameWidth, gameHeight, BackgroundCount, "backgrounds/background1");
+    public static BackgroundRenderer CreateBackgroundRenderer(ContentManager content, LevelData level) =>
+        BackgroundRenderer.Create(content, level.GameWidth, level.GameHeight, level.BackgroundCount, BackgroundAsset);
 
     private static List<WaveDef> CreateWaveDefs() =>
     [

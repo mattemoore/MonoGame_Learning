@@ -1,3 +1,5 @@
+using MonoGameLearning.Game.GameLoop;
+
 namespace MonoGameLearning.Game.Tests;
 
 [TestFixture]
@@ -7,7 +9,7 @@ public class GameLoopLivesTests
     public void TryConsumeLife_FromThree_DecrementsToTwo_ReturnsTrue()
     {
         int lives = 3;
-        Assert.That(global::MonoGameLearning.Game.GameLoop.GameLoop.TryConsumeLife(ref lives), Is.True);
+        Assert.That(GameLoopRules.TryConsumeLife(ref lives), Is.True);
         Assert.That(lives, Is.EqualTo(2));
     }
 
@@ -15,7 +17,7 @@ public class GameLoopLivesTests
     public void TryConsumeLife_FromOne_DecrementsToZero_ReturnsTrue()
     {
         int lives = 1;
-        Assert.That(global::MonoGameLearning.Game.GameLoop.GameLoop.TryConsumeLife(ref lives), Is.True);
+        Assert.That(GameLoopRules.TryConsumeLife(ref lives), Is.True);
         Assert.That(lives, Is.EqualTo(0));
     }
 
@@ -23,7 +25,7 @@ public class GameLoopLivesTests
     public void TryConsumeLife_FromZero_ReturnsFalse_DoesNotDecrement()
     {
         int lives = 0;
-        Assert.That(global::MonoGameLearning.Game.GameLoop.GameLoop.TryConsumeLife(ref lives), Is.False);
+        Assert.That(GameLoopRules.TryConsumeLife(ref lives), Is.False);
         Assert.That(lives, Is.EqualTo(0));
     }
 
@@ -31,7 +33,7 @@ public class GameLoopLivesTests
     public void TryConsumeLife_FromNegative_ReturnsFalse_DoesNotDecrement()
     {
         int lives = -1;
-        Assert.That(global::MonoGameLearning.Game.GameLoop.GameLoop.TryConsumeLife(ref lives), Is.False);
+        Assert.That(GameLoopRules.TryConsumeLife(ref lives), Is.False);
         Assert.That(lives, Is.EqualTo(-1));
     }
 }

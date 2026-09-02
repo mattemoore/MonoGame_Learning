@@ -21,10 +21,6 @@ public class EnemyPool : EntityPool<EnemyEntity>
 
     protected override void OnReturnEnemy(EnemyEntity enemy)
     {
-        if (enemy.HitboxService is not null)
-        {
-            enemy.HitboxService.Clear(enemy);
-            enemy.HitboxService.ClearAttackDedup(enemy);
-        }
+        enemy.ClearCombatState();
     }
 }

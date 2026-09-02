@@ -1,20 +1,17 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.Collisions;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core;
-using MonoGameLearning.Core.AI;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Camera;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Actor;
 using MonoGameLearning.Core.Entities.Pickup;
-using MonoGameLearning.Core.Entities.Prop;
 using MonoGameLearning.Core.Input;
 using MonoGameLearning.Core.Levels;
 using MonoGameLearning.Core.Movement;
@@ -24,9 +21,6 @@ using MonoGameLearning.Core.StateMachines;
 using MonoGameLearning.Core.UI;
 using MonoGameLearning.Game.Entities.GoIndicator;
 using MonoGameLearning.Game.Entities.Player;
-using MonoGameLearning.Game.Entities.Enemy;
-using MonoGameLearning.Game.Entities.Pickups;
-using MonoGameLearning.Game.Entities.Props;
 using MonoGameLearning.Game.Levels;
 using MonoGameLearning.Game.AnimatedSprites;
 using MonoGameLearning.Game.Weapons;
@@ -38,11 +32,12 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 {
     public const int GAME_WIDTH = 800;
     public const int GAME_HEIGHT = 600;
-    private static readonly int RESOLUTION_WIDTH = SettingsService.LoadResolution().Width;
-    private static readonly int RESOLUTION_HEIGHT = SettingsService.LoadResolution().Height;
+    private static readonly ResolutionSetting STARTUP_RESOLUTION = SettingsService.LoadResolution();
+    private static readonly int RESOLUTION_WIDTH = STARTUP_RESOLUTION.Width;
+    private static readonly int RESOLUTION_HEIGHT = STARTUP_RESOLUTION.Height;
     public const bool IS_FULL_SCREEN = false;
     private PlayerEntity _player;
-    private Level _currentLevel;
+    private LevelData _currentLevel;
     private EntityService _entityManager;
     private InputService _input;
     private int _numBackgroundsDrawn, _numEntitiesDrawn;
@@ -60,22 +55,12 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private Action<SfxId> _playSfx;
     private GoIndicatorEntity _goIndicator;
     private HudService _hudService;
+    private LevelEntityFactory _entityFactory;
     private int _lives;
     private readonly List<IScreenRenderable> _screenRenderables = [];
 
     private static readonly StaticTextureAsset GoIndicatorTexture = new("images/arrow");
     private static readonly StaticTextureAsset FoodPickupTexture = new("images/apple-pickup");
-
-    private static readonly string[] EnemyWarmUpKeys =
-    [
-        EnemySprite.AnimationIdle,
-        EnemySprite.AnimationRun,
-        EnemySprite.AnimationAttack1,
-        EnemySprite.AnimationHurt,
-        EnemySprite.AnimationFall,
-        EnemySprite.AnimationDie,
-        EnemySprite.AnimationGetUp,
-    ];
 
     protected override void Initialize()
     {
@@ -89,13 +74,13 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _hitboxService = new();
 
         _gameState = GameStateMachine.Create();
-        _gameState.StateMachine.OnTransitioned(t =>
+        _gameState.SubscribeTransitions(t =>
         {
             _menuManager.OnGameStateChanged(t.Source);
             if (t.Destination == GameState.Playing && t.Source != GameState.Paused)
                 ResetGame();
 
-            ApplyMusicForState(_audio, t.Source, t.Destination);
+            GameLoopRules.ApplyMusicForState(_audio, t.Source, t.Destination);
         });
 
         _menuManager = new MenuService(_gameState, Exit, _playSfx, () => SettingsService.AudioSettings, settings =>
@@ -152,6 +137,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             [InputAction.MenuRight] = () => _menuManager.HandleMenuAdjust(1),
         };
 
+        _entityFactory = new LevelEntityFactory(_audio, EnemySprite.Create, OilDrumSprite.Create, FoodPickupTexture.Texture, BatWeapon.Bat, GetCameraView);
         ReinitLevel();
         _goIndicator = new GoIndicatorEntity(GoIndicatorTexture.Texture, () => new Point(ViewportAdapter.VirtualWidth, ViewportAdapter.VirtualHeight));
         _screenRenderables.Add(_goIndicator);
@@ -292,64 +278,19 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
     private void OnPlayerDied(object sender, EventArgs e)
     {
-        if (TryConsumeLife(ref _lives))
+        if (GameLoopRules.TryConsumeLife(ref _lives))
             RespawnPlayer();
         else
             _gameState.Fire(GameTrigger.PlayerDied);
     }
 
-    internal static bool TryConsumeLife(ref int lives)
-    {
-        if (lives <= 0) return false;
-        lives--;
-        return true;
-    }
-
-    private const float SPAWN_BUFFER_X = 60f;
-    private const float LEVEL_EDGE_BUFFER = 10f;
     private const int INITIAL_LIVES = 3;
 
-    internal static void ApplyMusicForState(AudioService audio, GameState previous, GameState current)
-    {
-        if (previous == GameState.Paused && current != GameState.Paused)
-            audio.SetPaused(false);
-
-        switch (current)
-        {
-            case GameState.TitleScreen:
-            case GameState.Settings:
-                audio.PlayMusic(MusicId.TitleMenu);
-                break;
-            case GameState.Playing:
-                audio.PlayMusic(MusicId.Gameplay);
-                break;
-            case GameState.LevelComplete:
-                audio.PlayMusic(MusicId.LevelComplete);
-                break;
-            case GameState.Paused:
-                audio.SetPaused(true);
-                break;
-            case GameState.GameOver:
-                audio.PlayMusic(null);
-                break;
-        }
-    }
-
-    internal static Vector2 ComputeRespawnPosition(float cameraX, RectangleF movementBounds, float walkableTopY)
-    {
-        float levelLeft = movementBounds.X;
-        float levelRight = movementBounds.Right;
-        float desiredX = cameraX + SPAWN_BUFFER_X;
-        float clampedX = Math.Clamp(desiredX, levelLeft + LEVEL_EDGE_BUFFER, levelRight - LEVEL_EDGE_BUFFER);
-        Debug.Assert(clampedX >= levelLeft + LEVEL_EDGE_BUFFER,
-            "Respawn X clamped below level-left buffer — camera is before level start?");
-        return new Vector2(clampedX, walkableTopY);
-    }
-
-    internal Vector2 ComputeRespawnPosition()
-    {
-        return ComputeRespawnPosition(Camera?.Position.X ?? _currentLevel.MovementBounds.X, _currentLevel.MovementBounds, _currentLevel.WalkableTopY);
-    }
+    private Vector2 ComputeRespawnPosition() =>
+        GameLoopRules.ComputeRespawnPosition(
+            Camera?.Position.X ?? _currentLevel.MovementBounds.X,
+            _currentLevel.MovementBounds,
+            _currentLevel.WalkableTopY);
 
     private void RespawnPlayer()
     {
@@ -382,8 +323,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
     private void ReinitLevel()
     {
-        _currentLevel = new Level1(GAME_WIDTH, GAME_HEIGHT);
-        _backgroundRenderer = _currentLevel.CreateBackgroundRenderer(Content);
+        _currentLevel = Level1.Create(GAME_WIDTH, GAME_HEIGHT);
+        _backgroundRenderer = Level1.CreateBackgroundRenderer(Content, _currentLevel);
         _collisionWorld = CollisionWorldFactory.Create(_currentLevel.MovementBounds);
         _entityManager = new EntityService(_collisionWorld, _hitboxService);
 
@@ -409,63 +350,16 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             _currentLevel,
             _player,
             _audio,
-            CreateProp,
-            CreatePickup,
+            _entityFactory.CreateProp,
+            _entityFactory.CreatePickup,
             BatWeapon.Get,
-            CreateEnemy,
-            ConfigureSpawnedEnemy,
+            _entityFactory.CreateEnemy,
+            _entityFactory.ConfigureSpawnedEnemy,
             GetCameraView);
 
         _levelDirector.LevelCompleted += () => _gameState.Fire(GameTrigger.CompleteLevel);
 
         _cameraController = new CameraService(_player, GAME_WIDTH, GAME_HEIGHT, _currentLevel.MovementBounds, () => _levelDirector.WaveEndX);
-    }
-
-    private PropBase CreateProp(PropSpawnDef def) => new OilDrumEntity(def.Type, def.Position, 1.0f, OilDrumSprite.Create(), _audio, anchor: def.Anchor)
-    {
-        Drops = def.Drops
-    };
-
-    private Entity CreatePickup(PickupSpawnDef def) => def.Type switch
-    {
-        LevelContent.Food => new FoodPickupEntity(def.Type, def.Position, FoodPickupTexture.Texture),
-        LevelContent.Bat => new WeaponPickupEntity(def.Type, def.Position, BatWeapon.Bat),
-        _ => throw new ArgumentException($"Unknown pickup type: {def.Type}", nameof(def)),
-    };
-
-    private EnemyEntity CreateEnemy(string type, int index, Func<WorldSnapshot> getWorld)
-    {
-        var enemy = type switch
-        {
-            LevelContent.Grunt => new EnemyEntity($"grunt_pool_{index}", Vector2.Zero, 2.0f, EnemySprite.Create(), _audio, getWorld),
-            _ => throw new ArgumentException($"Unknown enemy type: {type}", nameof(type)),
-        };
-        foreach (var key in EnemyWarmUpKeys)
-            enemy.SpriteRenderer.SetAnimation(key);
-        return enemy;
-    }
-
-    private void ConfigureSpawnedEnemy(EnemyEntity enemy, EnemySpawnDef def, FacingDirection initialFacing, MeleeWeaponDef weapon)
-    {
-        if (weapon is not null)
-            enemy.EquipWeapon(weapon);
-
-        // SpriteRenderer without an attached sprite (test enemies) → skip visual setup.
-        if (enemy.SpriteRenderer.Sprite is not null)
-        {
-            enemy.Direction = initialFacing;
-            enemy.SpriteRenderer.SetEffect(initialFacing == FacingDirection.Left
-                ? SpriteEffects.FlipHorizontally
-                : SpriteEffects.None);
-
-            Vector2 walkDir = initialFacing == FacingDirection.Left ? new Vector2(-1, 0) : new Vector2(1, 0);
-            float halfW = enemy.Width * 0.5f;
-            var view = GetCameraView();
-            float targetX = initialFacing == FacingDirection.Left
-                ? view.X + view.Width - halfW - 50f
-                : view.X + halfW + 50f;
-            enemy.SetSpawnWalkData(walkDir, targetX);
-        }
     }
 
     private RectangleF GetCameraView() =>

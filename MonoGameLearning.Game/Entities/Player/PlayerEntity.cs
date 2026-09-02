@@ -12,7 +12,7 @@ using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Entities.Player;
 
-public class PlayerEntity : CombatActorBase, IHudPlayerData
+public class PlayerEntity : CombatActorBase, IHudPlayerData, IDamageResponse
 {
     private StateMachineController<PlayerState, PlayerTrigger> _stateController;
     private float _invincibilityTimer;
@@ -99,14 +99,14 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData
 
     public override void OnDeath() => _stateController.Fire(PlayerTrigger.Die);
 
-    public override void OnKnockdown(DamageInfo info)
+    public void OnKnockdown(DamageInfo info)
     {
         LastImpactSfx = info.ImpactSfx;
         _invincibilityTimer = 1.5f;
         _stateController.Fire(PlayerTrigger.TakeKnockdown);
     }
 
-    public override void OnHit(DamageInfo info)
+    public void OnHit(DamageInfo info)
     {
         LastImpactSfx = info.ImpactSfx;
         _invincibilityTimer = 1.0f;
