@@ -52,6 +52,11 @@ public static class SettingsService
 
     internal static void SaveSettings()
     {
+        WriteSettings(CurrentResolution, AudioSettings);
+    }
+
+    private static void WriteSettings(ResolutionSetting resolution, AudioSettings audio)
+    {
         try
         {
             var dir = Path.GetDirectoryName(GetSettingsPath());
@@ -60,8 +65,8 @@ public static class SettingsService
 
             var wrapper = new SettingsData
             {
-                Resolution = CurrentResolution,
-                Audio = AudioSettings
+                Resolution = resolution,
+                Audio = audio
             };
             var json = JsonSerializer.Serialize(wrapper);
             File.WriteAllText(GetSettingsPath(), json);
@@ -93,10 +98,11 @@ public static class SettingsService
             return res;
         }
 
-        if (data.Audio is { } audio)
-            AudioSettings = audio.Clamped();
+        // No cross-writing: LoadResolution must not mutate AudioSettings (that state belongs to
+        // LoadAudio/SaveAudio and is loaded independently during Initialize). The fallback write
+        // below persists the default resolution while keeping the file's own audio section intact.
         CurrentResolution = new(1024, 768);
-        SaveSettings();
+        WriteSettings(CurrentResolution, data.Audio?.Clamped() ?? AudioSettings.Default);
         return CurrentResolution;
     }
 
