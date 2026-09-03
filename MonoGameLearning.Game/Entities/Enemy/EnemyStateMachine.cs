@@ -39,15 +39,15 @@ public static class EnemyStateMachine
         callbacks ??= new EnemyStateMachineCallbacks();
         return new StateMachineController<EnemyState, EnemyTrigger>(
             EnemyState.Idle,
-            sm => Configure(sm, callbacks),
+            machine => Configure(machine, callbacks),
             () => callbacks.OnIdleEntry?.Invoke());
     }
 
-    private static void Configure(StateMachine<EnemyState, EnemyTrigger> sm, EnemyStateMachineCallbacks c)
+    private static void Configure(StateMachine<EnemyState, EnemyTrigger> machine, EnemyStateMachineCallbacks callbacks)
     {
-        sm.Configure(EnemyState.Entering)
-            .OnEntry(_ => c.OnEnteringEntry?.Invoke())
-            .OnExit(_ => c.OnEnteringExit?.Invoke())
+        machine.Configure(EnemyState.Entering)
+            .OnEntry(_ => callbacks.OnEnteringEntry?.Invoke())
+            .OnExit(_ => callbacks.OnEnteringExit?.Invoke())
             .Permit(EnemyTrigger.SpawnWalkCompleted, EnemyState.Idle)
             .Permit(EnemyTrigger.Die, EnemyState.Dying)
             .Ignore(EnemyTrigger.StartEntering)
@@ -61,8 +61,8 @@ public static class EnemyStateMachine
             .Ignore(EnemyTrigger.HurtCompleted)
             .Ignore(EnemyTrigger.DeathCompleted);
 
-        sm.Configure(EnemyState.Idle)
-            .OnEntry(_ => c.OnIdleEntry?.Invoke())
+        machine.Configure(EnemyState.Idle)
+            .OnEntry(_ => callbacks.OnIdleEntry?.Invoke())
             .Permit(EnemyTrigger.StartEntering, EnemyState.Entering)
             .Permit(EnemyTrigger.StartChase, EnemyState.Chasing)
             .Permit(EnemyTrigger.AttackStart, EnemyState.Attacking)
@@ -72,8 +72,8 @@ public static class EnemyStateMachine
             .Ignore(EnemyTrigger.AttackCompleted)
             .Ignore(EnemyTrigger.StopChase);
 
-        sm.Configure(EnemyState.Chasing)
-            .OnEntry(_ => c.OnChasingEntry?.Invoke())
+        machine.Configure(EnemyState.Chasing)
+            .OnEntry(_ => callbacks.OnChasingEntry?.Invoke())
             .Permit(EnemyTrigger.StopChase, EnemyState.Idle)
             .Permit(EnemyTrigger.AttackStart, EnemyState.Attacking)
             .Permit(EnemyTrigger.TakeDamage, EnemyState.Hurt)
@@ -83,8 +83,8 @@ public static class EnemyStateMachine
             .Ignore(EnemyTrigger.AttackCompleted);
 
         CombatStateMachineConfigurator.ConfigureCombatStates(
-            sm,
-            c,
+            machine,
+            callbacks,
             returnState: EnemyState.Idle,
             states: new(EnemyState.Attacking, EnemyState.Hurt, EnemyState.KnockedDown, EnemyState.Dying, EnemyState.Dead),
             triggers: new(EnemyTrigger.AttackStart, EnemyTrigger.AttackCompleted, EnemyTrigger.TakeDamage, EnemyTrigger.TakeKnockdown,

@@ -36,14 +36,14 @@ public static class PlayerStateMachine
         callbacks ??= new PlayerStateMachineCallbacks();
         return new StateMachineController<PlayerState, PlayerTrigger>(
             PlayerState.Idling,
-            sm => Configure(sm, callbacks),
+            machine => Configure(machine, callbacks),
             () => callbacks.OnIdleEntry?.Invoke());
     }
 
-    private static void Configure(StateMachine<PlayerState, PlayerTrigger> sm, PlayerStateMachineCallbacks c)
+    private static void Configure(StateMachine<PlayerState, PlayerTrigger> machine, PlayerStateMachineCallbacks callbacks)
     {
-        sm.Configure(PlayerState.Idling)
-            .OnEntry(_ => c.OnIdleEntry?.Invoke())
+        machine.Configure(PlayerState.Idling)
+            .OnEntry(_ => callbacks.OnIdleEntry?.Invoke())
             .Permit(PlayerTrigger.MoveStart, PlayerState.Moving)
             .Permit(PlayerTrigger.AttackStart, PlayerState.Attacking)
             .Permit(PlayerTrigger.TakeDamage, PlayerState.Hurt)
@@ -52,8 +52,8 @@ public static class PlayerStateMachine
             .Ignore(PlayerTrigger.AttackCompleted)
             .Ignore(PlayerTrigger.MoveStop);
 
-        sm.Configure(PlayerState.Moving)
-            .OnEntry(_ => c.OnMovingEntry?.Invoke())
+        machine.Configure(PlayerState.Moving)
+            .OnEntry(_ => callbacks.OnMovingEntry?.Invoke())
             .Permit(PlayerTrigger.MoveStop, PlayerState.Idling)
             .Permit(PlayerTrigger.AttackStart, PlayerState.Attacking)
             .Permit(PlayerTrigger.TakeDamage, PlayerState.Hurt)
@@ -63,8 +63,8 @@ public static class PlayerStateMachine
             .Ignore(PlayerTrigger.AttackCompleted);
 
         CombatStateMachineConfigurator.ConfigureCombatStates(
-            sm,
-            c,
+            machine,
+            callbacks,
             returnState: PlayerState.Idling,
             states: new(PlayerState.Attacking, PlayerState.Hurt, PlayerState.KnockedDown, PlayerState.Dying, PlayerState.Dead),
             triggers: new(PlayerTrigger.AttackStart, PlayerTrigger.AttackCompleted, PlayerTrigger.TakeDamage, PlayerTrigger.TakeKnockdown,
