@@ -13,6 +13,7 @@ public class TestUiEntity : UiBase
 {
     public override void Update(GameTime gameTime) { }
     public override void Render(RenderContext context) { }
+    public override void DrawDebug(DebugDrawContext context) { }
 }
 
 [TestFixture]
