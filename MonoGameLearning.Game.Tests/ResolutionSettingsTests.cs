@@ -55,9 +55,8 @@ public class ResolutionSettingsTests
     [Test]
     public void Load_FileMissing_ReturnsDefault()
     {
-        // delete persisted settings to simulate first launch
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        var path = Path.Combine(appData, "MonoGameLearning", "settings.json");
+        // delete persisted settings to simulate first launch (in the test's temp dir, never real app data)
+        var path = SettingsService.GetSettingsPath();
         if (File.Exists(path))
             File.Delete(path);
 
