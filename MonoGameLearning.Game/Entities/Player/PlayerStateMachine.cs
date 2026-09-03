@@ -36,14 +36,14 @@ public static class PlayerStateMachine
         callbacks ??= new PlayerStateMachineCallbacks();
         return new StateMachineController<PlayerState, PlayerTrigger>(
             PlayerState.Idling,
-            sm => Configure(sm, callbacks),
+            machine => Configure(machine, callbacks),
             () => callbacks.OnIdleEntry?.Invoke());
     }
 
-    private static void Configure(StateMachine<PlayerState, PlayerTrigger> sm, PlayerStateMachineCallbacks c)
+    private static void Configure(StateMachine<PlayerState, PlayerTrigger> machine, PlayerStateMachineCallbacks callbacks)
     {
-        sm.Configure(PlayerState.Idling)
-            .OnEntry(_ => c.OnIdleEntry?.Invoke())
+        machine.Configure(PlayerState.Idling)
+            .OnEntry(_ => callbacks.OnIdleEntry?.Invoke())
             .Permit(PlayerTrigger.MoveStart, PlayerState.Moving)
             .Permit(PlayerTrigger.AttackStart, PlayerState.Attacking)
             .Permit(PlayerTrigger.TakeDamage, PlayerState.Hurt)
@@ -52,8 +52,8 @@ public static class PlayerStateMachine
             .Ignore(PlayerTrigger.AttackCompleted)
             .Ignore(PlayerTrigger.MoveStop);
 
-        sm.Configure(PlayerState.Moving)
-            .OnEntry(_ => c.OnMovingEntry?.Invoke())
+        machine.Configure(PlayerState.Moving)
+            .OnEntry(_ => callbacks.OnMovingEntry?.Invoke())
             .Permit(PlayerTrigger.MoveStop, PlayerState.Idling)
             .Permit(PlayerTrigger.AttackStart, PlayerState.Attacking)
             .Permit(PlayerTrigger.TakeDamage, PlayerState.Hurt)
@@ -62,67 +62,14 @@ public static class PlayerStateMachine
             .Ignore(PlayerTrigger.MoveStart)
             .Ignore(PlayerTrigger.AttackCompleted);
 
-        sm.Configure(PlayerState.Attacking)
-            .OnEntry(_ => c.OnAttackingEntry?.Invoke())
-            .OnExit(_ => c.OnAttackingExit?.Invoke())
-            .Permit(PlayerTrigger.AttackCompleted, PlayerState.Idling)
-            .Permit(PlayerTrigger.TakeDamage, PlayerState.Hurt)
-            .Permit(PlayerTrigger.TakeKnockdown, PlayerState.KnockedDown)
-            .Permit(PlayerTrigger.Die, PlayerState.Dying)
-            .Ignore(PlayerTrigger.MoveStart)
-            .Ignore(PlayerTrigger.MoveStop)
-            .Ignore(PlayerTrigger.AttackStart);
-
-        sm.Configure(PlayerState.Hurt)
-            .OnEntry(_ => c.OnHurtEntry?.Invoke())
-            .OnExit(_ => c.OnHurtExit?.Invoke())
-            .Permit(PlayerTrigger.HurtCompleted, PlayerState.Idling)
-            .Permit(PlayerTrigger.TakeKnockdown, PlayerState.KnockedDown)
-            .Permit(PlayerTrigger.Die, PlayerState.Dying)
-            .Ignore(PlayerTrigger.TakeDamage)
-            .Ignore(PlayerTrigger.AttackStart)
-            .Ignore(PlayerTrigger.MoveStart)
-            .Ignore(PlayerTrigger.MoveStop)
-            .Ignore(PlayerTrigger.AttackCompleted);
-
-        sm.Configure(PlayerState.KnockedDown)
-            .OnEntry(_ => c.OnKnockdownEntry?.Invoke())
-            .OnExit(_ => c.OnKnockdownExit?.Invoke())
-            .Permit(PlayerTrigger.KnockdownCompleted, PlayerState.Idling)
-            .Permit(PlayerTrigger.Die, PlayerState.Dying)
-            .Ignore(PlayerTrigger.TakeDamage)
-            .Ignore(PlayerTrigger.TakeKnockdown)
-            .Ignore(PlayerTrigger.AttackStart)
-            .Ignore(PlayerTrigger.AttackCompleted)
-            .Ignore(PlayerTrigger.MoveStart)
-            .Ignore(PlayerTrigger.MoveStop)
-            .Ignore(PlayerTrigger.HurtCompleted);
-
-        sm.Configure(PlayerState.Dying)
-            .OnEntry(_ => c.OnDyingEntry?.Invoke())
-            .OnExit(_ => c.OnDyingExit?.Invoke())
-            .Permit(PlayerTrigger.DeathCompleted, PlayerState.Dead)
-            .Ignore(PlayerTrigger.TakeDamage)
-            .Ignore(PlayerTrigger.Die)
-            .Ignore(PlayerTrigger.HurtCompleted)
-            .Ignore(PlayerTrigger.AttackStart)
-            .Ignore(PlayerTrigger.MoveStart)
-            .Ignore(PlayerTrigger.MoveStop)
-            .Ignore(PlayerTrigger.AttackCompleted)
-            .Ignore(PlayerTrigger.TakeKnockdown)
-            .Ignore(PlayerTrigger.KnockdownCompleted);
-
-        sm.Configure(PlayerState.Dead)
-            .OnEntry(_ => c.OnDeadEntry?.Invoke())
-            .Ignore(PlayerTrigger.TakeDamage)
-            .Ignore(PlayerTrigger.Die)
-            .Ignore(PlayerTrigger.HurtCompleted)
-            .Ignore(PlayerTrigger.DeathCompleted)
-            .Ignore(PlayerTrigger.AttackStart)
-            .Ignore(PlayerTrigger.MoveStart)
-            .Ignore(PlayerTrigger.MoveStop)
-            .Ignore(PlayerTrigger.AttackCompleted)
-            .Ignore(PlayerTrigger.TakeKnockdown)
-            .Ignore(PlayerTrigger.KnockdownCompleted);
+        CombatStateMachineConfigurator.ConfigureCombatStates(
+            machine,
+            callbacks,
+            returnState: PlayerState.Idling,
+            states: new(PlayerState.Attacking, PlayerState.Hurt, PlayerState.KnockedDown, PlayerState.Dying, PlayerState.Dead),
+            triggers: new(PlayerTrigger.AttackStart, PlayerTrigger.AttackCompleted, PlayerTrigger.TakeDamage, PlayerTrigger.TakeKnockdown,
+                PlayerTrigger.KnockdownCompleted, PlayerTrigger.HurtCompleted, PlayerTrigger.Die, PlayerTrigger.DeathCompleted),
+            movementStart: PlayerTrigger.MoveStart,
+            movementStop: PlayerTrigger.MoveStop);
     }
 }
