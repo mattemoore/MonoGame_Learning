@@ -1,0 +1,67 @@
+{
+  "fileRelativeTextures": true,
+  "timeMeasurementUnit": "Second",
+  "coordinateType": "Pixel",
+  "animationChains": [
+    {
+      "name": "Hold",
+      "frames": [
+        {
+          "textureName": "bat-texture.png",
+          "frameLength": 0.1,
+          "leftCoordinate": 29.999998,
+          "rightCoordinate": 42,
+          "topCoordinate": 36,
+          "bottomCoordinate": 102
+        }
+      ]
+    },
+    {
+      "name": "Swing",
+      "frames": [
+        {
+          "textureName": "bat-texture.png",
+          "frameLength": 0.1,
+          "leftCoordinate": 102,
+          "rightCoordinate": 147,
+          "topCoordinate": 57.000004,
+          "bottomCoordinate": 102,
+          "relativeX": -16,
+          "relativeY": -16
+        },
+        {
+          "textureName": "bat-texture.png",
+          "frameLength": 0.1,
+          "leftCoordinate": 213,
+          "rightCoordinate": 261,
+          "topCoordinate": 90,
+          "bottomCoordinate": 102,
+          "flipDiagonal": true,
+          "relativeX": -1,
+          "relativeY": -21
+        },
+        {
+          "textureName": "bat-texture.png",
+          "frameLength": 0.1,
+          "leftCoordinate": 102,
+          "rightCoordinate": 147,
+          "topCoordinate": 57.000004,
+          "bottomCoordinate": 102,
+          "flipHorizontal": true,
+          "relativeX": 15,
+          "relativeY": -15
+        },
+        {
+          "textureName": "bat-texture.png",
+          "frameLength": 0.1,
+          "leftCoordinate": 213,
+          "rightCoordinate": 261,
+          "topCoordinate": 90,
+          "bottomCoordinate": 102,
+          "relativeX": 22,
+          "relativeY": 1
+        }
+      ]
+    }
+  ]
+}

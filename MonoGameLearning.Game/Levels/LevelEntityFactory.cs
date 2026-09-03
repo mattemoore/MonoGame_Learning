@@ -15,7 +15,6 @@ using MonoGameLearning.Game.AnimatedSprites;
 using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.Entities.Pickups;
 using MonoGameLearning.Game.Entities.Props;
-using MonoGameLearning.Game.Weapons;
 
 namespace MonoGameLearning.Game.Levels;
 
