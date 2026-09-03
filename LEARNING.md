@@ -19,7 +19,7 @@ findings have since been fixed (noted inline).
 
 - **Concept:** One place constructs the whole object graph; dependencies are passed in as `Func`/`Action` delegates rather than referenced by type.
 - **Why it's used here:** Lets Core stay generic — `LevelDirectorCore` never references Game types, so any beat-'em-up can reuse it.
-- **Where:** `GameLoop.InitLevelSystems` (`GameLoop.cs:401-418`); `LevelDirectorCore` ctor takes `createProp`/`createPickup`/`getWeapon`/`createEnemy`/`onEnemySpawned`/`getCameraView` (`LevelDirectorCore.cs:59-86`); `Func<WorldSnapshot>` seam (`EntityPool.cs:11`, `EnemyEntity.cs:75`).
+- **Where:** `GameLoop.InitLevelSystems` (`GameLoop.cs:352-369`) wires the Game-side content factories from `Levels.LevelEntityFactory`; `LevelDirectorCore` ctor takes `createProp`/`createPickup`/`getWeapon`/`createEnemy`/`onEnemySpawned`/`getCameraView` (`LevelDirectorCore.cs:59-86`); `Func<WorldSnapshot>` seam (`EntityPool.cs:11`, `EnemyEntity.cs:75`).
 - **How to spot it:** A class whose constructor is a wall of `Func<...>`/`Action<...>` parameters.
 
 ### 2. Capability interfaces (interface segregation, adjective-named) [Pattern]
@@ -33,14 +33,14 @@ findings have since been fixed (noted inline).
 
 - **Concept:** States and legal transitions are declared declaratively; illegal triggers are ignored with a debug trace.
 - **Why it's used here:** Player/enemy/game-shell behavior is a table of states × triggers, and animation completion feeds back into the FSM.
-- **Where:** `StateMachineController<TState,TTrigger>` guarded `Fire` + `Debug.WriteLine` (`StateMachines/StateMachineController.cs:24-32`); `GameStateMachine`, `PlayerStateMachine`, `EnemyStateMachine`; `ActorPhase` + `FirePhaseCompleted` bridge animation completion back into the FSM (`CombatActorBase.cs:195-196`). Each machine declares its callback surface explicitly (`CombatActorStateMachineCallbacks` base + `PlayerStateMachineCallbacks`/`EnemyStateMachineCallbacks` subtypes).
+- **Where:** `StateMachineController<TState,TTrigger>` wraps the raw Stateless machine privately — guarded `Fire` + `Debug.WriteLine` (`StateMachines/StateMachineController.cs:24-31`), `SubscribeTransitions` replaces direct `StateMachine.OnTransitioned` reach-through (`StateMachineController.cs:35`); `GameStateMachine`, `PlayerStateMachine`, `EnemyStateMachine`; the five combat states (Attacking/Hurt/KnockedDown/Dying/Dead) are configured once by `StateMachines.CombatStateMachineConfigurator` parameterized over each actor's enums (`CombatStateSet<TState>`/`CombatTriggerSet<TTrigger>`), so player/enemy tables can't drift; `ActorPhase` + `FirePhaseCompleted` bridge animation completion back into the FSM (`CombatActorBase.cs:195-196`). Each machine declares its callback surface explicitly (`CombatActorStateMachineCallbacks` base in `Core.StateMachines` + `PlayerStateMachineCallbacks`/`EnemyStateMachineCallbacks` subtypes).
 - **How to spot it:** `.Configure(state).Permit(trigger, nextState)` chains, or `Fire` wrapped in a `CanFire` guard.
 
 ### 4. Object pooling (rent/return/sentinel) [Pattern]
 
 - **Concept:** Reuse instances instead of allocating; a sentinel position marks "not in the world."
 - **Why it's used here:** Enemies spawn/die constantly; pooling avoids GC churn and keeps memory flat across retries. The sentinel is the allocation-free alternative to a nullable "in-pool" flag — checking `Position == Sentinel` reuses the existing position field instead of adding per-entity bookkeeping.
-- **Where:** `EntityPool<TEnemy>` (`EntityPool.cs`): per-type stacks, sentinel `(-99999,-99999)` (`EntityPool.cs:15`), `Build` pre-allocation, `OnRentEnemy`/`OnReturnEnemy` hooks. Audio reuses `SoundEffectInstance` pools (`AudioService.cs:12` `PoolSize = 3`).
+- **Where:** `EntityPool<TEnemy>` (`EntityPool.cs`): per-type stacks, sentinel `(-99999,-99999)` (`EntityPool.cs:15`), `Build` pre-allocation, `OnRentEnemy`/`OnReturnEnemy` hooks. Pool-return cleanup goes through the entity itself — `EnemyPool.OnReturnEnemy` calls `enemy.ClearCombatState()` (hitboxes/attack-dedup) so the pool never reaches into `HitboxService`. Audio reuses `SoundEffectInstance` pools (`AudioService.cs:12` `PoolSize = 3`).
 - **How to spot it:** A `Stack<T>` of instances plus a `Rent`/`Return` pair, and a magic sentinel position.
 
 ### 5. Snapshot pattern (consistent per-frame world view) [Pattern]
@@ -75,7 +75,7 @@ findings have since been fixed (noted inline).
 
 - **Concept:** Static or injected methods that construct configured instances.
 - **Why it's used here:** Sprites need one-time content loading + atlas wiring; the composition root builds content entities.
-- **Where:** Static sprite factories `PlayerSprite.Create()` etc. (`AnimatedSprites/*`); `BackgroundRenderer.Create` (`BackgroundRenderer.cs:33`); content factories in the composition root (`GameLoop.CreateEnemy`/`CreatePickup`/`CreateProp`, `GameLoop.cs:420-442`); `CollisionWorldFactory.Create` builds the canonical collision world (`CollisionWorldFactory.cs:11`).
+- **Where:** Static sprite factories `PlayerSprite.Create()` etc., each backed by the shared `Core.Rendering.SpriteSheetAsset` atlas-load/frame-def/Create pipeline (`AnimatedSprites/*`, `SpriteSheetAsset.cs`); `BackgroundRenderer.Create` (`BackgroundRenderer.cs:33`); Game-side content factories in `Levels.LevelEntityFactory` (`LevelEntityFactory.cs`); `CollisionWorldFactory.Create` builds the canonical collision world (`CollisionWorldFactory.cs:11`).
 - **How to spot it:** A `static` method returning a fully-configured object, or a `Create*` method taking a content/def parameter.
 
 ### 10. Template Method / hook methods [Pattern]
@@ -117,7 +117,7 @@ findings have since been fixed (noted inline).
 
 - **Concept:** Assert invariants and log unexpected conditions; compiled out in Release.
 - **Why it's used here:** Catches sentinel drift, illegal wave layouts, and camera clamp violations during development at zero runtime cost.
-- **Where:** `Level.ValidateWaveDefs` (`Level.cs:29-50`), `CameraService.ComputeTargetX` (`CameraService.cs:33-35`), `AnimationFrameTracker.TryGetNewFrame`, `StateMachineController.Fire` (`StateMachineController.cs:31`).
+- **Where:** `LevelData.Validate` (`Levels/LevelData.cs`), `CameraService.ComputeTargetX` (`CameraService.cs:33-35`), `AnimationFrameTracker.TryGetNewFrame`, `StateMachineController.Fire` (`StateMachineController.cs:31`).
 - **How to spot it:** `Debug.Assert(condition, "message")` guarding an invariant, or `Debug.WriteLine` in a "should never happen" branch.
 
 ### 16. Modern C# [Pattern]
@@ -142,7 +142,7 @@ findings have since been fixed (noted inline).
 
 - **Concept:** One class holding many responsibilities across many namespaces.
 - **Detection:** "many responsibilities / references many namespaces."
-- **Example:** `GameLoop.cs` (~469 lines: wiring + frame orchestration + rendering). Partially slimmed by the audit — collision/pickup/music logic moved to Core — but it remains the composition root + orchestrator.
+- **Example:** `GameLoop.cs` (~373 lines: wiring + frame orchestration + rendering). Slimmed repeatedly by audits — collision/pickup/music rules → `GameLoopRules`, entity factories → `LevelEntityFactory`, level data → `LevelData` — but it remains the composition root + orchestrator.
 
 ### 2. Feature Envy [Review term]
 
@@ -176,7 +176,7 @@ findings have since been fixed (noted inline).
 
 - **Concept:** Reusable engine logic trapped in the game project (or game-specific logic leaking into Core).
 - **Detection:** "would I copy this file verbatim into a new 2D sidescroller?" / "does Core reference Game?"
-- **Examples fixed by the audit:** `AudioService.OnGameStateChanged` state→music mapping → `GameLoop.ApplyMusicForState` (`GameLoop.cs:308`); `GameLoop.CreateCollisionWorld` → `CollisionWorldFactory` (`CollisionWorldFactory.cs`); `SpriteSheetAnimationExtensions` → `Core.Rendering`.
+- **Examples fixed by the audit:** `AudioService.OnGameStateChanged` state→music mapping → `GameLoopRules.ApplyMusicForState` (`GameLoopRules.cs`); `GameLoop.CreateCollisionWorld` → `CollisionWorldFactory` (`CollisionWorldFactory.cs`); `SpriteSheetAnimationExtensions` → `Core.Rendering`; `CombatActorStateMachineCallbacks` → `Core.StateMachines`.
 
 ### 8. Coupling vs Cohesion [Review term]
 
@@ -205,7 +205,7 @@ findings have since been fixed (noted inline).
 - **Concept:** A value is owned by one class but consumed only by another — the "owner" is just a bucket, not the decisionmaker.
 
 - **Detection:** "data owned by A, read/written only by B; A never uses its own value."
-- **Example:** `PlayerEntity.Lives`/`InitialLives` were carried by the player entity but only read/decremented by `GameLoop.OnPlayerDied` — **fixed**: lives moved to `GameLoop` (`_lives`, `INITIAL_LIVES`, `TryConsumeLife`, `GameLoop.cs:294-304`), and the HUD receives them via a `Func<int>` getter (`HudService(..., Func<int>)`). Clinical sign: the player never used its own lives — the value was run/session state, not actor behavior.
+- **Example:** `PlayerEntity.Lives`/`InitialLives` were carried by the player entity but only read/decremented by `GameLoop.OnPlayerDied` — **fixed**: lives moved to `GameLoop` (`_lives`, `INITIAL_LIVES`, consumed via `GameLoopRules.TryConsumeLife`), and the HUD receives them via a `Func<int>` getter (`HudService(..., Func<int>)`). Clinical sign: the player never used its own lives — the value was run/session state, not actor behavior.
 
 ---
 
@@ -219,10 +219,10 @@ linked in "Review terminology".
 1. **Misplaced data (wrong-owner state)** — A value is owned by one class but consumed only by another. *Resolve:* move the value to the consumer and pass it where needed — `PlayerEntity.Lives` became `GameLoop._lives`/`INITIAL_LIVES` with the HUD fed via a `Func<int>` getter.
 2. **Feature Envy** — A method uses more of another class's members than its own. *Resolve:* move the method (or the data it envies) to the class it depends on.
 3. **Dead code / duplicate source of truth** — A member is written but never read, or a constant duplicates another. *Resolve:* delete the dead member or collapse to one source of truth.
-4. **Law of Demeter / reach-through** — Chains like `.Foo.Bar.Baz` or indexing into another object's children. *Resolve:* have the owner expose what callers need directly — `MenuService` stores its option lists instead of casting `Children[i]`.
+4. **Law of Demeter / reach-through** — Chains like `.Foo.Bar.Baz` or indexing into another object's children. *Resolve:* have the owner expose what callers need directly — `MenuService` stores its option lists instead of casting `Children[i]`; enemy spawn/cleanup went through `EnemyEntity.PrepareSpawn`/`ClearCombatState` instead of callers reaching into `SpriteRenderer.*`/`HitboxService`.
 5. **Leaky abstraction** — Callers must understand a wrapped type's internals to use it. *Resolve:* tighten the contract or move the logic to the caller.
 6. **Misplaced Core Class** — Reusable engine logic trapped in the Game project. *Resolve:* promote it to `MonoGameLearning.Core` — `CollisionWorldFactory`, `PickupService`, `SpriteSheetAnimationExtensions`.
-7. **Inheritance smell** — Base members existing only for one subclass, or subclasses re-implementing base logic. *Resolve:* promote the shared step to the base as the single source of truth — `CombatActorBase` `*Impl` steps.
+7. **Inheritance smell** — Base members existing only for one subclass, or subclasses re-implementing base logic. *Resolve:* promote the shared step to the base as the single source of truth — `CombatActorBase` `*Impl` steps; or delete the speculative abstraction — `Level` had a single subclass and collapsed to the concrete `LevelData` record.
 
 When a session introduces a new smell or resolution, add it to this catalog in the
 same change (AGENTS.md rule).
