@@ -11,6 +11,5 @@ public abstract class UiBase : IUpdatable, IScreenRenderable, IDebugDrawable
 
     public abstract void Update(GameTime gameTime);
     public abstract void Render(RenderContext context);
-
-    public virtual void DrawDebug(DebugDrawContext context) { }
+    public abstract void DrawDebug(DebugDrawContext context);
 }
