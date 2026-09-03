@@ -1,7 +1,20 @@
 using System.IO;
 
-var outputDir = args.Length > 0 ? args[0] : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "MonoGameLearning.Game", "Content", "audio"));
+var outputDir = args.Length > 0 ? args[0] : FindGameContentAudioDir();
 Directory.CreateDirectory(outputDir);
+
+static string FindGameContentAudioDir()
+{
+    var dir = new DirectoryInfo(Environment.CurrentDirectory);
+    while (dir is not null)
+    {
+        var candidate = Path.Combine(dir.FullName, "MonoGameLearning.Game", "Content", "audio");
+        if (Directory.Exists(candidate)) return Path.GetFullPath(candidate);
+        dir = dir.Parent;
+    }
+    throw new DirectoryNotFoundException(
+        "MonoGameLearning.Game/Content/audio not found above the current working directory; pass an explicit output dir.");
+}
 
 static void WriteWav(string path, float duration, int sampleRate, Func<float, float> sampleFunc)
 {

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AESettingsSave xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <OffsetMultiplier>1</OffsetMultiplier>
+  <ExpandedNode>Hold</ExpandedNode>
+  <ExpandedNode>Swing</ExpandedNode>
+  <SnapToGrid>true</SnapToGrid>
+  <GridSize>3</GridSize>
+  <WireframeZoomPercent>300</WireframeZoomPercent>
+  <PreviewZoomPercent>400</PreviewZoomPercent>
+  <WireframePanX>464.5937</WireframePanX>
+  <WireframePanY>78.5</WireframePanY>
+  <PreviewPanX>0</PreviewPanX>
+  <PreviewPanY>0</PreviewPanY>
+</AESettingsSave>
