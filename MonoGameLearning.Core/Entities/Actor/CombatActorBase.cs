@@ -49,7 +49,6 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     public event EventHandler? Died;
     protected SfxId? LastImpactSfx { get; set; }
     public MeleeWeaponDef? EquippedWeapon { get; private set; }
-    protected AnimatedSprite? WeaponSprite { get; private set; }
 
     public int Health => HealthComponent.Value;
     public int MaxHealth => HealthComponent.MaxHealth;
@@ -63,17 +62,9 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     public virtual bool CanTakeDamage() => HealthComponent.IsAlive;
     public virtual void OnDeath() { }
 
-    public void EquipWeapon(MeleeWeaponDef weapon)
-    {
-        EquippedWeapon = weapon;
-        WeaponSprite = weapon.CreateSprite();
-    }
+    public void EquipWeapon(MeleeWeaponDef weapon) => EquippedWeapon = weapon;
 
-    public void UnequipWeapon()
-    {
-        EquippedWeapon = null;
-        WeaponSprite = null;
-    }
+    public void UnequipWeapon() => EquippedWeapon = null;
 
     protected void PlayAnimation(string key)
     {
@@ -128,28 +119,35 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     {
         var weapon = EquippedWeapon;
         if (weapon is null) return;
-        if (WeaponSprite is null)
+        if (weapon.Sheet is null)
         {
-            Debug.WriteLine($"{GetType().Name} [{Name}] armed with '{weapon.Name}' but no weapon sprite — Sheet not loaded?");
+            Debug.WriteLine($"{GetType().Name} [{Name}] armed with '{weapon.Name}' but no weapon sheet — Sheet not loaded?");
             return;
         }
 
         var (anchor, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(weapon, IsInAttackingState, FrameTracker.FrameIndex);
-        var effect = MeleeWeaponDef.WeaponFacingEffect(Direction);
-        WeaponSprite.Effect = effect;
-        WeaponSprite.Controller.SetFrame(frame);
-        // SetFrame only updates the controller's internal frame index — it never refreshes
-        // AnimatedSprite.TextureRegion. See AGENTS.md "MonoGame.Extended Pitfalls".
-        if (weapon.Sheet is not null)
-            WeaponSprite.TextureRegion = weapon.Sheet.TextureAtlas[WeaponSprite.Controller.CurrentFrame];
+        var region = weapon.ResolveWeaponRegion(IsInAttackingState, frame);
+        if (region is null)
+        {
+            Debug.Assert(false, $"{weapon.Name} weapon is missing SwingPrefix/CarryRegion region mapping");
+            return;
+        }
 
+        var effect = MeleeWeaponDef.WeaponFacingEffect(Direction);
         var anchorOffset = MeleeWeaponDef.ApplyWeaponFacing(anchor, Direction);
-        var region = WeaponSprite.TextureRegion;
         var origin = new Vector2(region.Width / 2f, region.Height / 2f);
-        var scale = new Vector2(SpriteRenderer.Scale);
+        // The grip-on-hand invariant cancels only when the region half-size equals
+        // weapon.FrameCenter (the handle offsets are expressed against it).
+        Debug.Assert(
+            MathF.Abs(region.Width / 2f - weapon.FrameCenter.X) < 0.5f &&
+            MathF.Abs(region.Height / 2f - weapon.FrameCenter.Y) < 0.5f,
+            $"{weapon.Name} region {region.Width}x{region.Height} does not match FrameCenter {weapon.FrameCenter} — the anchor formula assumes frame center = region size / 2");
+        // Anchor positions in actor space (tracks the hand); only the region scales by
+        // weapon.Scale, so the grip stays on the hand for any weapon scale.
+        var drawScale = new Vector2(SpriteRenderer.Scale * weapon.Scale);
         context.SpriteBatch.Draw(region,
             new Vector2(Position.X + anchorOffset.X * SpriteRenderer.Scale, Position.Y + anchorOffset.Y * SpriteRenderer.Scale),
-            Color.White, 0f, origin, scale, effect, 0f);
+            Color.White, 0f, origin, drawScale, effect, 0f);
     }
 
     public virtual void DrawDebug(DebugDrawContext context)
@@ -168,10 +166,42 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
 
         if (EquippedWeapon is not null)
         {
-            var (anchor, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(EquippedWeapon, IsInAttackingState, FrameTracker.FrameIndex);
-            var anchorScreen = Position + MeleeWeaponDef.ApplyWeaponFacing(anchor, Direction);
+            var weapon = EquippedWeapon;
+            var (anchor, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(weapon, IsInAttackingState, FrameTracker.FrameIndex);
+            var scale = SpriteRenderer.Scale;
+            // Region center the overlay draws the weapon at (orange marker + name).
+            var anchorScreen = Position + MeleeWeaponDef.ApplyWeaponFacing(anchor, Direction) * scale;
+
+            if (weapon.HasHandleOffsets)
+            {
+                // Grip point (green marker): the handle sits handleOffset - regionHalf from
+                // the region's center. Shares the draw path's math exactly (anchor scaled by
+                // actor scale, offset term by actor scale * weapon scale). Coincides with the
+                // orange anchor center only when the grip offset is zero; against the drawn
+                // bat it lands on the actor hand when the anchor formula holds.
+                var region = weapon.ResolveWeaponRegion(IsInAttackingState, frame);
+                if (region is not null)
+                {
+                    var handleOffset = weapon.ResolveHandleOffset(IsInAttackingState, frame);
+                    var regionHalf = new Vector2(region.Width / 2f, region.Height / 2f);
+                    var handleScreen = MeleeWeaponDef.ComputeHandleScreenPoint(
+                        Position, Direction, anchor, handleOffset, regionHalf, scale, weapon.Scale);
+                    // Off-sprite check in actor space: Frame is unscaled (48x60), so use the
+                    // scale=1 handle point, not the scaled world marker.
+                    var handScreen = MeleeWeaponDef.ComputeHandleScreenPoint(
+                        Position, Direction, anchor, handleOffset, regionHalf, 1f, weapon.Scale);
+                    var attachBounds = Frame;
+                    bool outsideSprite =
+                        handScreen.X < attachBounds.Left || handScreen.X > attachBounds.Right ||
+                        handScreen.Y < attachBounds.Top || handScreen.Y > attachBounds.Bottom;
+                    if (outsideSprite)
+                        Debug.WriteLine($"{GetType().Name} [{Name}] {weapon.Name} handle at ({handScreen.X:F0},{handScreen.Y:F0}) is outside the actor sprite {attachBounds} — retune CarryHandAnchor/SwingHandAnchors so the grip sits on the sprite");
+                    context.SpriteBatch.DrawRectangle(new RectangleF(handleScreen.X - 2, handleScreen.Y - 2, 4, 4), Color.Green);
+                }
+            }
+
             context.SpriteBatch.DrawRectangle(new RectangleF(anchorScreen.X - 2, anchorScreen.Y - 2, 4, 4), Color.Orange);
-            var name = $"{EquippedWeapon.Name} f{frame}";
+            var name = $"{weapon.Name} f{frame}";
             var nameSize = context.Font.MeasureString(name);
             context.SpriteBatch.DrawString(context.Font, name,
                 new Vector2(anchorScreen.X - nameSize.X / 2, anchorScreen.Y - nameSize.Y - 2), Color.White);

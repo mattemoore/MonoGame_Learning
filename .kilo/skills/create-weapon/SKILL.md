@@ -30,7 +30,22 @@ Then gather the weapon spec before touching anything:
 
 Pick one branch based on Phase 0.
 
-### 1a. User supplies real art
+### 1a. User supplies real art as an Aseprite sprite sheet
+
+Ask the user to author the animations in **Aseprite** under `MonoGameLearning.Game/Sources/Weapons/<Name>/`, tagging each animation with an Aseprite **frame tag** (e.g. tag `swing`), then export the sprite sheet (*File → Export Sprite Sheet*) to a `<Name>.json` + `<Name>-texture.png` pair using either the **JSON Array** or **JSON Hash** data format.
+
+1. Run the converter to produce the monogame-extended atlas:
+
+   ```bash
+   python3 Utils/aseprite_to_monogame_extended.py Sources/Weapons/<Name>/<Name>.json --name <slug> --out-dir MonoGameLearning.Game/Content/images
+   ```
+
+   (or `--texture-name <slug>-texture.png` to rename the referenced art.) The converter handles both Aseprite JSON shapes, derives each tag's frame run directly (overlapping/out-of-range tags are rejected), and prints the exact `SpriteAnimationDef` lines — use the tag-named prefix `<slug>-<tag>` verbatim. Untagged frames become `<slug>-frame-NN`.
+2. Verify the emitted `<slug>.json` in Content: `dataformat: monogame-extended`, one `<slug>-<tag>-NN` frame per source frame per tag, single-texture reference. Aseprite `rotated`/trim are preserved so the pipeline writer emits them; the atlas format still cannot express per-frame `flipHorizontal`/`flipDiagonal` or relative offsets, so bake flips into the art (the assistant never regenerates/edits textures). Offsets are sourced from art instead of hand-typed: the user authors a `handle` slice (pivot per frame on the grip) in Aseprite, exports with **Slices** checked in the JSON meta, and the converter prints `CarryHandleOffset`/`SwingHandleOffsets` to paste into the weapon def. Note: Aseprite 1.3.x hides per-frame slice keys behind *Preferences → Editor → Slices → "Prefer slice keyframes (obsolete behavior)"* — without it, slice moves on later frames silently overwrite the single global slice instead of recording a key.
+3. Wire the code after conversion: when replacing an existing weapon whose JSON used different naming (`<slug>-NN` or an older chain prefix), update the sprite class `SpriteAnimationDef` Prefix to `<slug>-<tag>` (e.g. `"bat-swing"`) and re-derive `SwingAnchors`. `FrameCount` usually stays.
+4. Copy the exported source texture into `MonoGameLearning.Game/Content/images/` under the JSON's filename, replacing any old placeholder (assistant may perform this copy — e.g. `cp Sources/Weapons/Bat/bat-texture.png Content/images/bat-texture.png`). `dotnet build` does NOT validate that the JSON frame regions fit the texture, so only a live in-game run confirms the frames line up.
+
+### 1b. User supplies real art as a packed atlas
 
 Instruct the user to drop these files into `MonoGameLearning.Game/Content/images/` (relative to that folder):
 
@@ -40,15 +55,7 @@ Instruct the user to drop these files into `MonoGameLearning.Game/Content/images
 
 Optional but encouraged: keep original sources under `MonoGameLearning.Game/Sources/<Name>/` and pack the atlas with TexturePacker (see `Sources/` examples). The JSON must be generated with `dataformat: monogame-extended` or the pipeline import will fail.
 
-If the user has a `.achj` animation-chain file from their sprite tool instead of a hand-made atlas, run `Utils/achj_to_monogame_extended.py` to produce the `<slug>.json` from it — it maps each chain to a `<slug>-<chain>-NN` frame run, emits the matching `SpriteAnimationDef` lines, and notes any flips/offsets the atlas format can't hold. Remind the user to place the source texture next to the JSON under the referenced name (`<slug>-texture.png`).
-
-WAIT for the user to place the files before continuing. Then validate as the assistant:
-
-- Every filename has no path prefix or spaces — filenames ARE the content keys (`images/<slug>`).
-- The JSON parses, lists exactly `FrameCount` frames named `<slug>-<NN>` in swing order, and the texture exists at the referenced width/height.
-- Note: if you are replacing an existing weapon's placeholder (e.g. the bat), the user's JSON may change the sheet region layout but MUST keep frame names `<slug>-NN` and the same `FrameCount` (or you update `FrameCount` + `SwingAnchors` + `FrameHitboxes` to match).
-
-### 1b. No art available (default for a new weapon)
+### 1c. No art available (default for a new weapon)
 
 Run the companion script (kept in the repo's `Utils/` tools folder) to synthesize a placeholder sheet, JSON atlas, and pickup icon straight into the content folder:
 
@@ -57,6 +64,14 @@ python3 Utils/placeholder_gen.py <slug> MonoGameLearning.Game/Content/images [fr
 ```
 
 Defaults match the bat: 4 frames of 12x40. Tell the user these are temporary placeholders they can replace later (re-run Phase 1/2/6 after swapping in real files, keeping frame count/naming to avoid code churn).
+
+### Validation (all branches)
+
+After placing the files (WAIT for the user), validate as the assistant:
+
+- Every filename has no path prefix or spaces — filenames ARE the content keys (`images/<slug>`).
+- The JSON parses, lists exactly `FrameCount` frames named `{slug}-{frame}` in swing order where each animation frame maps to the source runs, and the referenced texture exists at the width/height in the JSON.
+- If you are replacing an existing weapon's placeholder (e.g. the bat), the user's JSON may change the sheet region layout but MUST keep the same `FrameCount` (or you update `FrameCount` + `SwingAnchors` + `FrameHitboxes` to match).
 
 ## 2. Register assets in the content pipeline
 
@@ -109,21 +124,21 @@ namespace MonoGameLearning.Game.AnimatedSprites;
 public static class PipeSprite
 {
     public const string AnimationSwing = "swing";
+    public const string SwingPrefix = "pipe-swing";
+    public const string CarryRegion = "pipe-hold-00";
     private const int FrameCount = 4;
 
     private static readonly SpriteSheetAsset Asset = new(
         "pipe", "images/pipe",
-        new SpriteAnimationDef(AnimationSwing, "pipe", FrameCount, false));
+        new SpriteAnimationDef(AnimationSwing, SwingPrefix, FrameCount, false));
 
     public static SpriteSheet Sheet => Asset.Sheet;
 
     public static void Load(ContentManager content) => Asset.Load(content);
-
-    public static AnimatedSprite Create() => Asset.Create(AnimationSwing);
 }
 ```
 
-The `SpriteSheetAsset` first argument is the `SpriteSheet` display name (used in load error messages); the `Prefix` ("pipe") must match the JSON frame-name prefix, and `FrameCount` must match the JSON frame run exactly. Never fewer `SwingAnchors` than there are swing frames.
+The `SpriteSheetAsset` first argument is the `SpriteSheet` display name (used in load error messages); the `Prefix` (`<slug>-<tag>`, e.g. "pipe-swing") must match the JSON frame-name prefix, and `FrameCount` must match the JSON frame run exactly. Never fewer `SwingAnchors`/`SwingHandleOffsets` than there are swing frames.
 
 ## 4. Create the weapon definition class
 
@@ -143,10 +158,35 @@ namespace MonoGameLearning.Game.Weapons;
 
 public static class PipeWeapon
 {
+    private const float WeaponScale = 1f;
+    private static readonly Vector2 FrameCenter = new(32, 32);
+
+    // Bat-side grip points (frame-local) pasted from the converter's handle-slice output.
+    private static readonly Vector2 CarryHandleOffset = new(29, 54);
+    private static readonly Vector2[] SwingHandleOffsets =
+    [
+        new Vector2(46, 16),
+        new Vector2(29, 10),
+        new Vector2(17, 16),
+        new Vector2(8, 30),
+    ];
+
+    // Actor-side hand anchors (absolute offsets from Position; not relative to each other).
+    private static readonly Vector2 CarryHandAnchor = new(-8, 3);
+    private static readonly Vector2[] SwingHandAnchors =
+    [
+        new Vector2(-8, 3),
+        new Vector2(2, 3),
+        new Vector2(12, 3),
+        new Vector2(22, 3),
+    ];
+
     private static readonly StaticTextureAsset PickupTexture = new("images/pipe-pickup");
     public static readonly MeleeWeaponDef Pipe = new()
     {
         Name = "Pipe",
+        Scale = WeaponScale,
+        FrameCenter = FrameCenter,
         SwingMove = new()
         {
             AnimationKey = PlayerSprite.AnimationAttack1,
@@ -160,9 +200,18 @@ public static class PipeWeapon
                 [3] = [new() { Offset = new Vector2(45, 0), Size = new Point(70, 45) }],
             }
         },
-        SwingAnimation = PipeSprite.AnimationSwing,
-        CarryAnchor = new Vector2(20, 0),
-        SwingAnchors = [new Vector2(12, -15), new Vector2(25, -4), new Vector2(34, 0), new Vector2(30, -2)],
+        SwingPrefix = PipeSprite.SwingPrefix,
+        CarryRegion = PipeSprite.CarryRegion,
+        CarryHandleOffset = CarryHandleOffset,
+        SwingHandleOffsets = SwingHandleOffsets,
+        CarryAnchor = CarryHandAnchor - (CarryHandleOffset - FrameCenter) * WeaponScale,
+        SwingAnchors =
+        [
+            SwingHandAnchors[0] - (SwingHandleOffsets[0] - FrameCenter) * WeaponScale,
+            SwingHandAnchors[1] - (SwingHandleOffsets[1] - FrameCenter) * WeaponScale,
+            SwingHandAnchors[2] - (SwingHandleOffsets[2] - FrameCenter) * WeaponScale,
+            SwingHandAnchors[3] - (SwingHandleOffsets[3] - FrameCenter) * WeaponScale,
+        ],
     };
 
     public static MeleeWeaponDef Get(string key) => key switch
@@ -183,10 +232,11 @@ public static class PipeWeapon
 
 Key rules from the existing implementation:
 
-- `SwingMove.AnimationKey` must be one of `PlayerSprite.AnimationAttack*` — the swing overlay is frame-stepped against that animation, and `FrameCount` must equal that animation's frame count (`attack1` = 4).
-- `BatWeapon.cs:33` holds the reference anchors; reuse them as a starting point then re-tune in-game.
+- `SwingMove.AnimationKey` must be one of `PlayerSprite.AnimationAttack*` — the swing overlay is keyed against that animation, and `SwingAnchors.Length` must equal that animation's frame count (`attack1` = 4).
+- `SwingPrefix`/`CarryRegion` must match the sprite atlas region names (`<slug>-<tag>-NN` from the Aseprite tags) — the overlay resolves regions directly by name via `MeleeWeaponDef.ResolveWeaponRegionName`, never by frame-stepping a sprite.
+- Author the grip point in Aseprite: add a slice named `handle` (lowercase; enable its pivot and place it on the hand-grip pixel, one slice key per hold/swing/attack frame), then run the converter and paste the printed `CarryHandleOffset`/`SwingHandleOffsets` into the weapon class. Keep the actor-side `CarryHandAnchor`/`SwingHandAnchors` hand-tuned in the def and compute anchors with the formula `anchor = hand - (handleOffset - FrameCenter) * Scale`, where `Scale` is the weapon's render scale (default 1; bat uses 0.5). Hand anchors are absolute actor-unit offsets from `Position` (not relative to each other). A weapon redraw needs only re-export + re-paste the offsets.
 - Hitboxes fire at swing apex (frames 2–3) only — see the bat pattern.
-- `MeleeWeaponDef` TODO item 4 (AGENTS.md): assert `SwingAnchors.Length <= Sheet` frame count in Debug with `Debug.Assert`.
+- `MeleeWeaponDef` TODO item 4 (TODO.md): assert `SwingAnchors.Length` against the sheet's swing-region count in Debug with `Debug.Assert`.
 - Naming: one static `MeleeWeaponDef` per weapon, referenced via a `Get(string key)` dispatcher and `LevelContent` constant.
 
 ## 5. Wire it into the game
@@ -235,8 +285,8 @@ Nothing is done until the game actually shows it:
 
 ## Pitfalls to watch
 
-- The swing overlay is FRAME-STEPPED (`CombatActorBase.RenderWeaponOverlay` calls `SetFrame`), NOT time-driven — so `FrameCount` and `SwingAnchors` MUST match the player attack animation's frame count, or the overlay desyncs from the arm. `SetFrame` alone does not refresh `TextureRegion` (see AGENTS.md pitfall) — this is handled in `CombatActorBase`, don't add a fix for it.
-- The JSON frame names are content keys: `images/<slug>` content path, `<slug>-NN` frame names, and the `SpriteAnimationDef` prefix must all line up, or Content loading throws.
+- The swing overlay is REGION-KEYED, NOT time-driven: `CombatActorBase.RenderWeaponOverlay` resolves the atlas region by name (`MeleeWeaponDef.ResolveWeaponRegionName` → `SwingPrefix-<NN>` while attacking, `CarryRegion` at rest), so `SwingPrefix`, `SwingAnchors.Length`, and the player attack animation's frame count MUST all line up, or the overlay desyncs from the arm / throws `KeyNotFoundException` at draw time. There is no `SetFrame`/`TextureRegion` workaround needed — don't reintroduce frame-stepping.
+- The JSON frame names are content keys: `images/<slug>` content path, `<slug>-<tag>-NN` frame names, and the `SpriteAnimationDef`/`SwingPrefix` must all line up, or Content loading throws.
 - Do not add a new abstraction for weapon resolution when one switch keyed on `LevelContent.*` in a single `Get` suffices.
 - Replacing placeholder art later: keep frame count + naming so only the two PNGs and the JSON change; if the new art's frames differ in count, update `FrameCount`, `SwingAnchors`, and `FrameHitboxes` in the same change and re-run Phase 6.
 - The pickup icon is a plain texture (`StaticTextureAsset`), never part of the animation atlas.

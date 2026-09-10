@@ -223,6 +223,7 @@ linked in "Review terminology".
 5. **Leaky abstraction** — Callers must understand a wrapped type's internals to use it. *Resolve:* tighten the contract or move the logic to the caller.
 6. **Misplaced Core Class** — Reusable engine logic trapped in the Game project. *Resolve:* promote it to `MonoGameLearning.Core` — `CollisionWorldFactory`, `PickupService`, `SpriteSheetAnimationExtensions`.
 7. **Inheritance smell** — Base members existing only for one subclass, or subclasses re-implementing base logic. *Resolve:* promote the shared step to the base as the single source of truth — `CombatActorBase` `*Impl` steps; or delete the speculative abstraction — `Level` had a single subclass and collapsed to the concrete `LevelData` record.
+8. **Frame-stepped sprite workaround** — A sprite whose frames are driven manually via `Controller.SetFrame()` (+ the `TextureRegion` sync it forces) just to pick one atlas region per state. *Resolve:* if the visual is a fixed per-state image, drop the sprite entirely and draw the atlas region by name — the weapon overlay went from a per-equip `AnimatedSprite` + `SetFrame` to `MeleeWeaponDef.ResolveWeaponRegionName` (`CombatActorBase.RenderWeaponOverlay`), removing the `SetFrame()`/`TextureRegion` pitfall and the per-actor sprite field.
 
 When a session introduces a new smell or resolution, add it to this catalog in the
 same change (AGENTS.md rule).

@@ -58,7 +58,7 @@ repeated here:
 | # | Test | Expected |
 | --- | --- | --- |
 | 3.1 | Player idle / run / attack1 / attack2 / attack3 / hurt / fall / getup / die | Each animation plays its full loop/sequence at a natural frame rate; no freezing, skipping, or wrong frames |
-| 3.2 | Equip a bat, then attack | Bat sprite overlays the armed animation in sync (swing apex around attack frames 2-3); bat does not lag or desync from the player's arm |
+| 3.2 | Equip a bat, then attack | Bat sprite overlays the armed animation in sync (swing apex around attack frames 2-3); bat does not lag or desync from the player's arm. The bat's handle tracks the player's hand across the swing and sits on the hand when carried. A bat redraw needs only re-export + re-paste the handle offsets (`Utils/aseprite_to_monogame_extended.py`) — no actor-hand retune |
 | 3.3 | Scroll through the level | The 3 background panels tile seamlessly — no visible seam, gap, or color mismatch while the camera moves |
 | 3.4 | Stand above/below an oil drum at different Y positions | Player renders in front of or behind the drum correctly (Y-sort) |
 | 3.5 | Wave cleared | GO indicator pulses/flashes lime green top-right, phases out when the next wave spawns |
@@ -140,5 +140,5 @@ repeated here:
 | 9.1 | `~` during play | Debug overlay appears: FPS, state, wave (x/y, active count, locked), viewport virtual/actual, screen buffer, window size, BGs/entities drawn |
 | 9.2 | `K` during play | Player dies instantly (debug); respects world behavior (game over after lives exhausted) |
 | 9.3 | `C` during play | Level complete flow fires |
-| 9.4 | Debug overlays | Player frame (blue/yellow when invincible), enemy AI frames colored by dominant force + distance rings + force label, active hitboxes (red rects during attack frames), wave trigger/end/level-end/walkable lines, weapon anchor marker + name |
+| 9.4 | Debug overlays | Player frame (blue/yellow when invincible), enemy AI frames colored by dominant force + distance rings + force label, active hitboxes (red rects during attack frames), wave trigger/end/level-end/walkable lines, weapon anchor marker + name (orange, the region center), bat grip point (green, lands on the actor hand when anchored correctly) |
 | 9.5 | Debug overlay in menus/other states | No crash; text reflects the current game state |
