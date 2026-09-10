@@ -1,29 +1,59 @@
 {
-	"textures": [
-		{
-			"filename": "bat-texture.png",
-			"format": "RGBA8888",
-			"size": {"w":48,"h":40},
-			"frames": {
-				"bat-00":{
-					"frame": {"x":0,"y":0,"w":12,"h":40}
-				},
-				"bat-01":{
-					"frame": {"x":12,"y":0,"w":12,"h":40}
-				},
-				"bat-02":{
-					"frame": {"x":24,"y":0,"w":12,"h":40}
-				},
-				"bat-03":{
-					"frame": {"x":36,"y":0,"w":12,"h":40}
-				}
-			}
-		}
-	],
-
-	"meta": {
-		"app": "https://www.codeandweb.com/texturepacker",
-		"dataformat": "monogame-extended",
-		"version": "1.2"
-	}
+  "textures": [
+    {
+      "filename": "bat-texture.png",
+      "format": "RGBA8888",
+      "size": {
+        "w": 320,
+        "h": 64
+      },
+      "frames": {
+        "bat-hold-00": {
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "w": 64,
+            "h": 64
+          }
+        },
+        "bat-swing-00": {
+          "frame": {
+            "x": 64,
+            "y": 0,
+            "w": 64,
+            "h": 64
+          }
+        },
+        "bat-swing-01": {
+          "frame": {
+            "x": 128,
+            "y": 0,
+            "w": 64,
+            "h": 64
+          }
+        },
+        "bat-swing-02": {
+          "frame": {
+            "x": 192,
+            "y": 0,
+            "w": 64,
+            "h": 64
+          }
+        },
+        "bat-swing-03": {
+          "frame": {
+            "x": 256,
+            "y": 0,
+            "w": 64,
+            "h": 64
+          }
+        }
+      }
+    }
+  ],
+  "meta": {
+    "app": "aseprite_to_monogame_extended",
+    "dataformat": "monogame-extended",
+    "version": "1.0"
+  }
 }
