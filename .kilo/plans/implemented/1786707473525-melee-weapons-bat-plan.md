@@ -1,6 +1,6 @@
 # Melee Weapons v1 — Baseball Bat
 
-> **Status:** Implemented. The weapon system shipped as specified below, except the render approach — the static bat-overlay/`Texture` mechanics in this v1 document were superseded by the `1787178079168-bat-swing-sync` plan (AnimatedSprite frames + per-frame anchors + apex-only hitboxes). See that plan for the authoritative rendering/sync design.
+> **Status:** Implemented. The weapon system shipped as specified below, except the render approach — the static bat-overlay/`Texture` mechanics in this v1 document were superseded by the `.kilo/plans/implemented/1787178079168-bat-swing-sync-plan.md` plan (AnimatedSprite frames + per-frame anchors + apex-only hitboxes). See that plan for the authoritative rendering/sync design.
 
 ## Goal
 

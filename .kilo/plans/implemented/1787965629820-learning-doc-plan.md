@@ -121,7 +121,7 @@ Each gets the companion detection test used in audits.
 11. **Dead code** — e.g. `EntityService._damageables` (written, never read) (flagged).
 
 The learn-doc should also note that the audit vocabulary above is documented with
-findings in `.kilo/plans/1787965629820-architecture-audit-findings.md` and cross-link it.
+findings in `.kilo/plans/implemented/1787965629820-architecture-audit-findings.md` and cross-link it.
 
 ## LEARNING.md structure (recommended)
 

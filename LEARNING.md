@@ -8,7 +8,7 @@ recognition cue). Entries are labeled `[Pattern]` (thing we build with) or
 `[Review term]` (thing we critique with).
 
 The audit vocabulary below is documented with concrete findings in
-`.kilo/plans/1787965629820-architecture-audit-findings.md`; several of those
+`.kilo/plans/implemented/1787965629820-architecture-audit-findings.md`; several of those
 findings have since been fixed (noted inline).
 
 ---

@@ -10,8 +10,7 @@
 "Triggers that would justify implementing this").
 
 This mirrors the architecture audit, which documented the single test project as
-the deliberate status quo rather than a smell (`.kilo/plans/[IMPLEMENTED]
-1787965629820-architecture-audit-findings.md:9`: "One namespace has no
+the deliberate status quo rather than a smell (`.kilo/plans/implemented/1787965629820-architecture-audit-findings.md:9`: "One namespace has no
 `.Core.Tests` project (the directory is empty); all tests live in
 `MonoGameLearning.Game.Tests`."). It also aligns with the Solution
 Simplification / audit-simplicity convention: one test project is fewer moving

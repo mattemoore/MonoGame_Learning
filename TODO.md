@@ -1,6 +1,3 @@
-
-1. Manually make a bat and animation and have it swing realistically to make sure the weapon overlay logic works
-1. Replace all placholder sprites with double dragon sprites if that is legal
 1. Fix bug where attack2 and attack3 swing the weapon when only attack1 should
 
 ---

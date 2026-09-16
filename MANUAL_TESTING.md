@@ -43,7 +43,7 @@ repeated here:
 > can differ from the backbuffer (e.g. 1280x785 vs 1280x960), letterboxing the world while Gum fills
 > the whole window. Symptoms: title/pause menus off-center relative to the background, GO indicator
 > not at the visible right edge. Tracked in
-> `.kilo/plans/[NOT IMPLEMENTED] resolution-boot-alignment.md`.
+> `.kilo/plans/todo/1786285658000-resolution-boot-alignment.md`.
 
 ## 2. UI scaling (regression check)
 
