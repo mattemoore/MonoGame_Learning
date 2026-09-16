@@ -1,4 +1,4 @@
-# [IMPLEMENTED] Simplify OilDrum Behind a Single Entity
+# Simplify OilDrum Behind a Single Entity
 
 **Verdict: VALID (partial)** — collapse the auxiliary classes; keep the
 "drop effective damage" design with a commented rationale.

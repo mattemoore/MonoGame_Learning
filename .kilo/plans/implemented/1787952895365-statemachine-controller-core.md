@@ -1,4 +1,4 @@
-# [NOT IMPLEMENTED] StateMachineController to Core; Keep ActorStateMachineCallbacks
+# StateMachineController to Core; Keep ActorStateMachineCallbacks
 
 ## Verdict: MIXED
 

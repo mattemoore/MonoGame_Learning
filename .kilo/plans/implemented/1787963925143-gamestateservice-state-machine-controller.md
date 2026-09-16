@@ -1,4 +1,4 @@
-# [NOT IMPLEMENTED] Collapse GameStateService into StateMachineController
+# Collapse GameStateService into StateMachineController
 
 ## Verdict: VALID (contained cleanup)
 

@@ -1,4 +1,4 @@
-# [NOT IMPLEMENTED] Lock Actor Facing During Attack
+# Lock Actor Facing During Attack
 
 **Verdict: VALID bug** — the player can change facing direction mid-attack, which
 flips the weapon overlay and attack hitbox to the opposite side mid-swing.

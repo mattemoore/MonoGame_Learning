@@ -43,7 +43,7 @@ Six distinct type-check smells across `Core` and `Game`. Each item is independen
 **Change:** Use a typed event (`event Action<EnemyEntity>`) so handlers receive the entity without a runtime check.
 
 - Verify the `Died` event declaration and all subscribers; update to a typed `Action<EnemyEntity>`.
-- Note: `PropBase.Destroyed` is currently `Action<PropBase>` already (see existing plan `1785173487970` for the `Destroyed` typing direction — keep consistent).
+- Note: `PropBase.Destroyed` is currently `Action<PropBase>` already (see existing plan `.kilo/plans/implemented/1785173487970-propbase-level-coupling-and-type-checks.md` for the `Destroyed` typing direction — keep consistent).
 
 ## 5. Force-cast on a stored base reference in hitbox resolution
 

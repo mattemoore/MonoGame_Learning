@@ -1,4 +1,4 @@
-# [NOT IMPLEMENTED] Decouple AudioService from Game Content Asset Paths
+# Decouple AudioService from Game Content Asset Paths
 
 **Verdict: VALID** — but scoped. Fix what is genuinely leaking, don't over-engineer.
 
