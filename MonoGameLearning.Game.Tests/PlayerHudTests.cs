@@ -1,7 +1,6 @@
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGameLearning.Core.UI;
-using MonoGameLearning.Game.Entities.Player;
 
 namespace MonoGameLearning.Game.Tests;
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
+using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Entities;
@@ -25,18 +26,34 @@ public class HitboxService
         var provider = (IHitboxProvider)owner;
 
         foreach (var hb in hitboxDefs)
+            RegisterHitbox(provider, owner.Position, ownerFaction, hb, move.Damage, move.Knockdown, move.Strength, move.ImpactSfx, facing);
+    }
+
+    /// <summary>
+    /// Registers a single hitbox at an explicit center. Frame hitboxes and pooled
+    /// projectiles both funnel through here so hitbox shape/damage handling has one owner.
+    /// </summary>
+    public void RegisterHitbox(
+        IHitboxProvider owner,
+        Vector2 center,
+        Faction ownerFaction,
+        HitboxData hitbox,
+        int damage,
+        bool knockdown,
+        AttackStrength strength,
+        SfxId? impactSfx,
+        FacingDirection facing)
+    {
+        _activeHitboxes.Add(new()
         {
-            _activeHitboxes.Add(new()
-            {
-                Owner = provider,
-                OwnerFaction = ownerFaction,
-                Bounds = hb.CreateRectangle(owner.Position, facing),
-                Damage = move.Damage,
-                Knockdown = move.Knockdown,
-                Strength = move.Strength,
-                ImpactSfx = move.ImpactSfx,
-            });
-        }
+            Owner = owner,
+            OwnerFaction = ownerFaction,
+            Bounds = hitbox.CreateRectangle(center, facing),
+            Damage = damage,
+            Knockdown = knockdown,
+            Strength = strength,
+            ImpactSfx = impactSfx,
+        });
     }
 
     public List<DamageInfo> ResolveHits(IReadOnlyList<Entity> targets)
@@ -68,6 +85,7 @@ public class HitboxService
                     Knockdown = active.Knockdown,
                     Strength = active.Strength,
                     ImpactSfx = active.ImpactSfx,
+                    Source = active.Owner,
                 });
             }
         }
@@ -78,7 +96,13 @@ public class HitboxService
     public void Clear(IHitboxProvider owner)
     {
         Debug.Assert(owner is not null, "Clear called with null owner");
-        _activeHitboxes.RemoveAll(hb => hb.Owner == owner);
+        // Index loop, not RemoveAll(lambda): this runs per projectile per frame, and a
+        // capturing predicate would allocate a closure + delegate on the gameplay hot path.
+        for (int i = _activeHitboxes.Count - 1; i >= 0; i--)
+        {
+            if (_activeHitboxes[i].Owner == owner)
+                _activeHitboxes.RemoveAt(i);
+        }
     }
 
     public void ClearAttackDedup(IHitboxProvider owner)

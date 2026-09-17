@@ -72,7 +72,8 @@ public class EnemyEntity : CombatActorBase, IDamageResponse, IPickupDropper
         }
     };
 
-    public MoveData AttackMove => EquippedWeapon?.SwingMove ?? _attackMove;
+    // Melee-only: a non-melee (throwable) equip falls back to the default punch.
+    public MoveData AttackMove => (EquippedWeapon as MeleeWeaponDef)?.SwingMove ?? _attackMove;
 
     public EnemyEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, AudioService audio, Func<WorldSnapshot> getWorld)
         : base(name, position, 48, 60, sprite, scale, 30, new(EnemySprite.AnimationIdle, EnemySprite.AnimationRun, EnemySprite.AnimationHurt, EnemySprite.AnimationFall, EnemySprite.AnimationDie, EnemySprite.AnimationGetUp), audio)

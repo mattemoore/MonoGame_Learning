@@ -64,6 +64,9 @@ repeated here:
 | 3.5 | Wave cleared | GO indicator pulses/flashes lime green top-right, phases out when the next wave spawns |
 | 3.6 | Destroy oil drums | Explosion visual plays; dropped food/bat pickups appear at the drum location and are visible/readable |
 | 3.7 | HUD legibility at 1600x1200 | Player name, lives, health bar, mugshot letter, and enemy bar are readable; no text/bars overlap |
+| 3.8 | Pick up the knife (x≈250) and stand idle | Knife renders in the player's hand (carry pose) and tracks facing; no debug assert on the region/FrameCenter mismatch |
+| 3.9 | Throw the knife (U) | Knife leaves the hand mid-throw and plays its authored 7-frame flight animation (spin) while flying; no ghost frame remains after it hits or expires |
+| 3.10 | Equip the bat, then press I / O (attack2/attack3) | The bat holds its carried pose for the whole punch animation; the bat swing frames do NOT overlay attack2/attack3 |
 
 ## 4. Audio
 
@@ -123,6 +126,11 @@ repeated here:
 | 7.12 | Level completion | Reaching the level end (~3 backgrounds wide) fires LEVEL COMPLETE; level-complete music plays once |
 | 7.13 | Player containment | Player cannot leave the level left/right bounds or the walkable band; no falling off-screen |
 | 7.14 | Pause during a wave | World freezes, camera frozen, input mode switches to menu; resume continues cleanly (no double wave spawn, no stuck lock) |
+| 7.15 | Pick up the knife (x≈250), Attack1 (U) | Player throws the knife; the projectile plays its flight animation, kills the first enemy it touches in one hit (impact SFX), then disappears. Attack2/Attack3 still punch |
+| 7.16 | Throw the knife while facing left | Projectile travels left, flips horizontally, and hits enemies on the left |
+| 7.17 | Throw the knife into an oil drum | Drum takes damage/breaks (a thrown projectile can hit neutral props) |
+| 7.18 | Throw the knife, then pick up the bat | The bat replaces the knife in hand; Attack1 swings again instead of throwing |
+| 7.19 | Get knocked down while holding the knife | Knife drops (not re-pickable); Attack1 is a normal punch after getting up |
 
 ## 8. Performance and stability
 

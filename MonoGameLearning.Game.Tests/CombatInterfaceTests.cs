@@ -1,8 +1,6 @@
-using System;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities.Actor;
 using MonoGameLearning.Core.Entities.Prop;
-using NUnit.Framework;
 
 namespace MonoGameLearning.Game.Tests;
 

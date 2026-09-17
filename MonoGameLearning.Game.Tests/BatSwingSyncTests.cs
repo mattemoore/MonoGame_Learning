@@ -44,7 +44,7 @@ public class BatSwingSyncTests
     [Test]
     public void AnchorSelection_NotAttacking_ReturnsCarryAnchor()
     {
-        var (anchor, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(BatWeapon.Bat, isAttacking: false, frameIndex: 0);
+        var (anchor, frame) = BatWeapon.Bat.ResolveAnchorAndFrame(isAttacking: false, actorFrameIndex: 0);
 
         Assert.That(anchor, Is.EqualTo(BatWeapon.Bat.CarryAnchor));
         Assert.That(frame, Is.Zero);
@@ -53,7 +53,7 @@ public class BatSwingSyncTests
     [Test]
     public void AnchorSelection_Attacking_ReturnsPerFrameAnchor()
     {
-        var (anchor, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(BatWeapon.Bat, isAttacking: true, frameIndex: 2);
+        var (anchor, frame) = BatWeapon.Bat.ResolveAnchorAndFrame(isAttacking: true, actorFrameIndex: 2);
 
         Assert.That(anchor, Is.EqualTo(BatWeapon.Bat.SwingAnchors[2]));
         Assert.That(frame, Is.EqualTo(2));
@@ -62,7 +62,7 @@ public class BatSwingSyncTests
     [Test]
     public void AnchorSelection_OutOfRangeFrame_ClampsToLastAnchor()
     {
-        var (anchor, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(BatWeapon.Bat, isAttacking: true, frameIndex: 99);
+        var (anchor, frame) = BatWeapon.Bat.ResolveAnchorAndFrame(isAttacking: true, actorFrameIndex: 99);
 
         Assert.That(anchor, Is.EqualTo(BatWeapon.Bat.SwingAnchors[3]));
         Assert.That(frame, Is.EqualTo(3));
@@ -91,7 +91,7 @@ public class BatSwingSyncTests
     [Test]
     public void RegionName_NotAttacking_ReturnsCarryRegion()
     {
-        var region = MeleeWeaponDef.ResolveWeaponRegionName(BatWeapon.Bat, isAttacking: false, frameIndex: 0);
+        var region = MeleeWeaponDef.ResolveWeaponRegionName(BatWeapon.Bat, isAttacking: false, actorFrameIndex: 0);
 
         Assert.That(region, Is.EqualTo(BatWeapon.Bat.CarryRegion));
         Assert.That(region, Is.EqualTo(BatSprite.CarryRegion), "Carry region must come from the sprite's atlas naming");
@@ -100,7 +100,7 @@ public class BatSwingSyncTests
     [Test]
     public void RegionName_Attacking_ReturnsPerFrameSwingRegion()
     {
-        var region = MeleeWeaponDef.ResolveWeaponRegionName(BatWeapon.Bat, isAttacking: true, frameIndex: 2);
+        var region = MeleeWeaponDef.ResolveWeaponRegionName(BatWeapon.Bat, isAttacking: true, actorFrameIndex: 2);
 
         Assert.That(region, Is.EqualTo($"{BatWeapon.Bat.SwingPrefix}-02"));
     }
@@ -108,7 +108,7 @@ public class BatSwingSyncTests
     [Test]
     public void RegionName_AttackingOutOfRange_ClampsToLastSwingRegion()
     {
-        var region = MeleeWeaponDef.ResolveWeaponRegionName(BatWeapon.Bat, isAttacking: true, frameIndex: 99);
+        var region = MeleeWeaponDef.ResolveWeaponRegionName(BatWeapon.Bat, isAttacking: true, actorFrameIndex: 99);
 
         Assert.That(region, Is.EqualTo($"{BatWeapon.Bat.SwingPrefix}-03"));
     }
@@ -117,7 +117,7 @@ public class BatSwingSyncTests
     public void RegionName_MissingSwingPrefix_ReturnsNull()
     {
         var bare = new MeleeWeaponDef { Name = "Bare", SwingMove = new() { AnimationKey = "attack" } };
-        var region = MeleeWeaponDef.ResolveWeaponRegionName(bare, isAttacking: true, frameIndex: 0);
+        var region = MeleeWeaponDef.ResolveWeaponRegionName(bare, isAttacking: true, actorFrameIndex: 0);
 
         Assert.That(region, Is.Null, "Weapon with no swing regions must not resolve a swing frame region");
     }
@@ -125,10 +125,10 @@ public class BatSwingSyncTests
     [Test]
     public void ResolveWeaponRegion_WithoutSheet_ReturnsNull()
     {
-        var (_, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(BatWeapon.Bat, isAttacking: true, frameIndex: 2);
+        var (_, frame) = BatWeapon.Bat.ResolveAnchorAndFrame(isAttacking: true, actorFrameIndex: 2);
 
-        Assert.That(BatWeapon.Bat.ResolveWeaponRegion(isAttacking: true, frameIndex: frame), Is.Null);
-        Assert.That(BatWeapon.Bat.ResolveWeaponRegion(isAttacking: false, frameIndex: frame), Is.Null);
+        Assert.That(BatWeapon.Bat.ResolveRegion(isAttacking: true, actorFrameIndex: frame), Is.Null);
+        Assert.That(BatWeapon.Bat.ResolveRegion(isAttacking: false, actorFrameIndex: frame), Is.Null);
     }
 
     // --- Anchors derived from Aseprite handle slice + actor hand ---
@@ -183,10 +183,10 @@ public class BatSwingSyncTests
     [Test]
     public void ResolveHandleOffset_UsesCarryWhenNotAttacking_ClampsWhenAttacking()
     {
-        Assert.That(BatWeapon.Bat.ResolveHandleOffset(isAttacking: false, frameIndex: 0),
+        Assert.That(BatWeapon.Bat.ResolveHandleOffset(isAttacking: false, actorFrameIndex: 0),
             Is.EqualTo(BatWeapon.Bat.CarryHandleOffset));
 
-        Assert.That(BatWeapon.Bat.ResolveHandleOffset(isAttacking: true, frameIndex: 99),
+        Assert.That(BatWeapon.Bat.ResolveHandleOffset(isAttacking: true, actorFrameIndex: 99),
             Is.EqualTo(BatWeapon.Bat.SwingHandleOffsets[^1]),
             "Out-of-range swing frame must clamp to the last swing handle offset");
     }
@@ -207,7 +207,7 @@ public class BatSwingSyncTests
         var regionHalf = new Vector2(32, 32);
         return MeleeWeaponDef.ComputeHandleScreenPoint(
             Vector2.Zero, FacingDirection.Right,
-            MeleeWeaponDef.ResolveWeaponAnchorAndFrame(weapon, attacking, frame).anchor,
+            weapon.ResolveAnchorAndFrame(attacking, frame).anchor,
             weapon.ResolveHandleOffset(attacking, frame), regionHalf, scale, weaponScale ?? weapon.Scale);
     }
 
@@ -231,8 +231,8 @@ public class BatSwingSyncTests
     public void HandlePoint_MirrorsHorizontallyWhenFacingLeft()
     {
         var regionHalf = new Vector2(32, 32);
-        var anchor = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(BatWeapon.Bat, isAttacking: false, frameIndex: 0).anchor;
-        var handleOffset = BatWeapon.Bat.ResolveHandleOffset(isAttacking: false, frameIndex: 0);
+        var anchor = BatWeapon.Bat.ResolveAnchorAndFrame(isAttacking: false, actorFrameIndex: 0).anchor;
+        var handleOffset = BatWeapon.Bat.ResolveHandleOffset(isAttacking: false, actorFrameIndex: 0);
         var left = MeleeWeaponDef.ComputeHandleScreenPoint(
             Vector2.Zero, FacingDirection.Left, anchor, handleOffset, regionHalf, 1f, BatWeapon.Bat.Scale);
 

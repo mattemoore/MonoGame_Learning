@@ -46,6 +46,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private CameraService _cameraController;
     private MenuService _menuManager;
     private HitboxService _hitboxService;
+    private ProjectileService _projectileService;
     private SpriteFont _debugFont;
     private LevelDirector _levelDirector;
     private BackgroundRenderer _backgroundRenderer;
@@ -115,15 +116,17 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         OilDrumSprite.Load(Content);
         FoodPickupTexture.Load(Content);
         BatWeapon.Load(Content);
+        KnifeWeapon.Load(Content);
 
         _player.Died += OnPlayerDied;
+        _player.Thrown += OnPlayerThrown;
         _hudService = new HudService(_player, _debugFont, () => _lives);
 
         GoIndicatorTexture.Load(Content);
 
         _actionHandlers = new()
         {
-            [InputAction.Action1] = () => { if (_gameState.State == GameState.Playing) _player.Attack(_player.Attack1Move); },
+            [InputAction.Action1] = () => { if (_gameState.State == GameState.Playing) _player.PrimaryAttack(); },
             [InputAction.Action2] = () => { if (_gameState.State == GameState.Playing) _player.Attack(_player.Attack2Move); },
             [InputAction.Action3] = () => { if (_gameState.State == GameState.Playing) _player.Attack(_player.Attack3Move); },
             [InputAction.Back] = () => _menuManager.HandleBack(),
@@ -137,7 +140,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             [InputAction.MenuRight] = () => _menuManager.HandleMenuAdjust(1),
         };
 
-        _entityFactory = new LevelEntityFactory(_audio, EnemySprite.Create, OilDrumSprite.Create, FoodPickupTexture.Texture, BatWeapon.Bat, GetCameraView);
+        _entityFactory = new LevelEntityFactory(_audio, EnemySprite.Create, OilDrumSprite.Create, FoodPickupTexture.Texture, BatWeapon.Bat, KnifeWeapon.Knife, GetCameraView);
         ReinitLevel();
         _goIndicator = new GoIndicatorEntity(GoIndicatorTexture.Texture, () => new Point(ViewportAdapter.VirtualWidth, ViewportAdapter.VirtualHeight));
         _screenRenderables.Add(_goIndicator);
@@ -182,7 +185,12 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
                 damageable.TakeDamage(hit);
                 if (damageable is CombatActorBase { Faction: Faction.Enemy })
                     _hudService.OnEnemyHit(damageable);
+                // Single-hit projectiles despawn once they score.
+                if (hit.Source is ProjectileEntity projectile)
+                    projectile.MarkHit();
             }
+
+            _projectileService.Update();
 
             CollisionWorldFactory.ResolveActorPropCollisions(_collisionWorld);
             PickupService.ResolveOverlaps(_entityManager, _player, _playSfx);
@@ -284,6 +292,9 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             _gameState.Fire(GameTrigger.PlayerDied);
     }
 
+    private void OnPlayerThrown(ThrowableWeaponDef def, Vector2 origin, FacingDirection facing) =>
+        _projectileService.Spawn(def, origin, facing, Faction.Player);
+
     private const int INITIAL_LIVES = 3;
 
     private Vector2 ComputeRespawnPosition() =>
@@ -313,6 +324,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private void ResetGame()
     {
         _hitboxService.ClearAll();
+        _projectileService?.Clear();
         _lives = INITIAL_LIVES;
         _player.Reset(new Vector2(100, 450));
         _entityManager.Clear();
@@ -327,6 +339,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _backgroundRenderer = Level1.CreateBackgroundRenderer(Content, _currentLevel);
         _collisionWorld = CollisionWorldFactory.Create(_currentLevel.MovementBounds);
         _entityManager = new EntityService(_collisionWorld, _hitboxService);
+        _projectileService = new ProjectileService(_entityManager, _hitboxService, _entityFactory.CreateProjectile);
 
         _screenRenderables.Clear();
 

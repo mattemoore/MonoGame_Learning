@@ -57,7 +57,7 @@ public static class BatWeapon
             SwingMove = new()
             {
                 AnimationKey = PlayerSprite.AnimationAttack1,
-                Damage = 6,
+                Damage = 10,
                 Strength = AttackStrength.Light,
                 AttackSfx = SfxId.AttackSwing1,
                 ImpactSfx = SfxId.HitHeavy,

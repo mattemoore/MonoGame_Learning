@@ -30,11 +30,15 @@ public static class Level1
                 [
                     new PickupSpawnDef(LevelContent.Food, default),
                 ]),
-                new PropSpawnDef(LevelContent.OilDrum, new Vector2(1200, 460)),
+                new PropSpawnDef(LevelContent.OilDrum, new Vector2(1200, 460), Drops:
+                [
+                    new PickupSpawnDef(LevelContent.Knife, default),
+                ]),
             ],
             Pickups:
             [
                 new PickupSpawnDef(LevelContent.Bat, new Vector2(350f, 556f)),
+                new PickupSpawnDef(LevelContent.Knife, new Vector2(250f, 556f)),
                 new PickupSpawnDef(LevelContent.Food, new Vector2(1400f, 556f)),
             ],
             WaveDefs: CreateWaveDefs());

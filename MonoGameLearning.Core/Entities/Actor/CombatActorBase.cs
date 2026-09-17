@@ -48,7 +48,7 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     public Faction Faction { get; protected set; }
     public event EventHandler? Died;
     protected SfxId? LastImpactSfx { get; set; }
-    public MeleeWeaponDef? EquippedWeapon { get; private set; }
+    public WeaponDef? EquippedWeapon { get; private set; }
 
     public int Health => HealthComponent.Value;
     public int MaxHealth => HealthComponent.MaxHealth;
@@ -62,7 +62,7 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     public virtual bool CanTakeDamage() => HealthComponent.IsAlive;
     public virtual void OnDeath() { }
 
-    public void EquipWeapon(MeleeWeaponDef weapon) => EquippedWeapon = weapon;
+    public void EquipWeapon(WeaponDef weapon) => EquippedWeapon = weapon;
 
     public void UnequipWeapon() => EquippedWeapon = null;
 
@@ -125,16 +125,16 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
             return;
         }
 
-        var (anchor, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(weapon, IsInAttackingState, FrameTracker.FrameIndex);
-        var region = weapon.ResolveWeaponRegion(IsInAttackingState, frame);
+        var (anchor, frame) = weapon.ResolveAnchorAndFrame(IsWeaponSwingActive, FrameTracker.FrameIndex);
+        var region = weapon.ResolveRegion(IsWeaponSwingActive, frame);
         if (region is null)
         {
             Debug.Assert(false, $"{weapon.Name} weapon is missing SwingPrefix/CarryRegion region mapping");
             return;
         }
 
-        var effect = MeleeWeaponDef.WeaponFacingEffect(Direction);
-        var anchorOffset = MeleeWeaponDef.ApplyWeaponFacing(anchor, Direction);
+        var effect = WeaponDef.WeaponFacingEffect(Direction);
+        var anchorOffset = WeaponDef.ApplyWeaponFacing(anchor, Direction);
         var origin = new Vector2(region.Width / 2f, region.Height / 2f);
         // The grip-on-hand invariant cancels only when the region half-size equals
         // weapon.FrameCenter (the handle offsets are expressed against it).
@@ -167,10 +167,10 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         if (EquippedWeapon is not null)
         {
             var weapon = EquippedWeapon;
-            var (anchor, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(weapon, IsInAttackingState, FrameTracker.FrameIndex);
+            var (anchor, frame) = weapon.ResolveAnchorAndFrame(IsWeaponSwingActive, FrameTracker.FrameIndex);
             var scale = SpriteRenderer.Scale;
             // Region center the overlay draws the weapon at (orange marker + name).
-            var anchorScreen = Position + MeleeWeaponDef.ApplyWeaponFacing(anchor, Direction) * scale;
+            var anchorScreen = Position + WeaponDef.ApplyWeaponFacing(anchor, Direction) * scale;
 
             if (weapon.HasHandleOffsets)
             {
@@ -179,16 +179,16 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
                 // actor scale, offset term by actor scale * weapon scale). Coincides with the
                 // orange anchor center only when the grip offset is zero; against the drawn
                 // bat it lands on the actor hand when the anchor formula holds.
-                var region = weapon.ResolveWeaponRegion(IsInAttackingState, frame);
+                var region = weapon.ResolveRegion(IsWeaponSwingActive, frame);
                 if (region is not null)
                 {
-                    var handleOffset = weapon.ResolveHandleOffset(IsInAttackingState, frame);
+                    var handleOffset = weapon.ResolveHandleOffset(IsWeaponSwingActive, frame);
                     var regionHalf = new Vector2(region.Width / 2f, region.Height / 2f);
-                    var handleScreen = MeleeWeaponDef.ComputeHandleScreenPoint(
+                    var handleScreen = WeaponDef.ComputeHandleScreenPoint(
                         Position, Direction, anchor, handleOffset, regionHalf, scale, weapon.Scale);
                     // Off-sprite check in actor space: Frame is unscaled (48x60), so use the
                     // scale=1 handle point, not the scaled world marker.
-                    var handScreen = MeleeWeaponDef.ComputeHandleScreenPoint(
+                    var handScreen = WeaponDef.ComputeHandleScreenPoint(
                         Position, Direction, anchor, handleOffset, regionHalf, 1f, weapon.Scale);
                     var attachBounds = Frame;
                     bool outsideSprite =
@@ -214,10 +214,18 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
 
         if (CurrentMove is not null && FrameTracker.TryGetNewFrame(out var newFrameIndex))
         {
+            OnFrameAdvanced(newFrameIndex);
             HitboxService?.Clear(this);
             HitboxService?.RegisterFrameHitboxes(this, Faction, CurrentMove, newFrameIndex, Direction);
         }
     }
+
+    /// <summary>
+    /// Frame-advance hook for subclasses (e.g. spawning a throwable projectile mid-swing).
+    /// Called only when a move is active and the animation frame actually advances, before
+    /// that frame's hitboxes are registered.
+    /// </summary>
+    protected virtual void OnFrameAdvanced(int frameIndex) { }
 
     // --- State abstractions ---
     protected abstract ActorPhase Phase { get; }
@@ -225,6 +233,14 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
 
     protected bool IsIncapacitated => Phase is ActorPhase.Dead or ActorPhase.Dying or ActorPhase.Hurt or ActorPhase.KnockedDown;
     protected bool IsInAttackingState => Phase == ActorPhase.Attacking;
+
+    /// <summary>
+    /// The weapon overlay plays its swing run only while the actor performs the weapon's own
+    /// swing move. Attack2/Attack3 (and throwables on the carry pose) keep the held pose even
+    /// though they are Attacking, so weapon art can't play over a non-weapon animation.
+    /// </summary>
+    protected bool IsWeaponSwingActive =>
+        IsInAttackingState && EquippedWeapon is MeleeWeaponDef melee && ReferenceEquals(CurrentMove, melee.SwingMove);
 
     // --- Debug frame color ---
     protected virtual Color GetDebugFrameColor() => Color.Blue;

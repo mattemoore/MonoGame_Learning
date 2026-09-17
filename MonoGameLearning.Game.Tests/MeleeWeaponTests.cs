@@ -20,11 +20,11 @@ internal sealed class WeaponWielderTrackerEntity : IDamageable, IWeaponWielder
     public int MaxHealth => 100;
     public bool IsAlive => true;
     public event EventHandler Died = delegate { };
-    public MeleeWeaponDef? Equipped { get; private set; }
+    public WeaponDef? Equipped { get; private set; }
 
     public void TakeDamage(DamageInfo info) { }
     public void Heal(int amount) { }
-    public void EquipWeapon(MeleeWeaponDef weapon) => Equipped = weapon;
+    public void EquipWeapon(WeaponDef weapon) => Equipped = weapon;
     public void UnequipWeapon() => Equipped = null;
 }
 
@@ -87,6 +87,22 @@ public class MeleeWeaponTests
 
         Assert.That(player.Attack2Move, Is.SameAs(attack2));
         Assert.That(player.Attack3Move, Is.SameAs(attack3));
+    }
+
+    [Test]
+    public void WeaponSwingActive_OnlyForEquippedWeaponSwingMove()
+    {
+        var player = CreatePlayer();
+        Assert.That(player.WeaponSwingActiveForTest, Is.False, "Unarmed attacks are not a weapon swing");
+
+        player.EquipWeapon(BatWeapon.Bat);
+        player.Attack(player.Attack1Move);
+        Assert.That(player.WeaponSwingActiveForTest, Is.True);
+
+        player.Reset(Vector2.Zero);
+        player.EquipWeapon(BatWeapon.Bat);
+        player.Attack(player.Attack2Move);
+        Assert.That(player.WeaponSwingActiveForTest, Is.False, "Attack2 keeps the held pose, not the bat swing");
     }
 
     [Test]

@@ -1,7 +1,6 @@
 using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.Entities.Player;
 using MonoGameLearning.Game.StateMachines;
-using NUnit.Framework;
 
 namespace MonoGameLearning.Game.Tests;
 

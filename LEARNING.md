@@ -134,6 +134,28 @@ findings have since been fixed (noted inline).
 - **Where:** `GameCore` builds `BoxingViewportAdapter` + `OrthographicCamera` (`GameCore.cs:45-53`); `GameLoop` draws world space with `Camera.GetViewMatrix()` (`GameLoop.cs:228`) then UI with `ViewportAdapter.GetScaleMatrix()` (`GameLoop.cs:270`).
 - **How to spot it:** Two `SpriteBatch.Begin` calls per frame with different transform matrices.
 
+### 18. Polymorphic def with virtual resolvers [Pattern]
+
+- **Concept:** A data-only base class owns the shared fields and a default behavior; subclasses override small resolver methods instead of the caller branching on type.
+- **Why it's used here:** Melee (`MeleeWeaponDef`) and throwable (`ThrowableWeaponDef`) weapons share the carry pose, scale, and grip math, but only melee has a swing run. `CombatActorBase` renders any `WeaponDef` through `ResolveAnchorAndFrame`/`ResolveRegion`/`ResolveHandleOffset`/`HasHandleOffsets`, so a throwable reuses the entire overlay with zero new render code. The overlay has no clock of its own: the `actorFrameIndex` it passes comes from the actor's animation (`FrameTracker.FrameIndex`), so a melee swing region tracks the arm — this is not the same clock as a projectile's flight timer (pattern 20).
+- **Where:** `WeaponDef` base (carry data + carry-default resolvers + `ApplyWeaponFacing`/`ComputeHandleScreenPoint`/`WeaponFacingEffect` statics), `MeleeWeaponDef` overrides with swing logic, `ThrowableWeaponDef` keeps the carry defaults and adds projectile data; overlay consumption in `CombatActorBase.RenderWeaponOverlay`.
+- **How to spot it:** A base class whose methods are `virtual` returning the trivial default, and subclasses overriding only the parts that differ.
+
+### 19. Pooled one-shot projectiles [Pattern]
+
+- **Concept:** Short-lived spawned entities are rented from a pool and returned when spent, with cleanup pushed to the entity/service rather than the pool.
+- **Why it's used here:** Thrown weapons spawn and despawn per throw; pooling keeps the per-throw allocation (and GC pauses) at zero. Each frame the projectile re-registers a single hitbox at its position, and the owner marks it spent via `DamageInfo.Source`; `ProjectileService.Update` then recycles it.
+- **Where:** `ProjectileEntity` (`Launch`/`MarkHit`/`Expired`, per-frame `HitboxService.Clear`+`RegisterHitbox`), `ProjectileService` (`Stack<ProjectileEntity>` free list, `Spawn`/`Update`/`Despawn`/`Clear`), `GameLoop` marks `hit.Source is ProjectileEntity`.
+- **How to spot it:** A `Stack<T>` of spawned entities plus an `Expired`/`MarkHit` flag and a service `Update()` that despawns them.
+
+### 20. Cached region run for a time-driven flight animation [Pattern]
+
+- **Concept:** An authored animation plays by advancing a frame index on a timer and indexing a cached region array, instead of driving an `AnimatedSprite`.
+- **Why it's used here:** A projectile's flight can be more than a rotation (e.g. a knife spin run, or a Molotov igniting mid-flight). `ThrowableWeaponDef` caches `Texture2DRegion[]` built from `ProjectileRegionPrefix`, and `ProjectileEntity` advances the index on `ProjectileFrameDuration`, wrapping or holding the last frame; `SpinDegreesPerSecond` remains available as additive rotation. This is the projectile's **own** clock (`flightFrameIndex`), deliberately separate from the actor-owned frame that drives the held overlay (pattern 18). No `SetFrame`/`TextureRegion` sync is involved because the region is indexed directly.
+- **Why not an `AnimatedSprite`:** a pooled projectile must not allocate per spawn, so it cannot own an `AnimatedSprite`/`AnimationController`; and `AnimatedSprite.SetFrame` would not refresh `TextureRegion`, forcing a manual sync. Caching the region array in the def makes the per-frame draw a single index — zero alloc, no sync step.
+- **Where:** `ThrowableWeaponDef.ProjectileFrameCount`/`ProjectileFrameDuration`/`ProjectileLoop`/`ResolveProjectileRegion`, `ProjectileEntity.AdvanceFlightFrame`/`FlightFrameIndex`, `KnifeSprite.FlyPrefix`/`FlyFrameCount`.
+- **How to spot it:** A cached region array on a def plus a frame index and elapsed-time accumulator on the entity that consumes it.
+
 ---
 
 ## Review terminology

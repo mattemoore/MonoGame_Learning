@@ -11,4 +11,7 @@ public readonly record struct DamageInfo
     public bool Knockdown { get; init; }
     public AttackStrength Strength { get; init; }
     public SfxId? ImpactSfx { get; init; }
+
+    /// <summary>The hitbox owner that produced this hit (e.g. the projectile to despawn).</summary>
+    public IHitboxProvider? Source { get; init; }
 }

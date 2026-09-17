@@ -24,6 +24,7 @@ public sealed class LevelEntityFactory(
     Func<AnimatedSprite> createOilDrumSprite,
     Texture2D foodPickupTexture,
     MeleeWeaponDef batWeapon,
+    ThrowableWeaponDef knifeWeapon,
     Func<RectangleF> getCameraView)
 {
     private readonly AudioService _audio = audio;
@@ -31,6 +32,7 @@ public sealed class LevelEntityFactory(
     private readonly Func<AnimatedSprite> _createOilDrumSprite = createOilDrumSprite;
     private readonly Texture2D _foodPickupTexture = foodPickupTexture;
     private readonly MeleeWeaponDef _batWeapon = batWeapon;
+    private readonly ThrowableWeaponDef _knifeWeapon = knifeWeapon;
     private readonly Func<RectangleF> _getCameraView = getCameraView;
 
     public static readonly string[] EnemyWarmUpKeys =
@@ -54,8 +56,11 @@ public sealed class LevelEntityFactory(
     {
         LevelContent.Food => new FoodPickupEntity(def.Type, def.Position, _foodPickupTexture),
         LevelContent.Bat => new WeaponPickupEntity(def.Type, def.Position, _batWeapon),
+        LevelContent.Knife => new WeaponPickupEntity(def.Type, def.Position, _knifeWeapon),
         _ => throw new ArgumentException($"Unknown pickup type: {def.Type}", nameof(def)),
     };
+
+    public ProjectileEntity CreateProjectile() => new();
 
     public EnemyEntity CreateEnemy(string type, int index, Func<WorldSnapshot> getWorld)
     {

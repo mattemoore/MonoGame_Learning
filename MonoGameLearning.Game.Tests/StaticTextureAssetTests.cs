@@ -1,7 +1,5 @@
-using System;
 using Microsoft.Xna.Framework.Content;
 using MonoGameLearning.Core.Rendering;
-using NUnit.Framework;
 
 namespace MonoGameLearning.Game.Tests;
 

@@ -4,9 +4,9 @@ using MonoGameLearning.Core.Entities.Pickup;
 
 namespace MonoGameLearning.Game.Entities.Pickups;
 
-public class WeaponPickupEntity(string name, Vector2 position, MeleeWeaponDef weapon) : PickupBase(name, position, weapon.Texture)
+public class WeaponPickupEntity(string name, Vector2 position, WeaponDef weapon) : PickupBase(name, position, weapon.Texture)
 {
-    private readonly MeleeWeaponDef _weapon = weapon;
+    private readonly WeaponDef _weapon = weapon;
 
     public override void OnPickup(IDamageable target)
     {

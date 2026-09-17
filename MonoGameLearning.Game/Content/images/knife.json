@@ -1,0 +1,83 @@
+{
+  "textures": [
+    {
+      "filename": "knife-texture.png",
+      "format": "RGBA8888",
+      "size": {
+        "w": 256,
+        "h": 32
+      },
+      "frames": {
+        "knife-hold-00": {
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "w": 32,
+            "h": 32
+          }
+        },
+        "knife-fly-00": {
+          "frame": {
+            "x": 32,
+            "y": 0,
+            "w": 32,
+            "h": 32
+          }
+        },
+        "knife-fly-01": {
+          "frame": {
+            "x": 64,
+            "y": 0,
+            "w": 32,
+            "h": 32
+          }
+        },
+        "knife-fly-02": {
+          "frame": {
+            "x": 96,
+            "y": 0,
+            "w": 32,
+            "h": 32
+          }
+        },
+        "knife-fly-03": {
+          "frame": {
+            "x": 128,
+            "y": 0,
+            "w": 32,
+            "h": 32
+          }
+        },
+        "knife-fly-04": {
+          "frame": {
+            "x": 160,
+            "y": 0,
+            "w": 32,
+            "h": 32
+          }
+        },
+        "knife-fly-05": {
+          "frame": {
+            "x": 192,
+            "y": 0,
+            "w": 32,
+            "h": 32
+          }
+        },
+        "knife-fly-06": {
+          "frame": {
+            "x": 224,
+            "y": 0,
+            "w": 32,
+            "h": 32
+          }
+        }
+      }
+    }
+  ],
+  "meta": {
+    "app": "aseprite_to_monogame_extended",
+    "dataformat": "monogame-extended",
+    "version": "1.0"
+  }
+}
