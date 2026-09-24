@@ -1,7 +1,14 @@
 # Plan: Actor Hand Anchors Authored in Aseprite (Per-Animation `hand` Slice)
 
-> **Status:** Todo. Not started. Session is prepped for a phased, step-by-step implementation
-> — see "Session runbook" below.
+> **Status:** Implemented — Phases 0–5 complete. Phase 5's live run confirmed the weapon tracks
+> the hand in every animation, after fixing the pose clock (it was indexing poses with
+> `AnimationController.CurrentFrame`, which is the **atlas region index**, not
+> animation-relative; the overlay and hand table now use `SpriteRenderer.AnimationFrame`).
+> Build clean, `dotnet test` 519 passed / 3 skipped, converter python tests OK, sheet verifier
+> PASS. Post-review follow-ups applied: pose-clock controller-identity guard (a completion
+> handler can `SetAnimation` mid-update), a player/enemy hand-table equality guard, the
+> sheet frame/tag spec single-sourced to `Utils/build_adventurer_sheet.py`, and
+> `AnimationFrameTracker.FrameIndex` demoted to an internal test seam.
 
 ## Session runbook (resume here)
 
@@ -11,12 +18,12 @@ at the game. Phase 1 is a manual Aseprite step (the user); everything else is co
 
 | Phase | Work | Owner | Gate before moving on |
 | --- | --- | --- | --- |
-| 0. Core split with seeded tables | Steps 1–5, the `PlayerSprite`/`EnemySprite` seed tables + entity overrides from step 8, and the test rewrites from step 9 | assistant | `dotnet build --warnaserror` + `dotnet test` green; the game still looks like today (seed values, no art yet) |
-| 1. Author the actor sheet | Step 6 | user (Aseprite) | `Sources/Adventurer/adventurer.json` re-exported with a `hand` slice, untrimmed 50x37 |
-| 2. Converter + python tests | Step 7 and the python tests from step 9 | assistant | `python3 -m unittest Utils.test_aseprite_to_monogame_extended` green; the converter prints 9 tag groups |
-| 3. Paste the real tables | Step 8 (replace the seeds), copy the exported texture into `Content/images/` | assistant | build + `dotnet test` green |
-| 4. Table-count tests + docs | The remaining step 9 tests, step 10 | assistant | build, `dotnet test`, markdown lint, skill check |
-| 5. Live tuning | Final validation | both | weapon stays in hand while idle, running, hurt, and during attack2/attack3 |
+| 0. Core split with seeded tables | Steps 1–5, the `PlayerSprite`/`EnemySprite` seed tables + entity overrides from step 8, and the test rewrites from step 9 | assistant | **Done** — `dotnet build --warnaserror` clean; `dotnet test` 517 passed / 3 skipped |
+| 1. Author the actor sheet | Step 6 | user (Aseprite); assistant can script the frame/tag assembly on request (step 6 fallback) | **Done** — `Utils/verify_adventurer_sheet.py` PASS: 37 frames, 9 tags, `hand` pivot on every frame |
+| 2. Converter + python tests | Step 7 and the python tests from step 9 | assistant | **Done** — `hand` emitter added; `python3 -m unittest Utils.test_aseprite_to_monogame_extended` 12 tests OK |
+| 3. Paste the real tables | Step 8 (replace the seeds) | assistant | **Done** — real `hand` anchors pasted into `PlayerSprite`/`EnemySprite`; build clean, `dotnet test` 517 passed / 3 skipped |
+| 4. Table-count tests + docs | The remaining step 9 tests, step 10 | assistant | **Done** — docs/skill updates landed; markdown lint clean on changed docs |
+| 5. Live tuning | Final validation — pose clock fixed to `SpriteRenderer.AnimationFrame` (see decision 8 correction) | both | **Done** — user confirmed the weapon tracks the hand in every animation |
 
 Phase 0 seed values (so the ownership split lands with **no visual change**):
 
@@ -26,20 +33,26 @@ Phase 0 seed values (so the ownership split lands with **no visual change**):
 - The `getup` prefix rename and the real anchors wait for Phase 3 — until the new atlas
   exists, `adventurer-getup-*` regions do not.
 
-Phase 3 order matters: replace the seed arrays with the converter's `hand` output **and**
-rename the getup prefix (`adventurer-stand` → `adventurer-getup`) in `PlayerSprite` and
-`EnemySprite` in the same step, then copy `adventurer-texture.png` into `Content/images/`.
+Already done ahead of Phase 3 (so the sheet is playable while the slice is authored): the
+`getup` prefix rename (`adventurer-stand` → `adventurer-getup` in `PlayerSprite` and
+`EnemySprite`) and the copy of `adventurer-texture.png` into `Content/images/`, alongside a
+converter run that wrote the 37-region `Content/images/adventurer.json`. Phase 3 therefore
+only has to replace the seed tables with the converter's `hand` output.
 
 Commands to reuse (do not rediscover):
 
 - converter (Phase 2): `python3 Utils/aseprite_to_monogame_extended.py MonoGameLearning.Game/Sources/Adventurer/adventurer.json --name adventurer --out-dir MonoGameLearning.Game/Content/images`
+- build the actor sheet (Phase 1, writes `adventurer.aseprite` + export): `python3 Utils/build_adventurer_sheet.py`
+- re-export after authoring the `hand` slice in the GUI:
+  `aseprite -b MonoGameLearning.Game/Sources/Adventurer/adventurer.aseprite --sheet MonoGameLearning.Game/Sources/Adventurer/adventurer-texture.png --data MonoGameLearning.Game/Sources/Adventurer/adventurer.json --format json --list-tags --list-slices`
+- verify an actor export (Phase 1, read-only): `python3 Utils/verify_adventurer_sheet.py`
 - python tests: `python3 -m unittest Utils.test_aseprite_to_monogame_extended`
 - C#: `dotnet build --warnaserror` then `dotnet test`
 - markdown lint on a changed `.md`: `npx --yes markdownlint-cli2 <file>`
 
-Kickoff prompt for tomorrow: **"Implement
-`.kilo/plans/todo/1789676929150-actor-hand-anchors-from-aseprite-slices.md` phase by phase,
-starting with Phase 0, and stop for me at Phase 1."**
+Kickoff prompt for tomorrow: **"Resume the actor hand anchors plan
+(`.kilo/plans/todo/1789676929150-actor-hand-anchors-from-aseprite-slices.md`). The `hand`
+slice is authored and saved; re-export and verify, then do Phase 2 onward."**
 
 ## Goal
 
@@ -74,11 +87,16 @@ truth and no import quirk leaks into Core.
    with a one-per-animation `Debug.WriteLine`, so the game runs mid-authoring.
 7. **Core seam:** a virtual resolver on `CombatActorBase` so future armed enemies author
    their own table; enemies are not authored beyond the shared Adventurer animations now.
-8. **Frame index source:** `AnimatedSprite.Controller.CurrentFrame` (animation-relative,
-   0..n-1, wraps on loop), replacing `AnimationFrameTracker.FrameIndex` for anchor and
-   region indexing.
+8. **Frame index source:** an animation-relative pose clock — `SpriteRenderer.AnimationFrame`,
+   reset to 0 by `SetAnimation` and incremented on each frame change — used for anchor and
+   region indexing. **Correction (Phase 5):** the plan originally chose
+   `AnimatedSprite.Controller.CurrentFrame`, wrongly believing it was animation-relative; it
+   is actually the **atlas region index** (`SpriteSheetAnimationFrame.FrameIndex` ←
+   `TextureAtlas.GetIndexOfRegion`), which read poses from the wrong frame whenever an
+   animation's atlas offset did not divide its frame count (visible on `run`, invisible on the
+   rest). See the pitfall in `AGENTS.md`.
 
-## Current defect (what changes)
+## Initial defect (resolved by Phase 0)
 
 - `WeaponDef.CarryAnchor` / `MeleeWeaponDef.SwingAnchors` are the only pose data and are
   single/four-frame constants on the **weapon**; `CombatActorBase.RenderWeaponOverlay`
@@ -116,8 +134,10 @@ center, which `SpriteSheetAsset.Create` guarantees (`Origin = size / 2`).
 
 - Add `public string? CurrentAnimationKey { get; private set; }`, set in `SetAnimation`
   (so it is only ever a key that was actually applied).
-- Add `public int CurrentFrame => Sprite?.Controller.CurrentFrame ?? 0;` — the
-  animation-relative frame, loop-safe. No allocation.
+- Add `public int AnimationFrame { get; private set; }` — the animation-relative pose clock:
+  reset to 0 in `SetAnimation`, incremented in `AdvanceFrame`/`Update` when the sprite's atlas
+  frame actually changes. **Not** `Sprite?.Controller.CurrentFrame` (that is the atlas region
+  index — the original Phase 0 mistake; see decision 8's correction).
 - Leave `AnimationFrameTracker` untouched: it stays the *new frame event* source for
   hitbox registration and the throwable `SpawnFrame` hook. It is not a pose index.
 
@@ -161,7 +181,7 @@ allocation-free linear scan over a handful of entries.
 
   protected Vector2 ResolveHandAnchor()
   {
-      var frame = SpriteRenderer.CurrentFrame;
+      var frame = SpriteRenderer.AnimationFrame;
       if (HandAnchors is { } table && table.TryResolve(SpriteRenderer.CurrentAnimationKey, frame, out var hand))
           return hand;
       if (SpriteRenderer.CurrentAnimationKey != _lastWarnedHandKey)
@@ -176,7 +196,7 @@ allocation-free linear scan over a handful of entries.
 - `RenderWeaponOverlay`: replace the `ResolveAnchorAndFrame` call with
 
   ```csharp
-  var actorFrame = SpriteRenderer.CurrentFrame;
+  var actorFrame = SpriteRenderer.AnimationFrame;
   var anchor = WeaponDef.ComputeAnchor(
       ResolveHandAnchor(), weapon.ResolveHandleOffset(IsWeaponSwingActive, actorFrame),
       weapon.FrameCenter, weapon.Scale);
@@ -242,6 +262,42 @@ New file `MonoGameLearning.Game/Sources/Adventurer/adventurer.aseprite`, 50x37 c
 4. Export Sprite Sheet → **JSON Array**, `Trim` **off** (fixed 50x37), **Tags** and
    **Slices** checked, overwrite `Sources/Adventurer/adventurer.json` +
    `adventurer-texture.png`.
+
+#### Fallback: scripted sheet assembly via the Aseprite CLI
+
+Hand-assembling 37 frames + 9 tags in the GUI is error-prone. The first manual attempt
+produced misordered frames (attack2 first), tag ranges offset from the art, a duplicated
+`die-04` with `die-06` missing, a stray untagged frame, and no `idle`/`hurt` at all. If the
+manual route drifts again — or is simply unwanted — the assistant can build the sheet by
+script, leaving the user only the artistic step (the `hand` slice pivots).
+
+The environment supports this: Aseprite 1.3.18 is on `PATH` with `-b/--batch`, `--script`,
+`--save-as`, `--data`, `--format json`, `--list-tags`, and `--list-slices`. Verified in
+batch mode: `app.command.NewFile`, `app.open`, `app.command.NewFrame`, and `SaveFileAs`
+work; `app.command.ImportSpriteSheet` exists but does **not** yield a sprite in batch, so a
+script assembles frames through the Lua object API rather than that command.
+
+Recipe (run only if invoked):
+
+1. Python concatenates the 37 named source PNGs, in canonical order
+   (`idle-00..03`, `attack1-00..03`, `attack2-00..03`, `attack3-00..03`, `run-00..05`,
+   `hurt-00..02`, `die-00..06`, `fall-00..01`, `stand-00..02`), into a 1850x37 RGBA strip.
+2. `aseprite -b --script build_adventurer.lua` creates a 50x37 sprite with one frame per
+   strip cell, names the 9 tags with ranges 0-3 / 4-7 / 8-11 / 12-15 / 16-21 / 22-24 /
+   25-31 / 32-33 / 34-36 (`idle`, `attack1`, `attack2`, `attack3`, `run`, `hurt`, `die`,
+   `fall`, `getup`), and saves `Sources/Adventurer/adventurer.aseprite`.
+3. Re-export `adventurer.json` + `adventurer-texture.png` (JSON Array, Trim off, Tags and
+   Slices checked) via `aseprite -b adventurer.aseprite --save-as <png> --data <json>
+   --format json`.
+4. The user opens the generated `.aseprite` in the GUI and adds the `hand` slice pivots.
+5. Re-export, and the converter treats it exactly like a hand-authored sheet.
+
+Scripted assembly fixes only the mechanical parts — frame order, frame counts, tag names
+and ranges, and export flags; hand pivot positions remain a visual step for the user. The
+exact cel/frame fill calls are finalized against the Aseprite object API when the script is
+written; an untrimmed JSON Array export is the required output either way. This fallback
+touches only `Sources/Adventurer/adventurer.aseprite` and its export, so it never affects
+Core or the game code.
 
 ### 7. Converter — emit per-animation hand anchor tables
 
@@ -315,7 +371,8 @@ New file `MonoGameLearning.Game/Sources/Adventurer/adventurer.aseprite`, 50x37 c
   the carry region but follow the hand now; knockdown/die still unequip) and the `Sprites`
   bullet (getup prefix).
 - `LEARNING.md`: update the anchor-ownership pattern entry (split ownership, the one
-  formula, `Controller.CurrentFrame` vs the monotonic `AnimationFrameTracker`).
+  formula, `SpriteRenderer.AnimationFrame` vs `Controller.CurrentFrame` (atlas index) vs the
+  monotonic `AnimationFrameTracker`).
 - `MANUAL_TESTING.md`: rows for the weapon staying in hand while idling, running, hurt,
   and during attack2/attack3; bat swing still tracks the hand; knockdown/die still drop the
   weapon (authored anchors unused).

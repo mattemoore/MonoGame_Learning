@@ -19,7 +19,6 @@ public class MeleeWeaponDef : WeaponDef
     public required MoveData SwingMove { get; init; }
     public string? SwingPrefix { get; init; }
 
-    public Vector2[] SwingAnchors { get; init; } = [];
     public Vector2[] SwingHandleOffsets { get; init; } = [];
 
     private Texture2DRegion?[]? _swingRegions;
@@ -33,28 +32,18 @@ public class MeleeWeaponDef : WeaponDef
     public override bool HasHandleOffsets => base.HasHandleOffsets || SwingHandleOffsets.Length > 0;
 
     /// <summary>
-    /// The resolved swing frame index: clamped to the swing-anchor run, or 0 when the
-    /// weapon has no swing anchors (carry anchor is used). Single owner of the clamp so
-    /// anchor, region, and handle resolvers cannot drift apart.
+    /// The resolved swing frame index: clamped to the swing-handle run, or 0 when the weapon
+    /// has no per-frame swing handles (the carry grip is used). Single owner of the clamp so
+    /// region and handle resolvers cannot drift apart. Callers pass an animation-relative
+    /// frame (<c>SpriteRenderer.AnimationFrame</c>), not an atlas region index.
     /// </summary>
     internal static int ResolveSwingFrame(MeleeWeaponDef weapon, int actorFrameIndex) =>
-        weapon.SwingAnchors.Length > 0
-            ? Math.Clamp(actorFrameIndex, 0, weapon.SwingAnchors.Length - 1)
+        weapon.SwingHandleOffsets.Length > 0
+            ? Math.Clamp(actorFrameIndex, 0, weapon.SwingHandleOffsets.Length - 1)
             : 0;
-
-    public override (Vector2 anchor, int frame) ResolveAnchorAndFrame(bool isAttacking, int actorFrameIndex)
-    {
-        if (isAttacking && SwingAnchors.Length > 0)
-        {
-            int frame = ResolveSwingFrame(this, actorFrameIndex);
-            return (SwingAnchors[frame], frame);
-        }
-        return (CarryAnchor, 0);
-    }
-
     /// <summary>
     /// The current frame's handle point (frame-local, from the Aseprite slice). Uses the
-    /// same resolved swing frame as the anchors; falls back to the carry handle when the
+    /// same resolved swing frame as the region; falls back to the carry handle when the
     /// weapon has no per-frame swing handles.
     /// </summary>
     public override Vector2 ResolveHandleOffset(bool isAttacking, int actorFrameIndex)
@@ -77,7 +66,7 @@ public class MeleeWeaponDef : WeaponDef
         if (Sheet is null || SwingPrefix is null) return null;
 
         int frame = ResolveSwingFrame(this, actorFrameIndex);
-        _swingRegions ??= new Texture2DRegion?[Math.Max(1, SwingAnchors.Length)];
+        _swingRegions ??= new Texture2DRegion?[Math.Max(1, SwingHandleOffsets.Length)];
         return _swingRegions[frame] ??= Sheet.TextureAtlas[ResolveWeaponRegionName(this, isAttacking: true, actorFrameIndex)!];
     }
 

@@ -32,10 +32,9 @@ public class ThrowableWeaponTests
     {
         var knife = KnifeWeapon.Knife;
 
-        Assert.That(knife.ResolveAnchorAndFrame(isAttacking: false, actorFrameIndex: 0).anchor, Is.EqualTo(knife.CarryAnchor));
-        Assert.That(knife.ResolveAnchorAndFrame(isAttacking: true, actorFrameIndex: 2).anchor, Is.EqualTo(knife.CarryAnchor));
-        Assert.That(knife.ResolveAnchorAndFrame(isAttacking: true, actorFrameIndex: 2).frame, Is.Zero);
-        Assert.That(knife.ResolveHandleOffset(isAttacking: true, actorFrameIndex: 2), Is.EqualTo(knife.CarryHandleOffset));
+        Assert.That(knife.CarryRegion, Is.EqualTo(KnifeSprite.HoldRegion), "A throwable always draws the hold pose");
+        Assert.That(knife.ResolveHandleOffset(isAttacking: true, actorFrameIndex: 2), Is.EqualTo(knife.CarryHandleOffset),
+            "A throwable ignores the actor's attack frames and keeps the carry grip");
         Assert.That(knife.HasHandleOffsets, Is.True, "The new art exports a Handle slice");
         Assert.That(knife.CarryHandleOffset, Is.EqualTo(new Vector2(15, 26)), "Hold frame: bounds 12,21 + pivot 3,5");
     }
@@ -64,12 +63,13 @@ public class ThrowableWeaponTests
     }
 
     [Test]
-    public void Melee_StillResolvesSwingPosePerFrame()
+    public void Melee_StillResolvesSwingGripPerFrame()
     {
-        var (anchor, frame) = BatWeapon.Bat.ResolveAnchorAndFrame(isAttacking: true, actorFrameIndex: 2);
+        var bat = BatWeapon.Bat;
 
-        Assert.That(anchor, Is.EqualTo(BatWeapon.Bat.SwingAnchors[2]));
-        Assert.That(frame, Is.EqualTo(2));
+        Assert.That(bat.ResolveHandleOffset(isAttacking: true, actorFrameIndex: 2), Is.EqualTo(bat.SwingHandleOffsets[2]));
+        Assert.That(MeleeWeaponDef.ResolveWeaponRegionName(bat, isAttacking: true, actorFrameIndex: 2),
+            Is.EqualTo($"{bat.SwingPrefix}-02"));
     }
 
     // --- Pickup ---

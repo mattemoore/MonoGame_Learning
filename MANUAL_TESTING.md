@@ -58,7 +58,7 @@ repeated here:
 | # | Test | Expected |
 | --- | --- | --- |
 | 3.1 | Player idle / run / attack1 / attack2 / attack3 / hurt / fall / getup / die | Each animation plays its full loop/sequence at a natural frame rate; no freezing, skipping, or wrong frames |
-| 3.2 | Equip a bat, then attack | Bat sprite overlays the armed animation in sync (swing apex around attack frames 2-3); bat does not lag or desync from the player's arm. The bat's handle tracks the player's hand across the swing and sits on the hand when carried. A bat redraw needs only re-export + re-paste the handle offsets (`Utils/aseprite_to_monogame_extended.py`) — no actor-hand retune |
+| 3.2 | Equip a bat, then attack | Bat sprite overlays the armed animation in sync (swing apex around attack frames 2-3); bat does not lag or desync from the player's arm. The bat's grip tracks the player's hand across the swing and sits on the hand when carried. A weapon redraw needs only re-export + re-paste its `handle` offsets (`Utils/aseprite_to_monogame_extended.py`) — no actor-hand retune |
 | 3.3 | Scroll through the level | The 3 background panels tile seamlessly — no visible seam, gap, or color mismatch while the camera moves |
 | 3.4 | Stand above/below an oil drum at different Y positions | Player renders in front of or behind the drum correctly (Y-sort) |
 | 3.5 | Wave cleared | GO indicator pulses/flashes lime green top-right, phases out when the next wave spawns |
@@ -67,6 +67,8 @@ repeated here:
 | 3.8 | Pick up the knife (x≈250) and stand idle | Knife renders in the player's hand (carry pose) and tracks facing; no debug assert on the region/FrameCenter mismatch |
 | 3.9 | Throw the knife (U) | Knife leaves the hand mid-throw and plays its authored 7-frame flight animation (spin) while flying; no ghost frame remains after it hits or expires |
 | 3.10 | Equip the bat, then press I / O (attack2/attack3) | The bat holds its carried pose for the whole punch animation; the bat swing frames do NOT overlay attack2/attack3 |
+| 3.11 | Hold the bat (or knife) while running, then while hurt | The weapon stays in the hand on every run frame and through the hurt animation — it must not float beside or drift off the actor. This is the actor `hand`-slice/per-frame hand table at work (authored pivot per frame), not a single carried offset |
+| 3.12 | Carry the bat while standing still and while moving | The hand attachment is continuous at the idle→run transition (no visible jump between the idle and run hand points) |
 
 ## 4. Audio
 
@@ -130,7 +132,7 @@ repeated here:
 | 7.16 | Throw the knife while facing left | Projectile travels left, flips horizontally, and hits enemies on the left |
 | 7.17 | Throw the knife into an oil drum | Drum takes damage/breaks (a thrown projectile can hit neutral props) |
 | 7.18 | Throw the knife, then pick up the bat | The bat replaces the knife in hand; Attack1 swings again instead of throwing |
-| 7.19 | Get knocked down while holding the knife | Knife drops (not re-pickable); Attack1 is a normal punch after getting up |
+| 7.19 | Get knocked down while holding the knife | Knife drops (not re-pickable); Attack1 is a normal punch after getting up. Fall/getup/die hand pivots are authored but unused while knockdown/die still unequip the weapon |
 
 ## 8. Performance and stability
 
@@ -148,5 +150,5 @@ repeated here:
 | 9.1 | `~` during play | Debug overlay appears: FPS, state, wave (x/y, active count, locked), viewport virtual/actual, screen buffer, window size, BGs/entities drawn |
 | 9.2 | `K` during play | Player dies instantly (debug); respects world behavior (game over after lives exhausted) |
 | 9.3 | `C` during play | Level complete flow fires |
-| 9.4 | Debug overlays | Player frame (blue/yellow when invincible), enemy AI frames colored by dominant force + distance rings + force label, active hitboxes (red rects during attack frames), wave trigger/end/level-end/walkable lines, weapon anchor marker + name (orange, the region center), bat grip point (green, lands on the actor hand when anchored correctly) |
+| 9.4 | Debug overlays | Player frame (blue/yellow when invincible), enemy AI frames colored by dominant force + distance rings + force label, active hitboxes (red rects during attack frames), wave trigger/end/level-end/walkable lines, weapon anchor marker + name (orange, the region center), resolved actor hand point (cyan) and weapon grip point (green, the two coincide when the per-frame hand table and the weapon handle offsets are both correct) |
 | 9.5 | Debug overlay in menus/other states | No crash; text reflects the current game state |

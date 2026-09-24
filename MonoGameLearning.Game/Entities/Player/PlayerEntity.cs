@@ -2,6 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Audio;
+using MonoGameLearning.Core.Animation;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities.Actor;
 using MonoGameLearning.Core.Movement;
@@ -21,6 +22,8 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData, IDamageResponse
 
     public bool IsInvincible => _invincibilityTimer > 0;
     public ThrowableWeaponDef EquippedThrowable => EquippedWeapon as ThrowableWeaponDef;
+
+    protected override HandAnchorTable HandAnchors => PlayerSprite.HandAnchors;
 
     /// <summary>Raised mid-swing when a held throwable leaves the hand (def, origin, facing).</summary>
     public event Action<ThrowableWeaponDef, Vector2, FacingDirection> Thrown;

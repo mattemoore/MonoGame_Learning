@@ -16,11 +16,6 @@ public static class KnifeWeapon
     // Render at half the actor's scale (regions are 32x32), matching the bat's proportions.
     private const float WeaponScale = 0.5f;
 
-    // Actor-side hand anchor for the held pose (absolute actor-unit offset from Position).
-    // Shared with BatWeapon.CarryHandAnchor so every held weapon attaches at the same
-    // hand point; the knife-side grip offset still differs per weapon.
-    internal static readonly Vector2 CarryHandAnchor = BatWeapon.CarryHandAnchor;
-
     // Knife-side grip point in frame-local pixels from the Hold frame's "Handle" slice
     // (bounds 12,21 + pivot 3,5). Re-export with the slice to refresh.
     private static readonly Vector2 CarryHandleOffset = new(15, 26);
@@ -35,7 +30,6 @@ public static class KnifeWeapon
         FrameCenter = FrameCenter,
         CarryRegion = KnifeSprite.HoldRegion,
         CarryHandleOffset = CarryHandleOffset,
-        CarryAnchor = CarryHandAnchor - (CarryHandleOffset - FrameCenter) * WeaponScale,
         ThrowMove = new()
         {
             Name = "Throw",

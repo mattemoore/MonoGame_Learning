@@ -12,6 +12,9 @@ public sealed class SpriteSheetAsset(string sheetName, string assetPath, params 
     private SpriteSheet? _sheet;
     private bool _loaded;
 
+    /// <summary>The animation definitions this asset declares (name, prefix, frame count).</summary>
+    public SpriteAnimationDef[] Defs { get; } = defs;
+
     public SpriteSheet? Sheet => _sheet;
 
     public void Load(ContentManager content)
@@ -21,7 +24,7 @@ public sealed class SpriteSheetAsset(string sheetName, string assetPath, params 
 
         Texture2DAtlas atlas = content.Load<Texture2DAtlas>(assetPath);
         var sheet = new SpriteSheet(sheetName, atlas);
-        foreach (var def in defs)
+        foreach (var def in Defs)
             sheet.DefineFrames(def.Name, def.Prefix, def.FrameCount, def.Loop, def.FirstFrame);
         _sheet = sheet;
     }

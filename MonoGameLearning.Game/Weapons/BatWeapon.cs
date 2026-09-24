@@ -11,27 +11,14 @@ namespace MonoGameLearning.Game.Weapons;
 
 public static class BatWeapon
 {
-    // Actor-side weapon handle anchors: where the bat's grip must land, in actor units
-    // (unscaled, relative to the actor's Position — NOT relative to each other; the
-    // sweep across the swing is authored explicitly). The overlay draws the 64x64
-    // region centered at Position + anchor, so for the handle point to land on the
-    // anchor: anchor = handAnchor - (handleOffset - FrameCenter) * Scale.
-    internal static readonly Vector2 CarryHandAnchor = new(-8, 3);
-    internal static readonly Vector2[] SwingHandAnchors =
-    [
-        new Vector2(-8, 3),
-        new Vector2(2, 3),
-        new Vector2(12, 3),
-        new Vector2(22, 3),
-    ];
-
     private static readonly StaticTextureAsset BatPickupTexture = new("images/bat-pickup");
     public static readonly MeleeWeaponDef Bat = CreateBat();
 
     private static MeleeWeaponDef CreateBat()
     {
-        // Render at half the actor's scale. The anchors fold this in so the grip stays
-        // on the hand: anchor = hand - (handleOffset - FrameCenter) * Scale.
+        // Render at half the actor's scale. The actor-side hand point comes from the actor's
+        // own hand table, and the grip stays on the hand for any scale:
+        // anchor = hand - (handleOffset - FrameCenter) * Scale (WeaponDef.ComputeAnchor).
         const float weaponScale = 0.5f;
         // Bat regions are 64x64, so the frame center the handle offsets express against
         // is (32, 32). RenderWeaponOverlay asserts region half-size == FrameCenter.
@@ -71,14 +58,6 @@ public static class BatWeapon
             CarryRegion = BatSprite.CarryRegion,
             CarryHandleOffset = carryHandleOffset,
             SwingHandleOffsets = swingHandleOffsets,
-            CarryAnchor = CarryHandAnchor - (carryHandleOffset - frameCenter) * weaponScale,
-            SwingAnchors =
-            [
-                SwingHandAnchors[0] - (swingHandleOffsets[0] - frameCenter) * weaponScale,
-                SwingHandAnchors[1] - (swingHandleOffsets[1] - frameCenter) * weaponScale,
-                SwingHandAnchors[2] - (swingHandleOffsets[2] - frameCenter) * weaponScale,
-                SwingHandAnchors[3] - (swingHandleOffsets[3] - frameCenter) * weaponScale,
-            ],
         };
     }
 

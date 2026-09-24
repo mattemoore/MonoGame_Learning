@@ -6,10 +6,11 @@ using MonoGameLearning.Core.Movement;
 namespace MonoGameLearning.Core.Combat;
 
 /// <summary>
-/// Shared base for held weapons. Owns the data every weapon renders with: the
-/// carried hold pose and its actor-side anchor, the atlas-side grip point, and the
-/// render scale. The overlay is region-keyed (never frame-stepped), so subclasses
-/// resolve the atlas region/anchor/handle per frame through the virtual resolvers;
+/// Shared base for held weapons. Owns the data every weapon renders with: the carried
+/// hold pose, the atlas-side grip point, and the render scale. The actor owns where its
+/// hand is per animation frame (<c>CombatActorBase.ResolveHandAnchor</c>); a weapon
+/// combines the two through <see cref="ComputeAnchor"/>. The overlay is region-keyed
+/// (never frame-stepped), so subclasses resolve the atlas region/grip per actor frame;
 /// melee adds a swing run on top, throwables reuse the carry defaults verbatim.
 /// </summary>
 public abstract class WeaponDef
@@ -32,7 +33,6 @@ public abstract class WeaponDef
     public Vector2 FrameCenter { get; init; } = new(32, 32);
 
     public string? CarryRegion { get; init; }
-    public Vector2 CarryAnchor { get; init; } = new Vector2(20, 0);
 
     /// <summary>
     /// Atlas-side grip point in frame-local pixels (Aseprite "handle" slice pivot,
@@ -69,23 +69,11 @@ public abstract class WeaponDef
     public virtual bool HasHandleOffsets => CarryHandleOffset != Vector2.Zero;
 
     /// <summary>
-    /// Resolves the weapon's overlay pose. The overlay has NO clock of its own:
-    /// <paramref name="isAttacking"/> and <paramref name="actorFrameIndex"/> are the actor's
-    /// own state (<c>CombatActorBase.IsWeaponSwingActive</c> / <c>FrameTracker.FrameIndex</c>),
-    /// so a melee weapon's per-frame swing regions track the arm in lockstep while a
-    /// throwable just ignores them and returns the carry pose.
-    /// (Contrast: <see cref="ThrowableWeaponDef.ResolveProjectileRegion"/> is driven by the
-    /// projectile's own timer, not by the thrower's animation.)
-    /// </summary>
-    public virtual (Vector2 anchor, int frame) ResolveAnchorAndFrame(bool isAttacking, int actorFrameIndex) =>
-        (CarryAnchor, 0);
-
-    /// <summary>
     /// Resolves the atlas region for the weapon overlay, caching the resolved
     /// <see cref="Texture2DRegion"/> on first use so the Draw path stays allocation-free.
     /// Returns <c>null</c> when the sheet or the region mapping is missing.
-    /// <paramref name="actorFrameIndex"/> is the actor's animation frame (see
-    /// <see cref="ResolveAnchorAndFrame"/>).
+    /// <paramref name="actorFrameIndex"/> is the actor's animation frame
+    /// (<c>SpriteRenderer.AnimationFrame</c>).
     /// </summary>
     public virtual Texture2DRegion? ResolveRegion(bool isAttacking, int actorFrameIndex) => ResolveCarryRegion();
 
@@ -94,6 +82,15 @@ public abstract class WeaponDef
     /// the actor's animation frame for melee swing runs and ignored by throwables.
     /// </summary>
     public virtual Vector2 ResolveHandleOffset(bool isAttacking, int actorFrameIndex) => CarryHandleOffset;
+
+    /// <summary>
+    /// The overlay anchor for a weapon held at <paramref name="hand"/>: positions the drawn
+    /// region so the weapon's grip point (<paramref name="handleOffset"/>, from the Aseprite
+    /// handle slice) lands on the actor's hand. The weapon scale cancels out of the
+    /// grip-on-hand invariant, so the grip stays on the hand for any <paramref name="scale"/>.
+    /// </summary>
+    internal static Vector2 ComputeAnchor(Vector2 hand, Vector2 handleOffset, Vector2 frameCenter, float scale) =>
+        hand - (handleOffset - frameCenter) * scale;
 
     public static Vector2 ApplyWeaponFacing(Vector2 anchor, FacingDirection direction) =>
         direction == FacingDirection.Left ? new Vector2(-anchor.X, anchor.Y) : anchor;

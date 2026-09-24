@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.AI;
+using MonoGameLearning.Core.Animation;
 using MonoGameLearning.Core.Audio;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities;
@@ -74,6 +75,8 @@ public class EnemyEntity : CombatActorBase, IDamageResponse, IPickupDropper
 
     // Melee-only: a non-melee (throwable) equip falls back to the default punch.
     public MoveData AttackMove => (EquippedWeapon as MeleeWeaponDef)?.SwingMove ?? _attackMove;
+
+    protected override HandAnchorTable HandAnchors => EnemySprite.HandAnchors;
 
     public EnemyEntity(string name, Vector2 position, float scale, AnimatedSprite sprite, AudioService audio, Func<WorldSnapshot> getWorld)
         : base(name, position, 48, 60, sprite, scale, 30, new(EnemySprite.AnimationIdle, EnemySprite.AnimationRun, EnemySprite.AnimationHurt, EnemySprite.AnimationFall, EnemySprite.AnimationDie, EnemySprite.AnimationGetUp), audio)

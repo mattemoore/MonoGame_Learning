@@ -30,6 +30,8 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     protected readonly AnimationSet Animations;
     protected readonly AudioService Audio;
 
+    private string? _lastWarnedHandKey;
+
     public CombatActorBase(string name, Vector2 position, int width, int height, AnimatedSprite sprite, float scale, int maxHealth, AnimationSet animations, AudioService audio)
         : base(name, position, width, height)
     {
@@ -125,8 +127,18 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
             return;
         }
 
-        var (anchor, frame) = weapon.ResolveAnchorAndFrame(IsWeaponSwingActive, FrameTracker.FrameIndex);
-        var region = weapon.ResolveRegion(IsWeaponSwingActive, frame);
+        var actorFrame = SpriteRenderer.AnimationFrame;
+        // Swing moves do not loop, so a pose index past the run means the frame clock is not
+        // animation-relative (e.g. a raw atlas region index) — fail loudly in Debug.
+        if (IsWeaponSwingActive && EquippedWeapon is MeleeWeaponDef melee)
+            Debug.Assert(actorFrame < melee.SwingHandleOffsets.Length,
+                $"{melee.Name}: swing pose index {actorFrame} exceeds the {melee.SwingHandleOffsets.Length}-frame swing run");
+        // The actor owns the hand point; the weapon only supplies its own grip offset, so
+        // the same hand data drives every weapon it holds.
+        var anchor = WeaponDef.ComputeAnchor(
+            ResolveHandAnchor(), weapon.ResolveHandleOffset(IsWeaponSwingActive, actorFrame),
+            weapon.FrameCenter, weapon.Scale);
+        var region = weapon.ResolveRegion(IsWeaponSwingActive, actorFrame);
         if (region is null)
         {
             Debug.Assert(false, $"{weapon.Name} weapon is missing SwingPrefix/CarryRegion region mapping");
@@ -150,6 +162,31 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
             Color.White, 0f, origin, drawScale, effect, 0f);
     }
 
+    /// <summary>
+    /// The actor's per-animation hand points, or <c>null</c> when the actor has no authored
+    /// hand data (the overlay then falls back to <see cref="Vector2.Zero"/>).
+    /// </summary>
+    protected virtual HandAnchorTable? HandAnchors => null;
+
+    /// <summary>
+    /// The hand point for the current animation frame, in actor units relative to
+    /// <c>Position</c>. Falls back to <see cref="Vector2.Zero"/> and warns once per animation
+    /// when the table has no entry, so authoring can lag the code.
+    /// </summary>
+    protected Vector2 ResolveHandAnchor()
+    {
+        var key = SpriteRenderer.CurrentAnimationKey;
+        if (HandAnchors is { } table && table.TryResolve(key, SpriteRenderer.AnimationFrame, out var hand))
+            return hand;
+
+        if (key != _lastWarnedHandKey)
+        {
+            _lastWarnedHandKey = key;
+            Debug.WriteLine($"{GetType().Name} [{Name}] no hand anchor for '{key}' — actor hand slice/table missing or stale");
+        }
+        return Vector2.Zero;
+    }
+
     public virtual void DrawDebug(DebugDrawContext context)
     {
         context.SpriteBatch.DrawRectangle(Frame, GetDebugFrameColor());
@@ -167,44 +204,48 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         if (EquippedWeapon is not null)
         {
             var weapon = EquippedWeapon;
-            var (anchor, frame) = weapon.ResolveAnchorAndFrame(IsWeaponSwingActive, FrameTracker.FrameIndex);
             var scale = SpriteRenderer.Scale;
+            var actorFrame = SpriteRenderer.AnimationFrame;
+            var isSwing = IsWeaponSwingActive;
+            var hand = ResolveHandAnchor();
+            var handleOffset = weapon.ResolveHandleOffset(isSwing, actorFrame);
+            var anchor = WeaponDef.ComputeAnchor(hand, handleOffset, weapon.FrameCenter, weapon.Scale);
+            var region = weapon.ResolveRegion(isSwing, actorFrame);
+
+            // Hand point (cyan): the actor-side point the weapon must attach to.
+            var handScreen = Position + WeaponDef.ApplyWeaponFacing(hand, Direction) * scale;
+            context.SpriteBatch.DrawRectangle(new RectangleF(handScreen.X - 2, handScreen.Y - 2, 4, 4), Color.Cyan);
+
             // Region center the overlay draws the weapon at (orange marker + name).
             var anchorScreen = Position + WeaponDef.ApplyWeaponFacing(anchor, Direction) * scale;
-
-            if (weapon.HasHandleOffsets)
-            {
-                // Grip point (green marker): the handle sits handleOffset - regionHalf from
-                // the region's center. Shares the draw path's math exactly (anchor scaled by
-                // actor scale, offset term by actor scale * weapon scale). Coincides with the
-                // orange anchor center only when the grip offset is zero; against the drawn
-                // bat it lands on the actor hand when the anchor formula holds.
-                var region = weapon.ResolveRegion(IsWeaponSwingActive, frame);
-                if (region is not null)
-                {
-                    var handleOffset = weapon.ResolveHandleOffset(IsWeaponSwingActive, frame);
-                    var regionHalf = new Vector2(region.Width / 2f, region.Height / 2f);
-                    var handleScreen = WeaponDef.ComputeHandleScreenPoint(
-                        Position, Direction, anchor, handleOffset, regionHalf, scale, weapon.Scale);
-                    // Off-sprite check in actor space: Frame is unscaled (48x60), so use the
-                    // scale=1 handle point, not the scaled world marker.
-                    var handScreen = WeaponDef.ComputeHandleScreenPoint(
-                        Position, Direction, anchor, handleOffset, regionHalf, 1f, weapon.Scale);
-                    var attachBounds = Frame;
-                    bool outsideSprite =
-                        handScreen.X < attachBounds.Left || handScreen.X > attachBounds.Right ||
-                        handScreen.Y < attachBounds.Top || handScreen.Y > attachBounds.Bottom;
-                    if (outsideSprite)
-                        Debug.WriteLine($"{GetType().Name} [{Name}] {weapon.Name} handle at ({handScreen.X:F0},{handScreen.Y:F0}) is outside the actor sprite {attachBounds} — retune CarryHandAnchor/SwingHandAnchors so the grip sits on the sprite");
-                    context.SpriteBatch.DrawRectangle(new RectangleF(handleScreen.X - 2, handleScreen.Y - 2, 4, 4), Color.Green);
-                }
-            }
-
             context.SpriteBatch.DrawRectangle(new RectangleF(anchorScreen.X - 2, anchorScreen.Y - 2, 4, 4), Color.Orange);
-            var name = $"{weapon.Name} f{frame}";
+            var name = $"{weapon.Name} f{actorFrame}";
             var nameSize = context.Font.MeasureString(name);
             context.SpriteBatch.DrawString(context.Font, name,
                 new Vector2(anchorScreen.X - nameSize.X / 2, anchorScreen.Y - nameSize.Y - 2), Color.White);
+
+            if (region is null) return;
+
+            var regionHalf = new Vector2(region.Width / 2f, region.Height / 2f);
+            if (weapon.HasHandleOffsets)
+            {
+                // Grip point (green marker): shares the draw path's math exactly (anchor
+                // scaled by actor scale, offset term by actor scale * weapon scale). With
+                // regionHalf == FrameCenter it lands on the cyan hand point when both the
+                // actor hand table and the weapon handle offsets are correct.
+                var gripScreen = WeaponDef.ComputeHandleScreenPoint(
+                    Position, Direction, anchor, handleOffset, regionHalf, scale, weapon.Scale);
+                context.SpriteBatch.DrawRectangle(new RectangleF(gripScreen.X - 2, gripScreen.Y - 2, 4, 4), Color.Green);
+            }
+
+            // Off-sprite check in actor space: the sprite is drawn centered at Position with
+            // the region's unscaled half extents, so compare the unscaled hand point.
+            var handUnscaled = Position + WeaponDef.ApplyWeaponFacing(hand, Direction);
+            bool outsideSprite =
+                MathF.Abs(handUnscaled.X - Position.X) > regionHalf.X ||
+                MathF.Abs(handUnscaled.Y - Position.Y) > regionHalf.Y;
+            if (outsideSprite)
+                Debug.WriteLine($"{GetType().Name} [{Name}] {weapon.Name} hand at ({handUnscaled.X:F0},{handUnscaled.Y:F0}) is outside the {region.Width}x{region.Height} sprite — retune the actor hand table for '{SpriteRenderer.CurrentAnimationKey}'");
         }
     }
 

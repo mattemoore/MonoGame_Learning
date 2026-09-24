@@ -28,6 +28,16 @@ bounds origin into a frame-local handle point, and printed as a C# paste block
 for the weapon def (carry + swing offsets). Keys without a pivot are skipped
 with a one-line note. Absent slices leave the atlas output unchanged.
 
+A 'hand' slice (same case-insensitive match) is read for actor hand-anchor
+authoring. It is the actor-side counterpart to 'handle': a weapon def stores only
+its own grip offset, while the actor owns where its hand is per animation frame.
+Each key's point is ``bounds.origin + pivot`` in frame-local pixels, converted to
+**center-relative** coordinates by subtracting half the frame size (the region
+rect for untrimmed frames, the frame's ``sourceSize`` when trimmed), i.e. the
+offset from the sprite region center that SpriteSheetAsset uses as the actor's
+Position. Points are grouped by frameTag in region order and printed as a C#
+paste block for a HandAnchorTable. Absent slices leave the atlas output unchanged.
+
 Usage:
   python3 aseprite_to_monogame_extended.py <input.json>... [--name <slug>]
       [--texture-name <file>] [--out-dir DIR]
@@ -225,6 +235,92 @@ def emit_handle_offsets(doc, frame_names, names_by_tag):
     print(f"    SwingHandleOffsets = [ {swing_line} ],")
 
 
+def slice_hand_anchors(doc, regions, frame_names, names_by_tag):
+    """Read the 'hand' slice (case-insensitive) and return per-tag hand points.
+
+    The actor-side hand point for a frame is ``bounds.origin + pivot`` in
+    frame-local pixels, shifted to **center-relative** coordinates by subtracting
+    half the frame size (region rect when untrimmed, ``sourceSize`` when trimmed)
+    so it is directly the offset from the actor's Position. Returns
+    ``{tag_slug: [(x, y) | None, ...]}`` in region order, or ``None`` when no
+    compatible slice is exported. ``None`` entries mark frames with no slice key.
+    """
+    slices = doc.get("meta", {}).get("slices") or []
+    target = next(
+        (s for s in slices if str(s.get("name", "")).strip().lower() == "hand"),
+        None)
+    if target is None:
+        return None
+
+    points = {}
+    for key in target.get("keys", []):
+        try:
+            frame = int(key.get("frame", -1))
+        except (TypeError, ValueError):
+            continue
+        pivot = key.get("pivot")
+        bounds = key.get("bounds")
+        if not isinstance(pivot, dict) or not isinstance(bounds, dict):
+            print(f"    note: hand slice key frame {frame} has no pivot; skipped")
+            continue
+        try:
+            points[frame] = (
+                int(bounds["x"]) + int(pivot["x"]),
+                int(bounds["y"]) + int(pivot["y"]))
+        except (KeyError, TypeError, ValueError):
+            print(f"    note: hand slice key frame {frame} has non-integer bounds/pivot; skipped")
+
+    name_to_idx = {name: i for i, name in frame_names.items()}
+    by_tag = {}
+    for slug, names in names_by_tag.items():
+        entries = []
+        for name in names:
+            idx = name_to_idx.get(name)
+            if idx is None:
+                continue
+            point = points.get(idx)
+            if point is None:
+                entries.append(None)
+                continue
+            region = regions[idx]
+            src_w, src_h = region["rect"]["w"], region["rect"]["h"]
+            if region["trimmed"] and region["sourceSize"]:
+                src_w, src_h = region["sourceSize"]["w"], region["sourceSize"]["h"]
+            entries.append((point[0] - src_w / 2, point[1] - src_h / 2))
+        by_tag[slug] = entries
+    return by_tag
+
+
+def emit_hand_anchors(doc, regions, frame_names, names_by_tag):
+    """Print the C# paste block for an actor HandAnchorTable from the 'hand' slice.
+
+    Atlas JSON output is unaffected: the anchors ride in C# at use time, not in
+    the XNB. Missing/malformed keys degrade to a warning so re-exports without a
+    slice (or with sparse keys) still convert cleanly.
+    """
+    result = slice_hand_anchors(doc, regions, frame_names, names_by_tag)
+    if result is None:
+        print("    note: no 'hand' slice in export — actor hand anchors not emitted")
+        return
+    if not result:
+        print("    note: hand slice present but no tagged frames — paste block not emitted")
+        return
+
+    def vec2(point):
+        return f"new Vector2({point[0]:g}, {point[1]:g})"
+
+    print("  C# hand anchors (paste into AnimatedSprites/<Name>Sprite.cs; offsets are from the sprite origin):")
+    for slug, entries in result.items():
+        if not entries:
+            continue
+        missing = [i for i, p in enumerate(entries) if p is None]
+        if missing:
+            print(f"    note: hand slice missing pivot for '{slug}' frame(s) {missing} — {slug} entry skipped")
+            continue
+        line = ",  ".join(vec2(p) for p in entries)
+        print(f"    (\"{slug}\", [ {line} ]),")
+
+
 def convert(path, slug, texture_name, out_dir):
     with open(path, "r", encoding="utf-8") as f:
         doc = json.load(f)
@@ -290,6 +386,7 @@ def convert(path, slug, texture_name, out_dir):
         print(f"    (no frameTags in export — add tags in Aseprite for named animations)")
     print(f"  {len(regions)} frame(s) from '{os.path.basename(image)}' into '{tex_name}'")
     emit_handle_offsets(doc, frame_names, names_by_tag)
+    emit_hand_anchors(doc, regions, frame_names, names_by_tag)
 
 
 def main(argv):
