@@ -1,6 +1,10 @@
 # Throwable Weapons v1 — Knife
 
-> **Status:** Not implemented. Plan only.
+> **Status:** Implemented. One deviation from the sketch: `HitboxService.RegisterHitbox`
+> takes an explicit `Vector2 center` (the `IHitboxProvider` interface has no position), and
+> the knife placeholder PNGs are regenerated from `Utils/placeholder_gen.py` after fixing a
+> buffer-corruption bug in `draw_baton` (see "Risks" below). Plus the `PendingMove` protected
+> accessor on `PlayerEntity` for the headless test controller.
 
 ## Goal
 

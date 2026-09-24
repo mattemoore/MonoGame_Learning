@@ -1,4 +1,3 @@
-using MonoGameLearning.Core;
 using MonoGameLearning.Core.Audio;
 
 namespace MonoGameLearning.Game.Tests;

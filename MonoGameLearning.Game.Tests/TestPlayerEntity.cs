@@ -14,6 +14,7 @@ class PlayerEntityTester(string name, Vector2 position, float scale)
     {
         return PlayerStateMachine.Create(new PlayerStateMachineCallbacks
         {
+            OnAttackingEntry = () => CurrentMove = PendingMove,
             OnAttackingExit = AttackingExitImpl,
             OnHurtEntry = HurtEntryImpl,
             OnHurtExit = HurtExitImpl,
@@ -24,6 +25,10 @@ class PlayerEntityTester(string name, Vector2 position, float scale)
             OnDeadEntry = DeadEntryImpl,
         });
     }
+
+    public void SimulateFrameAdvanced(int frameIndex) => OnFrameAdvanced(frameIndex);
+
+    public bool WeaponSwingActiveForTest => IsWeaponSwingActive;
 }
 
 class StubHudPlayerData : IHudPlayerData

@@ -13,15 +13,11 @@ using HorizontalAlignment = RenderingLibrary.Graphics.HorizontalAlignment;
 
 namespace MonoGameLearning.Game.GameLoop;
 
-public class MenuService
+public class MenuService(
+    StateMachineController<GameState, GameTrigger> gameState, Action exitGame,
+    Action<SfxId> playSfx, Func<AudioSettings> getAudioSettings, Action<AudioSettings> setAudioSettings,
+    GraphicsDeviceManager graphics)
 {
-    private readonly StateMachineController<GameState, GameTrigger> _gameState;
-    private readonly Action _exitGame;
-    private readonly Action<SfxId> _playSfx;
-    private readonly Func<AudioSettings> _getAudioSettings;
-    private readonly Action<AudioSettings> _setAudioSettings;
-    private readonly GraphicsDeviceManager _graphics;
-
     private ContainerRuntime _titleScreen, _pauseScreen, _gameOverScreen, _levelCompleteScreen, _settingsScreen;
     private List<TextRuntime> _titleOptions, _pauseOptions, _gameOverOptions, _levelCompleteOptions;
     private int _menuIndex;
@@ -31,18 +27,6 @@ public class MenuService
     private TextRuntime _resCursor, _resLabel, _resValue;
     private TextRuntime _sfxCursor, _sfxLabel, _sfxValue;
     private TextRuntime _musicCursor, _musicLabel, _musicValue;
-
-    public MenuService(StateMachineController<GameState, GameTrigger> gameState, Action exitGame,
-        Action<SfxId> playSfx, Func<AudioSettings> getAudioSettings, Action<AudioSettings> setAudioSettings,
-        GraphicsDeviceManager graphics)
-    {
-        _gameState = gameState;
-        _exitGame = exitGame;
-        _playSfx = playSfx;
-        _getAudioSettings = getAudioSettings;
-        _setAudioSettings = setAudioSettings;
-        _graphics = graphics;
-    }
 
     public void BuildScreens()
     {
@@ -123,16 +107,16 @@ public class MenuService
 
     public void OnGameStateChanged(GameState previousState)
     {
-        if (_gameState.State == GameState.Settings)
+        if (gameState.State == GameState.Settings)
             _previousState = previousState;
 
-        _titleScreen.Visible = _gameState.State == GameState.TitleScreen;
-        _pauseScreen.Visible = _gameState.State == GameState.Paused;
-        _gameOverScreen.Visible = _gameState.State == GameState.GameOver;
-        _levelCompleteScreen.Visible = _gameState.State == GameState.LevelComplete;
-        _settingsScreen.Visible = _gameState.State == GameState.Settings;
+        _titleScreen.Visible = gameState.State == GameState.TitleScreen;
+        _pauseScreen.Visible = gameState.State == GameState.Paused;
+        _gameOverScreen.Visible = gameState.State == GameState.GameOver;
+        _levelCompleteScreen.Visible = gameState.State == GameState.LevelComplete;
+        _settingsScreen.Visible = gameState.State == GameState.Settings;
 
-        _activeMenuItems = _gameState.State switch
+        _activeMenuItems = gameState.State switch
         {
             GameState.TitleScreen => _titleOptions,
             GameState.Paused => _pauseOptions,
@@ -142,7 +126,7 @@ public class MenuService
             _ => []
         };
         _menuIndex = 0;
-        if (_gameState.State == GameState.Settings)
+        if (gameState.State == GameState.Settings)
             UpdateSettingsDisplays();
         else
             UpdateMenuCursor();
@@ -150,33 +134,33 @@ public class MenuService
 
     public void HandleBack()
     {
-        switch (_gameState.State)
+        switch (gameState.State)
         {
             case GameState.Playing:
             case GameState.Paused:
-                _gameState.Fire(GameTrigger.PauseToggle);
+                gameState.Fire(GameTrigger.PauseToggle);
                 break;
             case GameState.TitleScreen:
-                _exitGame();
+                exitGame();
                 break;
             case GameState.Settings:
                 if (_previousState == GameState.Paused)
-                    _gameState.Fire(GameTrigger.PauseToggle);
+                    gameState.Fire(GameTrigger.PauseToggle);
                 else
-                    _gameState.Fire(GameTrigger.ReturnToTitle);
+                    gameState.Fire(GameTrigger.ReturnToTitle);
                 break;
         }
     }
 
     public void HandleMenuNavigation(int delta)
     {
-        if (_gameState.State == GameState.Playing) return;
+        if (gameState.State == GameState.Playing) return;
 
         if (_activeMenuItems is not { Count: > 0 }) return;
 
         _menuIndex = Math.Clamp(_menuIndex + delta, 0, _activeMenuItems.Count - 1);
-        _playSfx(SfxId.MenuNavigate);
-        if (_gameState.State == GameState.Settings)
+        playSfx(SfxId.MenuNavigate);
+        if (gameState.State == GameState.Settings)
             UpdateSettingsDisplays();
         else
             UpdateMenuCursor();
@@ -184,7 +168,7 @@ public class MenuService
 
     public void HandleMenuAdjust(int delta)
     {
-        if (_gameState.State != GameState.Settings) return;
+        if (gameState.State != GameState.Settings) return;
 
         if (_menuIndex == 0)
         {
@@ -202,49 +186,49 @@ public class MenuService
             int newIdx = Math.Clamp(currentIdx + delta, 0, options.Count - 1);
             var selected = options[newIdx];
             SettingsService.SaveResolution(selected);
-            SettingsService.Apply(_graphics, selected);
+            SettingsService.Apply(graphics, selected);
             UpdateSettingsDisplays();
         }
         else if (_menuIndex == 1)
         {
             // SFX volume
-            var settings = _getAudioSettings();
+            var settings = getAudioSettings();
             float vol = MathF.Round(Math.Clamp(settings.SfxVolume + delta * 0.05f, 0f, 1f) * 20f) / 20f;
-            _setAudioSettings(new AudioSettings(vol, settings.MusicVolume));
+            setAudioSettings(new AudioSettings(vol, settings.MusicVolume));
             UpdateSettingsDisplays();
         }
         else if (_menuIndex == 2)
         {
             // Music volume
-            var settings = _getAudioSettings();
+            var settings = getAudioSettings();
             float vol = MathF.Round(Math.Clamp(settings.MusicVolume + delta * 0.05f, 0f, 1f) * 20f) / 20f;
-            _setAudioSettings(new AudioSettings(settings.SfxVolume, vol));
+            setAudioSettings(new AudioSettings(settings.SfxVolume, vol));
             UpdateSettingsDisplays();
         }
     }
 
     public void HandleConfirm()
     {
-        _playSfx(SfxId.MenuConfirm);
+        playSfx(SfxId.MenuConfirm);
 
-        switch (_gameState.State)
+        switch (gameState.State)
         {
             case GameState.TitleScreen:
-                if (_menuIndex == 0) _gameState.Fire(GameTrigger.StartGame);
-                else if (_menuIndex == 1) _gameState.Fire(GameTrigger.OpenSettings);
-                else if (_menuIndex == 2) _exitGame();
+                if (_menuIndex == 0) gameState.Fire(GameTrigger.StartGame);
+                else if (_menuIndex == 1) gameState.Fire(GameTrigger.OpenSettings);
+                else if (_menuIndex == 2) exitGame();
                 break;
             case GameState.Paused:
-                if (_menuIndex == 0) _gameState.Fire(GameTrigger.PauseToggle);
-                else if (_menuIndex == 1) _gameState.Fire(GameTrigger.OpenSettings);
-                else if (_menuIndex == 2) _gameState.Fire(GameTrigger.ReturnToTitle);
+                if (_menuIndex == 0) gameState.Fire(GameTrigger.PauseToggle);
+                else if (_menuIndex == 1) gameState.Fire(GameTrigger.OpenSettings);
+                else if (_menuIndex == 2) gameState.Fire(GameTrigger.ReturnToTitle);
                 break;
             case GameState.GameOver:
-                if (_menuIndex == 0) _gameState.Fire(GameTrigger.StartGame);
-                else if (_menuIndex == 1) _gameState.Fire(GameTrigger.ReturnToTitle);
+                if (_menuIndex == 0) gameState.Fire(GameTrigger.StartGame);
+                else if (_menuIndex == 1) gameState.Fire(GameTrigger.ReturnToTitle);
                 break;
             case GameState.LevelComplete:
-                if (_menuIndex == 0) _gameState.Fire(GameTrigger.ReturnToTitle);
+                if (_menuIndex == 0) gameState.Fire(GameTrigger.ReturnToTitle);
                 break;
             case GameState.Settings:
                 ApplySelectedResolution();
@@ -255,7 +239,7 @@ public class MenuService
     private void ApplySelectedResolution()
     {
         var selected = SettingsService.CurrentResolution;
-        SettingsService.Apply(_graphics, selected);
+        SettingsService.Apply(graphics, selected);
     }
 
     private void BuildSettingsScreen()
@@ -380,7 +364,7 @@ public class MenuService
     private void UpdateSettingsDisplays()
     {
         var res = SettingsService.CurrentResolution;
-        var audio = _getAudioSettings();
+        var audio = getAudioSettings();
         int sfxPct = (int)MathF.Round(audio.SfxVolume * 100f);
         int musicPct = (int)MathF.Round(audio.MusicVolume * 100f);
         int sfxBars = (int)MathF.Round(audio.SfxVolume * 10f);

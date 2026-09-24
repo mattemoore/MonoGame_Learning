@@ -18,26 +18,22 @@ public record struct AnimationSet(string Idle, string Run, string Hurt, string F
 
 public enum KnockdownPhase { Falling, GettingUp }
 
-public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, ICollisionLayer, IDamageable, IDamageResponse, IHitboxProvider, IMoveable, IAnimated, IWeaponWielder
+public abstract class CombatActorBase(
+    string name, Vector2 position, int width, int height, AnimatedSprite sprite, float scale, int maxHealth,
+    AnimationSet animations, AudioService audio)
+    : Entity(name, position, width, height), IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, ICollisionLayer, IDamageable, IDamageResponse, IHitboxProvider, IMoveable, IAnimated, IWeaponWielder
 {
     public string LayerName => CollisionLayers.Actors;
     public int Id => GetHashCode();
     public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
 
-    public readonly SpriteRenderer SpriteRenderer;
-    protected readonly Health HealthComponent;
+    public readonly SpriteRenderer SpriteRenderer = new(sprite, scale);
+    protected readonly Health HealthComponent = new(maxHealth);
     protected readonly AnimationFrameTracker FrameTracker = new();
-    protected readonly AnimationSet Animations;
-    protected readonly AudioService Audio;
+    protected readonly AnimationSet Animations = animations;
+    protected readonly AudioService Audio = audio;
 
-    public CombatActorBase(string name, Vector2 position, int width, int height, AnimatedSprite sprite, float scale, int maxHealth, AnimationSet animations, AudioService audio)
-        : base(name, position, width, height)
-    {
-        SpriteRenderer = new(sprite, scale);
-        HealthComponent = new(maxHealth);
-        Animations = animations;
-        Audio = audio;
-    }
+    private string? _lastWarnedHandKey;
 
     public RectangleF MovementBounds { get; set; }
     public Vector2 MovementDirection { get; set; }
@@ -48,7 +44,7 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     public Faction Faction { get; protected set; }
     public event EventHandler? Died;
     protected SfxId? LastImpactSfx { get; set; }
-    public MeleeWeaponDef? EquippedWeapon { get; private set; }
+    public WeaponDef? EquippedWeapon { get; private set; }
 
     public int Health => HealthComponent.Value;
     public int MaxHealth => HealthComponent.MaxHealth;
@@ -62,7 +58,7 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
     public virtual bool CanTakeDamage() => HealthComponent.IsAlive;
     public virtual void OnDeath() { }
 
-    public void EquipWeapon(MeleeWeaponDef weapon) => EquippedWeapon = weapon;
+    public void EquipWeapon(WeaponDef weapon) => EquippedWeapon = weapon;
 
     public void UnequipWeapon() => EquippedWeapon = null;
 
@@ -125,16 +121,26 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
             return;
         }
 
-        var (anchor, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(weapon, IsInAttackingState, FrameTracker.FrameIndex);
-        var region = weapon.ResolveWeaponRegion(IsInAttackingState, frame);
+        var actorFrame = SpriteRenderer.AnimationFrame;
+        // Swing moves do not loop, so a pose index past the run means the frame clock is not
+        // animation-relative (e.g. a raw atlas region index) — fail loudly in Debug.
+        if (IsWeaponSwingActive && EquippedWeapon is MeleeWeaponDef melee)
+            Debug.Assert(actorFrame < melee.SwingHandleOffsets.Length,
+                $"{melee.Name}: swing pose index {actorFrame} exceeds the {melee.SwingHandleOffsets.Length}-frame swing run");
+        // The actor owns the hand point; the weapon only supplies its own grip offset, so
+        // the same hand data drives every weapon it holds.
+        var anchor = WeaponDef.ComputeAnchor(
+            ResolveHandAnchor(), weapon.ResolveHandleOffset(IsWeaponSwingActive, actorFrame),
+            weapon.FrameCenter, weapon.Scale);
+        var region = weapon.ResolveRegion(IsWeaponSwingActive, actorFrame);
         if (region is null)
         {
             Debug.Assert(false, $"{weapon.Name} weapon is missing SwingPrefix/CarryRegion region mapping");
             return;
         }
 
-        var effect = MeleeWeaponDef.WeaponFacingEffect(Direction);
-        var anchorOffset = MeleeWeaponDef.ApplyWeaponFacing(anchor, Direction);
+        var effect = WeaponDef.WeaponFacingEffect(Direction);
+        var anchorOffset = WeaponDef.ApplyWeaponFacing(anchor, Direction);
         var origin = new Vector2(region.Width / 2f, region.Height / 2f);
         // The grip-on-hand invariant cancels only when the region half-size equals
         // weapon.FrameCenter (the handle offsets are expressed against it).
@@ -148,6 +154,31 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         context.SpriteBatch.Draw(region,
             new Vector2(Position.X + anchorOffset.X * SpriteRenderer.Scale, Position.Y + anchorOffset.Y * SpriteRenderer.Scale),
             Color.White, 0f, origin, drawScale, effect, 0f);
+    }
+
+    /// <summary>
+    /// The actor's per-animation hand points, or <c>null</c> when the actor has no authored
+    /// hand data (the overlay then falls back to <see cref="Vector2.Zero"/>).
+    /// </summary>
+    protected virtual HandAnchorTable? HandAnchors => null;
+
+    /// <summary>
+    /// The hand point for the current animation frame, in actor units relative to
+    /// <c>Position</c>. Falls back to <see cref="Vector2.Zero"/> and warns once per animation
+    /// when the table has no entry, so authoring can lag the code.
+    /// </summary>
+    protected Vector2 ResolveHandAnchor()
+    {
+        var key = SpriteRenderer.CurrentAnimationKey;
+        if (HandAnchors is { } table && table.TryResolve(key, SpriteRenderer.AnimationFrame, out var hand))
+            return hand;
+
+        if (key != _lastWarnedHandKey)
+        {
+            _lastWarnedHandKey = key;
+            Debug.WriteLine($"{GetType().Name} [{Name}] no hand anchor for '{key}' — actor hand slice/table missing or stale");
+        }
+        return Vector2.Zero;
     }
 
     public virtual void DrawDebug(DebugDrawContext context)
@@ -167,44 +198,48 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
         if (EquippedWeapon is not null)
         {
             var weapon = EquippedWeapon;
-            var (anchor, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(weapon, IsInAttackingState, FrameTracker.FrameIndex);
             var scale = SpriteRenderer.Scale;
+            var actorFrame = SpriteRenderer.AnimationFrame;
+            var isSwing = IsWeaponSwingActive;
+            var hand = ResolveHandAnchor();
+            var handleOffset = weapon.ResolveHandleOffset(isSwing, actorFrame);
+            var anchor = WeaponDef.ComputeAnchor(hand, handleOffset, weapon.FrameCenter, weapon.Scale);
+            var region = weapon.ResolveRegion(isSwing, actorFrame);
+
+            // Hand point (cyan): the actor-side point the weapon must attach to.
+            var handScreen = Position + WeaponDef.ApplyWeaponFacing(hand, Direction) * scale;
+            context.SpriteBatch.DrawRectangle(new RectangleF(handScreen.X - 2, handScreen.Y - 2, 4, 4), Color.Cyan);
+
             // Region center the overlay draws the weapon at (orange marker + name).
-            var anchorScreen = Position + MeleeWeaponDef.ApplyWeaponFacing(anchor, Direction) * scale;
-
-            if (weapon.HasHandleOffsets)
-            {
-                // Grip point (green marker): the handle sits handleOffset - regionHalf from
-                // the region's center. Shares the draw path's math exactly (anchor scaled by
-                // actor scale, offset term by actor scale * weapon scale). Coincides with the
-                // orange anchor center only when the grip offset is zero; against the drawn
-                // bat it lands on the actor hand when the anchor formula holds.
-                var region = weapon.ResolveWeaponRegion(IsInAttackingState, frame);
-                if (region is not null)
-                {
-                    var handleOffset = weapon.ResolveHandleOffset(IsInAttackingState, frame);
-                    var regionHalf = new Vector2(region.Width / 2f, region.Height / 2f);
-                    var handleScreen = MeleeWeaponDef.ComputeHandleScreenPoint(
-                        Position, Direction, anchor, handleOffset, regionHalf, scale, weapon.Scale);
-                    // Off-sprite check in actor space: Frame is unscaled (48x60), so use the
-                    // scale=1 handle point, not the scaled world marker.
-                    var handScreen = MeleeWeaponDef.ComputeHandleScreenPoint(
-                        Position, Direction, anchor, handleOffset, regionHalf, 1f, weapon.Scale);
-                    var attachBounds = Frame;
-                    bool outsideSprite =
-                        handScreen.X < attachBounds.Left || handScreen.X > attachBounds.Right ||
-                        handScreen.Y < attachBounds.Top || handScreen.Y > attachBounds.Bottom;
-                    if (outsideSprite)
-                        Debug.WriteLine($"{GetType().Name} [{Name}] {weapon.Name} handle at ({handScreen.X:F0},{handScreen.Y:F0}) is outside the actor sprite {attachBounds} — retune CarryHandAnchor/SwingHandAnchors so the grip sits on the sprite");
-                    context.SpriteBatch.DrawRectangle(new RectangleF(handleScreen.X - 2, handleScreen.Y - 2, 4, 4), Color.Green);
-                }
-            }
-
+            var anchorScreen = Position + WeaponDef.ApplyWeaponFacing(anchor, Direction) * scale;
             context.SpriteBatch.DrawRectangle(new RectangleF(anchorScreen.X - 2, anchorScreen.Y - 2, 4, 4), Color.Orange);
-            var name = $"{weapon.Name} f{frame}";
+            var name = $"{weapon.Name} f{actorFrame}";
             var nameSize = context.Font.MeasureString(name);
             context.SpriteBatch.DrawString(context.Font, name,
                 new Vector2(anchorScreen.X - nameSize.X / 2, anchorScreen.Y - nameSize.Y - 2), Color.White);
+
+            if (region is null) return;
+
+            var regionHalf = new Vector2(region.Width / 2f, region.Height / 2f);
+            if (weapon.HasHandleOffsets)
+            {
+                // Grip point (green marker): shares the draw path's math exactly (anchor
+                // scaled by actor scale, offset term by actor scale * weapon scale). With
+                // regionHalf == FrameCenter it lands on the cyan hand point when both the
+                // actor hand table and the weapon handle offsets are correct.
+                var gripScreen = WeaponDef.ComputeHandleScreenPoint(
+                    Position, Direction, anchor, handleOffset, regionHalf, scale, weapon.Scale);
+                context.SpriteBatch.DrawRectangle(new RectangleF(gripScreen.X - 2, gripScreen.Y - 2, 4, 4), Color.Green);
+            }
+
+            // Off-sprite check in actor space: the sprite is drawn centered at Position with
+            // the region's unscaled half extents, so compare the unscaled hand point.
+            var handUnscaled = Position + WeaponDef.ApplyWeaponFacing(hand, Direction);
+            bool outsideSprite =
+                MathF.Abs(handUnscaled.X - Position.X) > regionHalf.X ||
+                MathF.Abs(handUnscaled.Y - Position.Y) > regionHalf.Y;
+            if (outsideSprite)
+                Debug.WriteLine($"{GetType().Name} [{Name}] {weapon.Name} hand at ({handUnscaled.X:F0},{handUnscaled.Y:F0}) is outside the {region.Width}x{region.Height} sprite — retune the actor hand table for '{SpriteRenderer.CurrentAnimationKey}'");
         }
     }
 
@@ -214,10 +249,18 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
 
         if (CurrentMove is not null && FrameTracker.TryGetNewFrame(out var newFrameIndex))
         {
+            OnFrameAdvanced(newFrameIndex);
             HitboxService?.Clear(this);
             HitboxService?.RegisterFrameHitboxes(this, Faction, CurrentMove, newFrameIndex, Direction);
         }
     }
+
+    /// <summary>
+    /// Frame-advance hook for subclasses (e.g. spawning a throwable projectile mid-swing).
+    /// Called only when a move is active and the animation frame actually advances, before
+    /// that frame's hitboxes are registered.
+    /// </summary>
+    protected virtual void OnFrameAdvanced(int frameIndex) { }
 
     // --- State abstractions ---
     protected abstract ActorPhase Phase { get; }
@@ -225,6 +268,14 @@ public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugD
 
     protected bool IsIncapacitated => Phase is ActorPhase.Dead or ActorPhase.Dying or ActorPhase.Hurt or ActorPhase.KnockedDown;
     protected bool IsInAttackingState => Phase == ActorPhase.Attacking;
+
+    /// <summary>
+    /// The weapon overlay plays its swing run only while the actor performs the weapon's own
+    /// swing move. Attack2/Attack3 (and throwables on the carry pose) keep the held pose even
+    /// though they are Attacking, so weapon art can't play over a non-weapon animation.
+    /// </summary>
+    protected bool IsWeaponSwingActive =>
+        IsInAttackingState && EquippedWeapon is MeleeWeaponDef melee && ReferenceEquals(CurrentMove, melee.SwingMove);
 
     // --- Debug frame color ---
     protected virtual Color GetDebugFrameColor() => Color.Blue;

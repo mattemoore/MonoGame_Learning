@@ -7,7 +7,7 @@ using MonoGameLearning.Core.Rendering;
 
 namespace MonoGameLearning.Core.UI;
 
-public sealed class EnemyBar : UiBase
+public sealed class EnemyBar(SpriteFont font) : UiBase
 {
     private IDamageable? _hitTarget;
     private IDamageable? _proximityTarget;
@@ -22,13 +22,6 @@ public sealed class EnemyBar : UiBase
     public bool IsDeathLinger => _isDeathLinger;
 
     public void SetProximityTarget(IDamageable? target) => _proximityTarget = target;
-
-    private readonly SpriteFont _font;
-
-    public EnemyBar(SpriteFont font)
-    {
-        _font = font;
-    }
 
     public void OnHit(IDamageable enemy)
     {
@@ -109,8 +102,8 @@ public sealed class EnemyBar : UiBase
         sb.DrawRectangle(mugshotRect, Color.White, 1f);
 
         string label = _displayTarget.Name;
-        Vector2 labelSize = _font.MeasureString(label);
-        sb.DrawString(_font, label,
+        Vector2 labelSize = font.MeasureString(label);
+        sb.DrawString(font, label,
             new Vector2(left + mugSize + 6f, top + mugSize / 2f - labelSize.Y / 2f),
             Color.White);
 

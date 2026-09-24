@@ -2,6 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended.Graphics;
 using MonoGameLearning.Core.Audio;
+using MonoGameLearning.Core.Animation;
 using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.Entities.Actor;
 using MonoGameLearning.Core.Movement;
@@ -17,8 +18,16 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData, IDamageResponse
     private StateMachineController<PlayerState, PlayerTrigger> _stateController;
     private float _invincibilityTimer;
     private MoveData _pendingMove;
+    private ThrowableWeaponDef _pendingThrowable;
 
     public bool IsInvincible => _invincibilityTimer > 0;
+    public ThrowableWeaponDef EquippedThrowable => EquippedWeapon as ThrowableWeaponDef;
+
+    protected override HandAnchorTable HandAnchors => PlayerSprite.HandAnchors;
+
+    /// <summary>Raised mid-swing when a held throwable leaves the hand (def, origin, facing).</summary>
+    public event Action<ThrowableWeaponDef, Vector2, FacingDirection> Thrown;
+
     string IHudPlayerData.Name => Name;
     int IHudPlayerData.Health => HealthComponent.Value;
     int IHudPlayerData.MaxHealth => HealthComponent.MaxHealth;
@@ -37,7 +46,10 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData, IDamageResponse
         }
     };
 
-    public MoveData Attack1Move => EquippedWeapon?.SwingMove ?? _attack1Move;
+    public MoveData Attack1Move => (EquippedWeapon as MeleeWeaponDef)?.SwingMove ?? _attack1Move;
+
+    /// <summary>The move most recently requested via <see cref="Attack"/> (for subclass state entries).</summary>
+    protected MoveData PendingMove => _pendingMove;
     public readonly MoveData Attack2Move = new()
     {
         AnimationKey = PlayerSprite.AnimationAttack2,
@@ -125,7 +137,12 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData, IDamageResponse
             if (_pendingMove.AttackSfx.HasValue)
                 Audio.PlaySfx(_pendingMove.AttackSfx.Value);
         },
-        OnAttackingExit = AttackingExitImpl,
+        OnAttackingExit = () =>
+        {
+            // Drop any throw that was interrupted before its spawn frame could fire.
+            _pendingThrowable = null;
+            AttackingExitImpl();
+        },
         OnHurtEntry = () =>
         {
             HurtEntryImpl();
@@ -178,12 +195,46 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData, IDamageResponse
 
     public void Attack(MoveData move) { _pendingMove = move; _stateController.Fire(PlayerTrigger.AttackStart); }
 
+    /// <summary>
+    /// Attack1 input: throws a held throwable (consuming it) or performs the normal punch.
+    /// </summary>
+    public void PrimaryAttack()
+    {
+        if (EquippedThrowable is { } throwable)
+            Throw(throwable);
+        else
+            Attack(Attack1Move);
+    }
+
+    private void Throw(ThrowableWeaponDef throwable)
+    {
+        _pendingThrowable = throwable;
+        Attack(throwable.ThrowMove);
+    }
+
+    protected override void OnFrameAdvanced(int frameIndex)
+    {
+        if (_pendingThrowable is not { } throwable) return;
+        // A stale pending throw must never fire on a later punch/attack.
+        if (CurrentMove != throwable.ThrowMove) return;
+        if (frameIndex < throwable.SpawnFrame) return;
+
+        _pendingThrowable = null;
+        var origin = Position + WeaponDef.ApplyWeaponFacing(throwable.SpawnOffset, Direction);
+        Thrown?.Invoke(throwable, origin, Direction);
+        // Only consume the weapon actually thrown: a pickup during the windup may have
+        // replaced it, and unequipping then would silently destroy the newly acquired weapon.
+        if (ReferenceEquals(EquippedWeapon, throwable))
+            UnequipWeapon();
+    }
+
     public void Move(Vector2 direction, float deltaTime) =>
         Position += direction * deltaTime * Speed;
 
     public void Reset(Vector2 position)
     {
         ResetActor(position);
+        _pendingThrowable = null;
         _stateController = CreateStateController();
     }
 

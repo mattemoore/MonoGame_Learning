@@ -39,35 +39,6 @@ public class BatSwingSyncTests
         Assert.That(player.EquippedWeapon, Is.Null);
     }
 
-    // --- Per-frame anchor selection ---
-
-    [Test]
-    public void AnchorSelection_NotAttacking_ReturnsCarryAnchor()
-    {
-        var (anchor, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(BatWeapon.Bat, isAttacking: false, frameIndex: 0);
-
-        Assert.That(anchor, Is.EqualTo(BatWeapon.Bat.CarryAnchor));
-        Assert.That(frame, Is.Zero);
-    }
-
-    [Test]
-    public void AnchorSelection_Attacking_ReturnsPerFrameAnchor()
-    {
-        var (anchor, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(BatWeapon.Bat, isAttacking: true, frameIndex: 2);
-
-        Assert.That(anchor, Is.EqualTo(BatWeapon.Bat.SwingAnchors[2]));
-        Assert.That(frame, Is.EqualTo(2));
-    }
-
-    [Test]
-    public void AnchorSelection_OutOfRangeFrame_ClampsToLastAnchor()
-    {
-        var (anchor, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(BatWeapon.Bat, isAttacking: true, frameIndex: 99);
-
-        Assert.That(anchor, Is.EqualTo(BatWeapon.Bat.SwingAnchors[3]));
-        Assert.That(frame, Is.EqualTo(3));
-    }
-
     // --- Facing-left mirroring ---
 
     [Test]
@@ -91,7 +62,7 @@ public class BatSwingSyncTests
     [Test]
     public void RegionName_NotAttacking_ReturnsCarryRegion()
     {
-        var region = MeleeWeaponDef.ResolveWeaponRegionName(BatWeapon.Bat, isAttacking: false, frameIndex: 0);
+        var region = MeleeWeaponDef.ResolveWeaponRegionName(BatWeapon.Bat, isAttacking: false, actorFrameIndex: 0);
 
         Assert.That(region, Is.EqualTo(BatWeapon.Bat.CarryRegion));
         Assert.That(region, Is.EqualTo(BatSprite.CarryRegion), "Carry region must come from the sprite's atlas naming");
@@ -100,7 +71,7 @@ public class BatSwingSyncTests
     [Test]
     public void RegionName_Attacking_ReturnsPerFrameSwingRegion()
     {
-        var region = MeleeWeaponDef.ResolveWeaponRegionName(BatWeapon.Bat, isAttacking: true, frameIndex: 2);
+        var region = MeleeWeaponDef.ResolveWeaponRegionName(BatWeapon.Bat, isAttacking: true, actorFrameIndex: 2);
 
         Assert.That(region, Is.EqualTo($"{BatWeapon.Bat.SwingPrefix}-02"));
     }
@@ -108,7 +79,7 @@ public class BatSwingSyncTests
     [Test]
     public void RegionName_AttackingOutOfRange_ClampsToLastSwingRegion()
     {
-        var region = MeleeWeaponDef.ResolveWeaponRegionName(BatWeapon.Bat, isAttacking: true, frameIndex: 99);
+        var region = MeleeWeaponDef.ResolveWeaponRegionName(BatWeapon.Bat, isAttacking: true, actorFrameIndex: 99);
 
         Assert.That(region, Is.EqualTo($"{BatWeapon.Bat.SwingPrefix}-03"));
     }
@@ -117,7 +88,7 @@ public class BatSwingSyncTests
     public void RegionName_MissingSwingPrefix_ReturnsNull()
     {
         var bare = new MeleeWeaponDef { Name = "Bare", SwingMove = new() { AnimationKey = "attack" } };
-        var region = MeleeWeaponDef.ResolveWeaponRegionName(bare, isAttacking: true, frameIndex: 0);
+        var region = MeleeWeaponDef.ResolveWeaponRegionName(bare, isAttacking: true, actorFrameIndex: 0);
 
         Assert.That(region, Is.Null, "Weapon with no swing regions must not resolve a swing frame region");
     }
@@ -125,47 +96,40 @@ public class BatSwingSyncTests
     [Test]
     public void ResolveWeaponRegion_WithoutSheet_ReturnsNull()
     {
-        var (_, frame) = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(BatWeapon.Bat, isAttacking: true, frameIndex: 2);
-
-        Assert.That(BatWeapon.Bat.ResolveWeaponRegion(isAttacking: true, frameIndex: frame), Is.Null);
-        Assert.That(BatWeapon.Bat.ResolveWeaponRegion(isAttacking: false, frameIndex: frame), Is.Null);
+        Assert.That(BatWeapon.Bat.ResolveRegion(isAttacking: true, actorFrameIndex: 2), Is.Null);
+        Assert.That(BatWeapon.Bat.ResolveRegion(isAttacking: false, actorFrameIndex: 2), Is.Null);
     }
 
-    // --- Anchors derived from Aseprite handle slice + actor hand ---
+    // --- Weapon carries only its own grip data; the actor owns the hand point ---
 
     [Test]
-    public void Anchors_AreSeededFromHandsAndSliceHandleOffsets()
+    public void Bat_CarriesGripOffsets_NotActorHandAnchors()
     {
-        Assert.That(BatWeapon.Bat.SwingAnchors, Has.Length.EqualTo(4));
-        Assert.That(BatWeapon.SwingHandAnchors, Has.Length.EqualTo(4));
         Assert.That(BatWeapon.Bat.SwingHandleOffsets, Has.Length.EqualTo(4));
         Assert.That(BatWeapon.Bat.Scale, Is.EqualTo(0.5f), "Bat renders at half the actor's scale");
-        Assert.That(BatWeapon.CarryHandAnchor, Is.EqualTo(BatWeapon.SwingHandAnchors[0]),
-            "Carry pose uses the same hand anchor as the first swing frame (both are the forward grip)");
-        Assert.That(BatWeapon.SwingHandAnchors, Is.Ordered.Ascending.By("X"),
-            "Swing hand anchors must sweep steadily from carry to the right (facing right)");
-
-        var scale = BatWeapon.Bat.Scale;
-        var carryExpected = BatWeapon.CarryHandAnchor - (BatWeapon.Bat.CarryHandleOffset - BatWeapon.Bat.FrameCenter) * scale;
-        Assert.That(BatWeapon.Bat.CarryAnchor, Is.EqualTo(carryExpected));
-
-        for (int i = 0; i < BatWeapon.SwingHandAnchors.Length; i++)
-        {
-            var expected = BatWeapon.SwingHandAnchors[i] - (BatWeapon.Bat.SwingHandleOffsets[i] - BatWeapon.Bat.FrameCenter) * scale;
-            Assert.That(BatWeapon.Bat.SwingAnchors[i], Is.EqualTo(expected));
-        }
+        Assert.That(BatWeapon.Bat.FrameCenter, Is.EqualTo(new Vector2(32, 32)));
     }
 
     [Test]
-    public void Anchors_AreFinite()
+    public void ComputeAnchor_PlacesGripOnHand()
     {
-        Assert.That(float.IsFinite(BatWeapon.Bat.CarryAnchor.X), Is.True);
-        Assert.That(float.IsFinite(BatWeapon.Bat.CarryAnchor.Y), Is.True);
-        foreach (var anchor in BatWeapon.Bat.SwingAnchors)
-        {
-            Assert.That(float.IsFinite(anchor.X), Is.True);
-            Assert.That(float.IsFinite(anchor.Y), Is.True);
-        }
+        var weapon = BatWeapon.Bat;
+        Assert.That(PlayerSprite.HandAnchors.TryResolve(PlayerSprite.AnimationAttack1, 2, out var hand), Is.True);
+        var handleOffset = weapon.ResolveHandleOffset(isAttacking: true, actorFrameIndex: 2);
+
+        var anchor = WeaponDef.ComputeAnchor(hand, handleOffset, weapon.FrameCenter, weapon.Scale);
+
+        var grip = WeaponDef.ComputeHandleScreenPoint(
+            Vector2.Zero, FacingDirection.Right, anchor, handleOffset, weapon.FrameCenter, 1f, weapon.Scale);
+        Assert.That(grip, Is.EqualTo(hand), "A grip offset that lands on FrameCenter must sit exactly on the hand");
+    }
+
+    [Test]
+    public void ComputeAnchor_WithNoHandleOffset_IsTheHand()
+    {
+        var hand = new Vector2(7, -3);
+
+        Assert.That(WeaponDef.ComputeAnchor(hand, new Vector2(16, 16), new Vector2(16, 16), 0.5f), Is.EqualTo(hand));
     }
 
     [Test]
@@ -183,10 +147,10 @@ public class BatSwingSyncTests
     [Test]
     public void ResolveHandleOffset_UsesCarryWhenNotAttacking_ClampsWhenAttacking()
     {
-        Assert.That(BatWeapon.Bat.ResolveHandleOffset(isAttacking: false, frameIndex: 0),
+        Assert.That(BatWeapon.Bat.ResolveHandleOffset(isAttacking: false, actorFrameIndex: 0),
             Is.EqualTo(BatWeapon.Bat.CarryHandleOffset));
 
-        Assert.That(BatWeapon.Bat.ResolveHandleOffset(isAttacking: true, frameIndex: 99),
+        Assert.That(BatWeapon.Bat.ResolveHandleOffset(isAttacking: true, actorFrameIndex: 99),
             Is.EqualTo(BatWeapon.Bat.SwingHandleOffsets[^1]),
             "Out-of-range swing frame must clamp to the last swing handle offset");
     }
@@ -203,40 +167,44 @@ public class BatSwingSyncTests
 
     private static Vector2 ComputeHandle(MeleeWeaponDef weapon, bool attacking, int frame, float scale = 1f, float? weaponScale = null)
     {
-        // 64x64 region, no sheet needed: only the half-size matters for the math.
-        var regionHalf = new Vector2(32, 32);
-        return MeleeWeaponDef.ComputeHandleScreenPoint(
-            Vector2.Zero, FacingDirection.Right,
-            MeleeWeaponDef.ResolveWeaponAnchorAndFrame(weapon, attacking, frame).anchor,
-            weapon.ResolveHandleOffset(attacking, frame), regionHalf, scale, weaponScale ?? weapon.Scale);
+        // 64x64 bat region: regionHalf == FrameCenter, no sheet needed for the math.
+        var attackKey = attacking ? PlayerSprite.AnimationAttack1 : PlayerSprite.AnimationIdle;
+        PlayerSprite.HandAnchors.TryResolve(attackKey, frame, out var hand);
+        var handleOffset = weapon.ResolveHandleOffset(attacking, frame);
+        var anchor = WeaponDef.ComputeAnchor(hand, handleOffset, weapon.FrameCenter, weapon.Scale);
+        return WeaponDef.ComputeHandleScreenPoint(
+            Vector2.Zero, FacingDirection.Right, anchor, handleOffset, weapon.FrameCenter, scale, weaponScale ?? weapon.Scale);
     }
 
     [Test]
-    public void HandlePoint_EqualsCarryHandAnchor_WhenCarried()
+    public void HandlePoint_EqualsActorHand_WhenCarried()
     {
-        Assert.That(ComputeHandle(BatWeapon.Bat, attacking: false, frame: 0), Is.EqualTo(BatWeapon.CarryHandAnchor));
+        PlayerSprite.HandAnchors.TryResolve(PlayerSprite.AnimationIdle, 0, out var hand);
+
+        Assert.That(ComputeHandle(BatWeapon.Bat, attacking: false, frame: 0), Is.EqualTo(hand));
     }
 
     [Test]
-    public void HandlePoint_EqualsSwingHandAnchor_OnEachSwingFrame()
+    public void HandlePoint_EqualsActorHand_OnEachSwingFrame()
     {
-        for (int i = 0; i < BatWeapon.SwingHandAnchors.Length; i++)
+        for (int i = 0; i < BatWeapon.Bat.SwingHandleOffsets.Length; i++)
         {
-            Assert.That(ComputeHandle(BatWeapon.Bat, attacking: true, frame: i), Is.EqualTo(BatWeapon.SwingHandAnchors[i]),
-                $"Swing frame {i} handle must track the actor hand");
+            PlayerSprite.HandAnchors.TryResolve(PlayerSprite.AnimationAttack1, i, out var hand);
+            Assert.That(ComputeHandle(BatWeapon.Bat, attacking: true, frame: i), Is.EqualTo(hand),
+                $"Swing frame {i} grip must track the actor hand");
         }
     }
 
     [Test]
     public void HandlePoint_MirrorsHorizontallyWhenFacingLeft()
     {
-        var regionHalf = new Vector2(32, 32);
-        var anchor = MeleeWeaponDef.ResolveWeaponAnchorAndFrame(BatWeapon.Bat, isAttacking: false, frameIndex: 0).anchor;
-        var handleOffset = BatWeapon.Bat.ResolveHandleOffset(isAttacking: false, frameIndex: 0);
+        PlayerSprite.HandAnchors.TryResolve(PlayerSprite.AnimationIdle, 0, out var hand);
+        var handleOffset = BatWeapon.Bat.ResolveHandleOffset(isAttacking: false, actorFrameIndex: 0);
+        var anchor = WeaponDef.ComputeAnchor(hand, handleOffset, BatWeapon.Bat.FrameCenter, BatWeapon.Bat.Scale);
         var left = MeleeWeaponDef.ComputeHandleScreenPoint(
-            Vector2.Zero, FacingDirection.Left, anchor, handleOffset, regionHalf, 1f, BatWeapon.Bat.Scale);
+            Vector2.Zero, FacingDirection.Left, anchor, handleOffset, BatWeapon.Bat.FrameCenter, 1f, BatWeapon.Bat.Scale);
 
-        Assert.That(left, Is.EqualTo(new Vector2(-BatWeapon.CarryHandAnchor.X, BatWeapon.CarryHandAnchor.Y)));
+        Assert.That(left, Is.EqualTo(new Vector2(-hand.X, hand.Y)));
     }
 
     [Test]
@@ -245,8 +213,9 @@ public class BatSwingSyncTests
         // Player runs at scale 2; the overlay draw positions the region at anchor*scale and
         // scales the texture by scale*weaponScale. The weapon scale cancels out of the grip-
         // on-hand invariant, so the grip must sit at Position + scale*hand at any weapon scale.
-        Assert.That(ComputeHandle(BatWeapon.Bat, attacking: false, frame: 0, scale: 2f),
-            Is.EqualTo(BatWeapon.CarryHandAnchor * 2f));
+        PlayerSprite.HandAnchors.TryResolve(PlayerSprite.AnimationIdle, 0, out var hand);
+
+        Assert.That(ComputeHandle(BatWeapon.Bat, attacking: false, frame: 0, scale: 2f), Is.EqualTo(hand * 2f));
     }
 
     // --- Apex-only hitbox timing ---

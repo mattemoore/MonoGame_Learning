@@ -1,6 +1,5 @@
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
-using MonoGame.Extended.Collisions;
 using MonoGameLearning.Core.Entities;
 
 namespace MonoGameLearning.Game.Tests;

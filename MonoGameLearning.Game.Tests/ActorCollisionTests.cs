@@ -261,18 +261,11 @@ public class ActorCollisionTests
 
     // --- ISpatial contract ---
 
-    private sealed class PureSpatialStub : ISpatial
+    private sealed class PureSpatialStub(Vector2 position, int width, int height) : ISpatial
     {
-        public Vector2 Position { get; set; }
-        public int Width { get; }
-        public int Height { get; }
-
-        public PureSpatialStub(Vector2 position, int width, int height)
-        {
-            Position = position;
-            Width = width;
-            Height = height;
-        }
+        public Vector2 Position { get; set; } = position;
+        public int Width { get; } = width;
+        public int Height { get; } = height;
     }
 
     [Test]

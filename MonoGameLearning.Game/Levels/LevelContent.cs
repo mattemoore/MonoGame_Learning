@@ -5,5 +5,6 @@ public static class LevelContent
     public const string Grunt = "Grunt";
     public const string Food = "Food";
     public const string Bat = "Bat";
+    public const string Knife = "Knife";
     public const string OilDrum = "OilDrum";
 }

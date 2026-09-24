@@ -47,6 +47,11 @@ def _rot_point(cx, cy, x, y, angle_deg):
 
 
 def draw_baton(w, h, angle_deg, bar_w, bar_h, color):
+    # Materialize once: `color` may arrive as a generator, and `bytes()` would consume
+    # it on the first pixel (later slices would then delete bytes from the buffer).
+    color = tuple(color)
+    if len(color) == 3:
+        color = (*color, 255)
     px = bytearray(w * h * 4)
     cx, cy = (w - 1) / 2, (h - 1) / 2
     bw, bh = bar_w / 2, bar_h / 2

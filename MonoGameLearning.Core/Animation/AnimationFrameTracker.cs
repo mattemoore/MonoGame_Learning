@@ -17,13 +17,21 @@ public class AnimationFrameTracker
 
     public void AdvanceOnFrameChange(AnimatedSprite sprite, GameTime gameTime)
     {
-        int oldAtlasFrame = sprite.Controller.CurrentFrame;
+        var controller = sprite.Controller;
+        int oldAtlasFrame = controller.CurrentFrame;
         sprite.Update(gameTime);
-        if (sprite.Controller.CurrentFrame != oldAtlasFrame)
+        // A non-looping animation raises AnimationCompleted synchronously inside Update and a
+        // handler may SetAnimation, replacing Controller: that is a new animation at its first
+        // frame, not a frame advance of the animation that just ended.
+        if (ReferenceEquals(controller, sprite.Controller) && sprite.Controller.CurrentFrame != oldAtlasFrame)
             _frameIndex++;
     }
 
-    public int FrameIndex => _frameIndex;
+    /// <summary>
+    /// The current new-frame event count. Test seam only — production code reads new frames
+    /// through <see cref="TryGetNewFrame"/>.
+    /// </summary>
+    internal int FrameIndex => _frameIndex;
 
     public bool TryGetNewFrame(out int newFrameIndex)
     {
