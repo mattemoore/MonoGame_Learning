@@ -18,28 +18,22 @@ public record struct AnimationSet(string Idle, string Run, string Hurt, string F
 
 public enum KnockdownPhase { Falling, GettingUp }
 
-public abstract class CombatActorBase : Entity, IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, ICollisionLayer, IDamageable, IDamageResponse, IHitboxProvider, IMoveable, IAnimated, IWeaponWielder
+public abstract class CombatActorBase(
+    string name, Vector2 position, int width, int height, AnimatedSprite sprite, float scale, int maxHealth,
+    AnimationSet animations, AudioService audio)
+    : Entity(name, position, width, height), IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, ICollisionLayer, IDamageable, IDamageResponse, IHitboxProvider, IMoveable, IAnimated, IWeaponWielder
 {
     public string LayerName => CollisionLayers.Actors;
     public int Id => GetHashCode();
     public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
 
-    public readonly SpriteRenderer SpriteRenderer;
-    protected readonly Health HealthComponent;
+    public readonly SpriteRenderer SpriteRenderer = new(sprite, scale);
+    protected readonly Health HealthComponent = new(maxHealth);
     protected readonly AnimationFrameTracker FrameTracker = new();
-    protected readonly AnimationSet Animations;
-    protected readonly AudioService Audio;
+    protected readonly AnimationSet Animations = animations;
+    protected readonly AudioService Audio = audio;
 
     private string? _lastWarnedHandKey;
-
-    public CombatActorBase(string name, Vector2 position, int width, int height, AnimatedSprite sprite, float scale, int maxHealth, AnimationSet animations, AudioService audio)
-        : base(name, position, width, height)
-    {
-        SpriteRenderer = new(sprite, scale);
-        HealthComponent = new(maxHealth);
-        Animations = animations;
-        Audio = audio;
-    }
 
     public RectangleF MovementBounds { get; set; }
     public Vector2 MovementDirection { get; set; }

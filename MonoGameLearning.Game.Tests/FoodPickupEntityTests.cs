@@ -3,16 +3,10 @@ using MonoGameLearning.Game.Entities.Pickups;
 
 namespace MonoGameLearning.Game.Tests;
 
-internal sealed class HealTrackerEntity : IDamageable, IDamageResponse
+internal sealed class HealTrackerEntity(int maxHealth) : IDamageable, IDamageResponse
 {
-    private int _health;
-    private readonly int _maxHealth;
-
-    public HealTrackerEntity(int maxHealth)
-    {
-        _maxHealth = maxHealth;
-        _health = maxHealth;
-    }
+    private readonly int _maxHealth = maxHealth;
+    private int _health = maxHealth;
 
     public string Name => "HealTracker";
     public int Health => _health;
