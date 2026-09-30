@@ -6,7 +6,7 @@ using MonoGameLearning.Core.Entities;
 
 namespace MonoGameLearning.Core.Levels;
 
-public abstract class EntityPool<TEnemy>(
+public class EntityPool<TEnemy>(
     EntityService entityManager,
     Func<WorldSnapshot> getWorld,
     Func<string, int, Func<WorldSnapshot>, TEnemy> factory)
@@ -17,8 +17,8 @@ public abstract class EntityPool<TEnemy>(
     protected readonly EntityService EntityService = entityManager;
     private readonly Func<WorldSnapshot> _getWorld = getWorld;
     private readonly Func<string, int, Func<WorldSnapshot>, TEnemy> _factory = factory;
-    protected readonly Dictionary<string, Stack<TEnemy>> Free = [];
-    protected readonly Dictionary<TEnemy, string> EntityType = [];
+    private readonly Dictionary<string, Stack<TEnemy>> _free = [];
+    private readonly Dictionary<TEnemy, string> _entityType = [];
 
     public void Build(LevelData level)
     {
@@ -40,15 +40,15 @@ public abstract class EntityPool<TEnemy>(
                 var enemy = _factory(type, i, _getWorld);
                 enemy.Position = Sentinel;
                 stack.Push(enemy);
-                EntityType[enemy] = type;
+                _entityType[enemy] = type;
             }
-            Free[type] = stack;
+            _free[type] = stack;
         }
     }
 
     public virtual TEnemy Rent(string type, Vector2 position, Entity target)
     {
-        if (!Free.TryGetValue(type, out var stack) || stack.Count == 0)
+        if (!_free.TryGetValue(type, out var stack) || stack.Count == 0)
             throw new InvalidOperationException($"Pool exhausted for enemy type '{type}'.");
 
         var enemy = stack.Pop();
@@ -57,7 +57,7 @@ public abstract class EntityPool<TEnemy>(
         return enemy;
     }
 
-    protected abstract void OnRentEnemy(TEnemy enemy, Vector2 position, Entity target);
+    protected virtual void OnRentEnemy(TEnemy enemy, Vector2 position, Entity target) { }
 
     public void Return(TEnemy enemy)
     {
@@ -65,16 +65,16 @@ public abstract class EntityPool<TEnemy>(
         OnReturnEnemy(enemy);
         enemy.Position = Sentinel;
 
-        if (EntityType.TryGetValue(enemy, out var type) &&
-            Free.TryGetValue(type, out var stack))
+        if (_entityType.TryGetValue(enemy, out var type) &&
+            _free.TryGetValue(type, out var stack))
             stack.Push(enemy);
     }
 
-    protected abstract void OnReturnEnemy(TEnemy enemy);
+    protected virtual void OnReturnEnemy(TEnemy enemy) { }
 
     public void Clear()
     {
-        Free.Clear();
-        EntityType.Clear();
+        _free.Clear();
+        _entityType.Clear();
     }
 }

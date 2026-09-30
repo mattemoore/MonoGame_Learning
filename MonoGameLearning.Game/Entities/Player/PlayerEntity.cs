@@ -9,7 +9,6 @@ using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Core.UI;
 using MonoGameLearning.Core.StateMachines;
 using MonoGameLearning.Game.AnimatedSprites;
-using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Entities.Player;
 
@@ -111,21 +110,19 @@ public class PlayerEntity : CombatActorBase, IHudPlayerData, IDamageResponse
 
     public override void OnDeath() => _stateController.Fire(PlayerTrigger.Die);
 
-    public void OnKnockdown(DamageInfo info)
+    protected override void OnKnockdownImpl()
     {
-        LastImpactSfx = info.ImpactSfx;
         _invincibilityTimer = 1.5f;
         _stateController.Fire(PlayerTrigger.TakeKnockdown);
     }
 
-    public void OnHit(DamageInfo info)
+    protected override void OnHitImpl()
     {
-        LastImpactSfx = info.ImpactSfx;
         _invincibilityTimer = 1.0f;
         _stateController.Fire(PlayerTrigger.TakeDamage);
     }
 
-    protected virtual StateMachineController<PlayerState, PlayerTrigger> CreateStateController() => PlayerStateMachine.Create(new PlayerStateMachineCallbacks
+    protected virtual StateMachineController<PlayerState, PlayerTrigger> CreateStateController() => PlayerStateMachine.Create(new CombatActorStateMachineCallbacks
     {
         OnIdleEntry = () => SpriteRenderer.SetAnimation(Animations.Idle),
         OnMovingEntry = () => SpriteRenderer.SetAnimation(Animations.Run),

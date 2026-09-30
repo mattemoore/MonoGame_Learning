@@ -3,7 +3,6 @@ using MonoGameLearning.Core.Combat;
 using MonoGameLearning.Core.UI;
 using MonoGameLearning.Core.StateMachines;
 using MonoGameLearning.Game.Entities.Player;
-using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Tests;
 
@@ -12,7 +11,7 @@ class PlayerEntityTester(string name, Vector2 position, float scale)
 {
     protected override StateMachineController<PlayerState, PlayerTrigger> CreateStateController()
     {
-        return PlayerStateMachine.Create(new PlayerStateMachineCallbacks
+        return PlayerStateMachine.Create(new CombatActorStateMachineCallbacks
         {
             OnAttackingEntry = () => CurrentMove = PendingMove,
             OnAttackingExit = AttackingExitImpl,

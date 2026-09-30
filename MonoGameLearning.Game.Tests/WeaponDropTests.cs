@@ -6,7 +6,6 @@ using MonoGameLearning.Core.Entities;
 using MonoGameLearning.Core.Entities.Pickup;
 using MonoGameLearning.Core.Levels;
 using MonoGameLearning.Core.Movement;
-using MonoGameLearning.Core.StateMachines;
 using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.Entities.Pickups;
 using MonoGameLearning.Game.Levels;

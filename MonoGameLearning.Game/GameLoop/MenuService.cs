@@ -287,14 +287,17 @@ public class MenuService(
             return new TextRuntime
             {
                 Text = text,
-                X = x, Y = y,
+                X = x,
+                Y = y,
                 XOrigin = HorizontalAlignment.Left,
                 YOrigin = VerticalAlignment.Center,
                 XUnits = GeneralUnitType.PixelsFromMiddle,
                 YUnits = GeneralUnitType.PixelsFromMiddle,
                 HorizontalAlignment = HorizontalAlignment.Left,
                 FontScale = 1.4f,
-                Red = 200, Green = 200, Blue = 200
+                Red = 200,
+                Green = 200,
+                Blue = 200
             };
         }
 
@@ -335,28 +338,34 @@ public class MenuService(
         var navHint = new TextRuntime
         {
             Text = "Navigate: Arrow Keys    Adjust: Left/Right",
-            X = 0, Y = 120,
+            X = 0,
+            Y = 120,
             XOrigin = HorizontalAlignment.Center,
             YOrigin = VerticalAlignment.Center,
             XUnits = GeneralUnitType.PixelsFromMiddle,
             YUnits = GeneralUnitType.PixelsFromMiddle,
             HorizontalAlignment = HorizontalAlignment.Center,
             FontScale = 1f,
-            Red = 140, Green = 140, Blue = 140
+            Red = 140,
+            Green = 140,
+            Blue = 140
         };
         _settingsScreen.Children.Add(navHint);
 
         var escHint = new TextRuntime
         {
             Text = "ESC: Back",
-            X = 0, Y = 200,
+            X = 0,
+            Y = 200,
             XOrigin = HorizontalAlignment.Center,
             YOrigin = VerticalAlignment.Center,
             XUnits = GeneralUnitType.PixelsFromMiddle,
             YUnits = GeneralUnitType.PixelsFromMiddle,
             HorizontalAlignment = HorizontalAlignment.Center,
             FontScale = 1f,
-            Red = 120, Green = 120, Blue = 120
+            Red = 120,
+            Green = 120,
+            Blue = 120
         };
         _settingsScreen.Children.Add(escHint);
     }

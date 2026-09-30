@@ -15,7 +15,6 @@ using MonoGameLearning.Core.Movement;
 using MonoGameLearning.Core.Rendering;
 using MonoGameLearning.Core.StateMachines;
 using MonoGameLearning.Game.AnimatedSprites;
-using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Entities.Enemy;
 
@@ -47,7 +46,6 @@ public class EnemyEntity : CombatActorBase, IDamageResponse, IPickupDropper
             case ActorPhase.Hurt: _stateController.Fire(EnemyTrigger.HurtCompleted); break;
             case ActorPhase.Dying: _stateController.Fire(EnemyTrigger.DeathCompleted); break;
             default:
-                _ai.AttackCooldown = 1.5f;
                 _stateController.Fire(EnemyTrigger.AttackCompleted);
                 break;
         }
@@ -94,19 +92,11 @@ public class EnemyEntity : CombatActorBase, IDamageResponse, IPickupDropper
 
     public override void OnDeath() => _stateController.Fire(EnemyTrigger.Die);
 
-    public void OnKnockdown(DamageInfo info)
-    {
-        LastImpactSfx = info.ImpactSfx;
-        _stateController.Fire(EnemyTrigger.TakeKnockdown);
-    }
+    protected override void OnKnockdownImpl() => _stateController.Fire(EnemyTrigger.TakeKnockdown);
 
-    public void OnHit(DamageInfo info)
-    {
-        LastImpactSfx = info.ImpactSfx;
-        _stateController.Fire(EnemyTrigger.TakeDamage);
-    }
+    protected override void OnHitImpl() => _stateController.Fire(EnemyTrigger.TakeDamage);
 
-    protected virtual StateMachineController<EnemyState, EnemyTrigger> CreateStateController() => EnemyStateMachine.Create(new EnemyStateMachineCallbacks
+    protected virtual StateMachineController<EnemyState, EnemyTrigger> CreateStateController() => EnemyStateMachine.Create(new CombatActorStateMachineCallbacks
     {
         OnIdleEntry = () => SpriteRenderer.SetAnimation(Animations.Idle),
         OnChasingEntry = () => SpriteRenderer.SetAnimation(Animations.Run),
@@ -118,7 +108,11 @@ public class EnemyEntity : CombatActorBase, IDamageResponse, IPickupDropper
             if (AttackMove.AttackSfx.HasValue)
                 Audio.PlaySfx(AttackMove.AttackSfx.Value);
         },
-        OnAttackingExit = AttackingExitImpl,
+        OnAttackingExit = () =>
+        {
+            _ai.AttackCooldown = 1.5f;
+            AttackingExitImpl();
+        },
         OnHurtEntry = () =>
         {
             HurtEntryImpl();

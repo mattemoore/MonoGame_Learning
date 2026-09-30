@@ -21,6 +21,8 @@ internal sealed class StubCombatActor : CombatActorBase
     public override void Update(GameTime gameTime) { }
     protected override ActorPhase Phase => ActorPhase.Idle;
     protected override void FirePhaseCompleted() { }
+    protected override void OnKnockdownImpl() { }
+    protected override void OnHitImpl() { }
 }
 
 internal sealed class GenericCollidableEntity(string name, Vector2 position, int width, int height)

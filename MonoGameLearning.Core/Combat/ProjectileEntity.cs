@@ -24,7 +24,7 @@ namespace MonoGameLearning.Core.Combat;
 /// the cached array keeps the per-frame Draw path allocation-free with no sync step.
 /// </para>
 /// </summary>
-public sealed class ProjectileEntity : Entity, IUpdatable, IRenderable, IDebugDrawable, IHitboxProvider
+public sealed class ProjectileEntity : Entity, IUpdatable, IRenderable, IDebugDrawable, IHitboxProvider, IFactionMember
 {
     private ThrowableWeaponDef? _def;
     private Vector2 _origin;
@@ -45,6 +45,7 @@ public sealed class ProjectileEntity : Entity, IUpdatable, IRenderable, IDebugDr
     public MoveData? CurrentMove { get; set; }
     public HitboxService? HitboxService { get; set; }
     public FacingDirection Direction { get; set; }
+    public Faction Faction => _faction;
 
     public void Launch(ThrowableWeaponDef def, Vector2 origin, FacingDirection facing, Faction faction)
     {

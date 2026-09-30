@@ -10,13 +10,9 @@ namespace MonoGameLearning.Game.Levels;
 public class EnemyPool(EntityService entityManager, Func<WorldSnapshot> getWorld, Func<string, int, Func<WorldSnapshot>, EnemyEntity> factory)
     : EntityPool<EnemyEntity>(entityManager, getWorld, factory)
 {
-    protected override void OnRentEnemy(EnemyEntity enemy, Vector2 position, Entity target)
-    {
+    protected override void OnRentEnemy(EnemyEntity enemy, Vector2 position, Entity target) =>
         enemy.Reset(position, target);
-    }
 
-    protected override void OnReturnEnemy(EnemyEntity enemy)
-    {
+    protected override void OnReturnEnemy(EnemyEntity enemy) =>
         enemy.ClearCombatState();
-    }
 }
