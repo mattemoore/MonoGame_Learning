@@ -30,9 +30,8 @@ public enum PlayerTrigger
 
 public static class PlayerStateMachine
 {
-    public static StateMachineController<PlayerState, PlayerTrigger> Create(CombatActorStateMachineCallbacks callbacks = null)
+    public static StateMachineController<PlayerState, PlayerTrigger> Create(CombatActorStateMachineCallbacks callbacks)
     {
-        callbacks ??= new();
         return new StateMachineController<PlayerState, PlayerTrigger>(
             PlayerState.Idling,
             machine => Configure(machine, callbacks),

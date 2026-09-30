@@ -9,7 +9,7 @@ public class EnemyStateTests
     private StateMachineController<EnemyState, EnemyTrigger> _controller;
 
     [SetUp]
-    public void Setup() => _controller = EnemyStateMachine.Create();
+    public void Setup() => _controller = EnemyStateMachine.Create(new CombatActorStateMachineCallbacks());
 
     [Test]
     public void InitialState_ShouldBeIdle() =>
@@ -305,7 +305,7 @@ public class EnemyStateTests
     [Test]
     public void Attacking_IsInAttackingState()
     {
-        var controller = EnemyStateMachine.Create();
+        var controller = EnemyStateMachine.Create(new CombatActorStateMachineCallbacks());
         controller.Fire(EnemyTrigger.AttackStart);
         Assert.That(controller.IsInState(EnemyState.Attacking), Is.True);
     }

@@ -7,12 +7,6 @@ using MonoGameLearning.Game.Weapons;
 
 namespace MonoGameLearning.Game.Tests;
 
-class ArmedActorTester(string name) : PlayerEntityTester(name, Vector2.Zero, 1f)
-{
-    public void Equip(MeleeWeaponDef weapon) => EquipWeapon(weapon);
-    public void Unequip() => UnequipWeapon();
-}
-
 [TestFixture]
 public class BatSwingSyncTests
 {
@@ -21,9 +15,9 @@ public class BatSwingSyncTests
     [Test]
     public void EquipWeapon_WithoutSheet_EquipsSafely()
     {
-        var player = new ArmedActorTester("Bat");
+        var player = new PlayerEntityTester("Bat", Vector2.Zero);
 
-        player.Equip(BatWeapon.Bat);
+        player.EquipWeapon(BatWeapon.Bat);
 
         Assert.That(player.EquippedWeapon, Is.SameAs(BatWeapon.Bat));
     }
@@ -31,10 +25,10 @@ public class BatSwingSyncTests
     [Test]
     public void UnequipWeapon_ClearsWeapon()
     {
-        var player = new ArmedActorTester("Bat");
-        player.Equip(BatWeapon.Bat);
+        var player = new PlayerEntityTester("Bat", Vector2.Zero);
+        player.EquipWeapon(BatWeapon.Bat);
 
-        player.Unequip();
+        player.UnequipWeapon();
 
         Assert.That(player.EquippedWeapon, Is.Null);
     }

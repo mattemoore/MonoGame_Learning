@@ -30,7 +30,7 @@ public class PickupRegistrationTests
 
         mgr.Register(pickup);
 
-        Assert.That(mgr.PickupCollidables, Does.Contain(pickup));
+        Assert.That(mgr.GetCollidables(CollisionLayers.Pickups), Does.Contain(pickup));
     }
 
     [Test]
@@ -57,7 +57,7 @@ public class PickupRegistrationTests
 
         mgr.Clear();
 
-        Assert.That(mgr.PickupCollidables, Is.Empty);
+        Assert.That(mgr.GetCollidables(CollisionLayers.Pickups), Is.Empty);
     }
 
     [Test]
@@ -70,7 +70,7 @@ public class PickupRegistrationTests
         mgr.Destroy(pickup);
         mgr.ProcessPending();
 
-        Assert.That(mgr.PickupCollidables, Is.Empty);
+        Assert.That(mgr.GetCollidables(CollisionLayers.Pickups), Is.Empty);
     }
 
     [Test]

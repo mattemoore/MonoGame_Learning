@@ -21,7 +21,7 @@ public enum KnockdownPhase { Falling, GettingUp }
 public abstract class CombatActorBase(
     string name, Vector2 position, int width, int height, AnimatedSprite sprite, float scale, int maxHealth,
     AnimationSet animations, AudioService audio)
-    : Entity(name, position, width, height), IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, ICollisionLayer, IDamageable, IDamageResponse, IHitboxProvider, IMoveable, IAnimated, IWeaponWielder, IFactionMember
+    : Entity(name, position, width, height), IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, ICollisionLayer, IDamageable, IDamageResponse, IHitboxProvider, IMoveable, IWeaponWielder, IFactionMember
 {
     public string LayerName => CollisionLayers.Actors;
     public int Id => GetHashCode();
@@ -161,8 +161,6 @@ public abstract class CombatActorBase(
     public abstract void Update(GameTime gameTime);
 
     protected void RaiseDied() => Died?.Invoke(this, EventArgs.Empty);
-
-    void IAnimated.ResetAnimationFrameIndex() => FrameTracker.Reset();
 
     public void Render(RenderContext context)
     {

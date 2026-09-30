@@ -8,8 +8,8 @@ public class OilDrumEntityTests
 {
     private static TestableOilDrumEntity CreateDrum() => new("drum");
 
-    private static DamageInfo Strike(AttackStrength strength, int amount = 0) =>
-        new() { Amount = amount, Strength = strength };
+    private static DamageInfo Strike(AttackStrength strength) =>
+        new() { Amount = 0, Strength = strength };
 
     private static void AdvancePastHitStun(TestableOilDrumEntity drum) =>
         drum.Update(new GameTime(TimeSpan.Zero, TimeSpan.FromSeconds(0.35f)));
@@ -59,7 +59,7 @@ public class OilDrumEntityTests
         // Durability is tiered by Strength, not Amount: a zero-amount heavy hit
         // still one-shots the 6-HP drum.
         var drum = CreateDrum();
-        drum.TakeDamage(Strike(AttackStrength.Heavy, amount: 0));
+        drum.TakeDamage(Strike(AttackStrength.Heavy));
         Assert.That(drum.IsAliveExposed, Is.False);
     }
 

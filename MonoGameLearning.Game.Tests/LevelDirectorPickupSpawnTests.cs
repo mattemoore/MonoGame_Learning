@@ -36,7 +36,7 @@ public class LevelDirectorPickupSpawnTests
         mgr.Register(pickup);
 
         Assert.That(mgr.All, Does.Contain(pickup));
-        Assert.That(mgr.PickupCollidables, Does.Contain(pickup));
+        Assert.That(mgr.GetCollidables(CollisionLayers.Pickups), Does.Contain(pickup));
     }
 
     [Test]

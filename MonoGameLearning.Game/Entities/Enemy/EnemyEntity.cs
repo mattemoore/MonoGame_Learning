@@ -211,10 +211,6 @@ public class EnemyEntity : CombatActorBase, IDamageResponse, IPickupDropper
             if (_stateController.State == EnemyState.Chasing && result.MovementDirection != Vector2.Zero)
                 Position += result.MovementDirection * deltaSeconds * Speed;
         }
-        else
-        {
-            _ai.UpdateIdle(deltaSeconds);
-        }
 
         AdvanceFrameAndRegisterHitboxes(gameTime);
     }

@@ -6,8 +6,8 @@ using MonoGameLearning.Game.Entities.Player;
 
 namespace MonoGameLearning.Game.Tests;
 
-class PlayerEntityTester(string name, Vector2 position, float scale)
-    : PlayerEntity(name, position, scale, null!, null!)
+class PlayerEntityTester(string name, Vector2 position)
+    : PlayerEntity(name, position, 1f, null!, null!)
 {
     protected override StateMachineController<PlayerState, PlayerTrigger> CreateStateController()
     {
@@ -43,7 +43,7 @@ class PlayerEntityInvulnerabilityTests
 {
     private static PlayerEntity CreatePlayer()
     {
-        return new PlayerEntityTester("Test", Vector2.Zero, 1f);
+        return new PlayerEntityTester("Test", Vector2.Zero);
     }
 
     private static GameTime ZeroGameTime => new(TimeSpan.Zero, TimeSpan.Zero);

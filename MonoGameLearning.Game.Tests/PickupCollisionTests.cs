@@ -46,17 +46,8 @@ public class PickupCollisionTests
 {
     private const int EntitySize = 50;
 
-    private static CollisionWorld2D CreateWorld()
-    {
-        var world = new CollisionWorld2D();
-        var bb = new BoundingBox2D(new Vector2(0, 0), new Vector2(2000, 2000));
-        world.AddLayer(CollisionLayers.Actors, new Layer(new QuadTreeSpace(bb)));
-        world.DisableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Actors);
-        world.AddLayer(CollisionLayers.Pickups, new Layer(new QuadTreeSpace(bb)));
-        world.DisableCollisionBetweenLayers(CollisionLayers.Pickups, CollisionLayers.Pickups);
-        world.EnableCollisionBetweenLayers(CollisionLayers.Actors, CollisionLayers.Pickups);
-        return world;
-    }
+    private static CollisionWorld2D CreateWorld() =>
+        CollisionWorldFactory.Create(new RectangleF(0, 0, 2000, 2000));
 
     private static TestPickupActor MakePickup(float x, float y) =>
         new("pickup", new Vector2(x, y), EntitySize, EntitySize);

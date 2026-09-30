@@ -10,7 +10,7 @@ public class StateMachineControllerTests
     [Test]
     public void Fire_IllegalTrigger_DoesNotThrow_StateUnchanged()
     {
-        var controller = EnemyStateMachine.Create();
+        var controller = EnemyStateMachine.Create(new CombatActorStateMachineCallbacks());
 
         Assert.DoesNotThrow(() => controller.Fire(EnemyTrigger.DeathCompleted));
         Assert.That(controller.State, Is.EqualTo(EnemyState.Idle));
@@ -19,7 +19,7 @@ public class StateMachineControllerTests
     [Test]
     public void Fire_IllegalTrigger_Player_DoesNotThrow_StateUnchanged()
     {
-        var controller = PlayerStateMachine.Create();
+        var controller = PlayerStateMachine.Create(new CombatActorStateMachineCallbacks());
 
         Assert.DoesNotThrow(() => controller.Fire(PlayerTrigger.DeathCompleted));
         Assert.That(controller.State, Is.EqualTo(PlayerState.Idling));
@@ -41,7 +41,7 @@ public class StateMachineControllerTests
     [Test]
     public void Fire_IgnoredTrigger_IsNoOp()
     {
-        var controller = PlayerStateMachine.Create();
+        var controller = PlayerStateMachine.Create(new CombatActorStateMachineCallbacks());
 
         controller.Fire(PlayerTrigger.AttackCompleted);
 
@@ -51,7 +51,7 @@ public class StateMachineControllerTests
     [Test]
     public void CanFire_ReturnsTrue_ForIgnoredTrigger()
     {
-        var controller = EnemyStateMachine.Create();
+        var controller = EnemyStateMachine.Create(new CombatActorStateMachineCallbacks());
         Assert.That(controller.CanFire(EnemyTrigger.AttackCompleted), Is.True);
     }
 }
