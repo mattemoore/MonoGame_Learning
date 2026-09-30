@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using MonoGame.Extended;
 using MonoGameLearning.Core.AI;
@@ -12,19 +13,17 @@ using MonoGameLearning.Game.Entities.Enemy;
 
 namespace MonoGameLearning.Game.Levels;
 
-#pragma warning disable CS9107 // Primary constructor params are used only by the base call
 public class LevelDirector(EntityService entityManager, LevelData level, Entity player, AudioService audio,
     Func<PropSpawnDef, PropBase> createProp, Func<PickupSpawnDef, Entity> createPickup,
     Func<string, MeleeWeaponDef> getWeapon, Func<string, int, Func<WorldSnapshot>, EnemyEntity> createEnemy,
-    Action<EnemyEntity, EnemySpawnDef, FacingDirection, MeleeWeaponDef> onEnemySpawned,
+    Action<EnemyEntity, EnemySpawnDef, FacingDirection, MeleeWeaponDef?> onEnemySpawned,
     Func<RectangleF> getCameraView)
-    : LevelDirectorCore<EnemyEntity>(entityManager, level, player, audio, createProp, createPickup,
-        getWeapon, createEnemy, onEnemySpawned, getCameraView)
-#pragma warning restore CS9107
+    : LevelDirectorCore<EnemyEntity>(entityManager, level, player, audio, createProp, createPickup, getWeapon, createEnemy, onEnemySpawned, getCameraView)
 {
-    protected override void InitializePool()
+    protected override EntityPool<EnemyEntity> CreateDefaultPool()
     {
-        EnemyPool = new EnemyPool(EntityManager, () => CurrentWorld, CreateEnemy);
-        EnemyPool.Build(Level);
+        var pool = new EnemyPool(EntityManager, () => CurrentWorld, CreateEnemy);
+        pool.Build(Level);
+        return pool;
     }
 }

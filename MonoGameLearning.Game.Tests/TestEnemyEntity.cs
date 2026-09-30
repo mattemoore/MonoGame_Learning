@@ -3,7 +3,6 @@ using MonoGame.Extended.Animations;
 using MonoGameLearning.Core.StateMachines;
 using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.Levels;
-using MonoGameLearning.Game.StateMachines;
 
 namespace MonoGameLearning.Game.Tests;
 
@@ -20,7 +19,7 @@ class TestEnemyEntity(string name, Vector2 position, LevelDirector? director = n
 
     protected override StateMachineController<EnemyState, EnemyTrigger> CreateStateController()
     {
-        StateController = EnemyStateMachine.Create(new EnemyStateMachineCallbacks
+        StateController = EnemyStateMachine.Create(new CombatActorStateMachineCallbacks
         {
             OnAttackingEntry = () => CurrentMove = AttackMove,
             OnAttackingExit = AttackingExitImpl,

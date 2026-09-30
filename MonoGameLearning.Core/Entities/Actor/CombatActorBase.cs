@@ -21,17 +21,23 @@ public enum KnockdownPhase { Falling, GettingUp }
 public abstract class CombatActorBase(
     string name, Vector2 position, int width, int height, AnimatedSprite sprite, float scale, int maxHealth,
     AnimationSet animations, AudioService audio)
-    : Entity(name, position, width, height), IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, ICollisionLayer, IDamageable, IDamageResponse, IHitboxProvider, IMoveable, IAnimated, IWeaponWielder
+    : Entity(name, position, width, height), IUpdatable, IRenderable, IDebugDrawable, ICollisionActor, ICollisionLayer, IDamageable, IDamageResponse, IHitboxProvider, IMoveable, IAnimated, IWeaponWielder, IFactionMember
 {
     public string LayerName => CollisionLayers.Actors;
     public int Id => GetHashCode();
     public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
 
-    public readonly SpriteRenderer SpriteRenderer = new(sprite, scale);
-    protected readonly Health HealthComponent = new(maxHealth);
-    protected readonly AnimationFrameTracker FrameTracker = new();
-    protected readonly AnimationSet Animations = animations;
-    protected readonly AudioService Audio = audio;
+    private readonly SpriteRenderer _spriteRenderer = new(sprite, scale);
+    private readonly Health _health = new(maxHealth);
+    private readonly AnimationFrameTracker _frameTracker = new();
+    private readonly AnimationSet _animations = animations;
+    private readonly AudioService _audio = audio;
+
+    public SpriteRenderer SpriteRenderer => _spriteRenderer;
+    protected Health HealthComponent => _health;
+    protected AnimationFrameTracker FrameTracker => _frameTracker;
+    protected AnimationSet Animations => _animations;
+    protected AudioService Audio => _audio;
 
     private string? _lastWarnedHandKey;
 
@@ -67,6 +73,21 @@ public abstract class CombatActorBase(
 
     public virtual bool CanTakeDamage() => HealthComponent.IsAlive;
     public virtual void OnDeath() { }
+
+    public void OnKnockdown(DamageInfo info)
+    {
+        LastImpactSfx = info.ImpactSfx;
+        OnKnockdownImpl();
+    }
+
+    public void OnHit(DamageInfo info)
+    {
+        LastImpactSfx = info.ImpactSfx;
+        OnHitImpl();
+    }
+
+    protected abstract void OnKnockdownImpl();
+    protected abstract void OnHitImpl();
 
     public void EquipWeapon(WeaponDef weapon) => EquippedWeapon = weapon;
 

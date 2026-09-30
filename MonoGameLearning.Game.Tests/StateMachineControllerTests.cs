@@ -1,6 +1,6 @@
 using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.Entities.Player;
-using MonoGameLearning.Game.StateMachines;
+using MonoGameLearning.Core.StateMachines;
 
 namespace MonoGameLearning.Game.Tests;
 
@@ -29,7 +29,7 @@ public class StateMachineControllerTests
     public void Constructor_InvokesInitialStateEntryCallback()
     {
         bool idleEntryInvoked = false;
-        var controller = PlayerStateMachine.Create(new PlayerStateMachineCallbacks
+        var controller = PlayerStateMachine.Create(new CombatActorStateMachineCallbacks
         {
             OnIdleEntry = () => idleEntryInvoked = true,
         });

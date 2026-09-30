@@ -1,5 +1,4 @@
 using MonoGameLearning.Core.StateMachines;
-using MonoGameLearning.Game.StateMachines;
 using Stateless;
 
 namespace MonoGameLearning.Game.Entities.Player;
@@ -31,16 +30,16 @@ public enum PlayerTrigger
 
 public static class PlayerStateMachine
 {
-    public static StateMachineController<PlayerState, PlayerTrigger> Create(PlayerStateMachineCallbacks callbacks = null)
+    public static StateMachineController<PlayerState, PlayerTrigger> Create(CombatActorStateMachineCallbacks callbacks = null)
     {
-        callbacks ??= new PlayerStateMachineCallbacks();
+        callbacks ??= new();
         return new StateMachineController<PlayerState, PlayerTrigger>(
             PlayerState.Idling,
             machine => Configure(machine, callbacks),
             () => callbacks.OnIdleEntry?.Invoke());
     }
 
-    private static void Configure(StateMachine<PlayerState, PlayerTrigger> machine, PlayerStateMachineCallbacks callbacks)
+    private static void Configure(StateMachine<PlayerState, PlayerTrigger> machine, CombatActorStateMachineCallbacks callbacks)
     {
         machine.Configure(PlayerState.Idling)
             .OnEntry(_ => callbacks.OnIdleEntry?.Invoke())

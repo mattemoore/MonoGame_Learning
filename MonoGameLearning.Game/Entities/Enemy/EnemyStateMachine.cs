@@ -1,5 +1,4 @@
 using MonoGameLearning.Core.StateMachines;
-using MonoGameLearning.Game.StateMachines;
 using Stateless;
 
 namespace MonoGameLearning.Game.Entities.Enemy;
@@ -34,16 +33,16 @@ public enum EnemyTrigger
 
 public static class EnemyStateMachine
 {
-    public static StateMachineController<EnemyState, EnemyTrigger> Create(EnemyStateMachineCallbacks callbacks = null)
+    public static StateMachineController<EnemyState, EnemyTrigger> Create(CombatActorStateMachineCallbacks callbacks = null)
     {
-        callbacks ??= new EnemyStateMachineCallbacks();
+        callbacks ??= new();
         return new StateMachineController<EnemyState, EnemyTrigger>(
             EnemyState.Idle,
             machine => Configure(machine, callbacks),
             () => callbacks.OnIdleEntry?.Invoke());
     }
 
-    private static void Configure(StateMachine<EnemyState, EnemyTrigger> machine, EnemyStateMachineCallbacks callbacks)
+    private static void Configure(StateMachine<EnemyState, EnemyTrigger> machine, CombatActorStateMachineCallbacks callbacks)
     {
         machine.Configure(EnemyState.Entering)
             .OnEntry(_ => callbacks.OnEnteringEntry?.Invoke())
