@@ -86,6 +86,7 @@ description: Audit the entire codebase for unnecessary complexity — redundant 
    - Feature additions or new capabilities
    - Performance micro-optimizations that add complexity
    - Architecture-level restructuring (that belongs in audit-architecture)
+   - Removal of existing features or capabilities that the project actively uses (simplify how a feature is implemented, do not propose dropping the feature itself)
 
 6. Report findings as follows. If no simplifications found: `NO_SIMPLIFICATIONS`
 

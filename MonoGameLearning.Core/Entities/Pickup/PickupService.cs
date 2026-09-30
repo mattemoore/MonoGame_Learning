@@ -11,7 +11,7 @@ public static class PickupService
         if (player is not IDamageable { IsAlive: true } damageable) return;
 
         var playerFrame = player.Frame;
-        var pickups = entityManager.PickupCollidables;
+        var pickups = entityManager.GetCollidables(CollisionLayers.Pickups);
         for (int i = 0; i < pickups.Count; i++)
         {
             var pickup = pickups[i];

@@ -34,7 +34,7 @@ public class MeleeWeaponTests
     private static CollisionWorld2D CreateTestWorld() =>
         CollisionWorldFactory.Create(new RectangleF(0, 0, 2000, 600));
 
-    private static PlayerEntityTester CreatePlayer() => new("Test", Vector2.Zero, 1f);
+    private static PlayerEntityTester CreatePlayer() => new("Test", Vector2.Zero);
 
     private static TestEnemyEntity CreateEnemy() => new("TestEnemy", Vector2.Zero);
 

@@ -35,17 +35,6 @@ public sealed class LevelEntityFactory(
     private readonly ThrowableWeaponDef _knifeWeapon = knifeWeapon;
     private readonly Func<RectangleF> _getCameraView = getCameraView;
 
-    public static readonly string[] EnemyWarmUpKeys =
-    [
-        EnemySprite.AnimationIdle,
-        EnemySprite.AnimationRun,
-        EnemySprite.AnimationAttack1,
-        EnemySprite.AnimationHurt,
-        EnemySprite.AnimationFall,
-        EnemySprite.AnimationDie,
-        EnemySprite.AnimationGetUp,
-    ];
-
     public PropBase CreateProp(PropSpawnDef def) =>
         new OilDrumEntity(def.Type, def.Position, 1.0f, _createOilDrumSprite(), _audio, anchor: def.Anchor)
         {
@@ -69,8 +58,7 @@ public sealed class LevelEntityFactory(
             LevelContent.Grunt => new EnemyEntity($"grunt_pool_{index}", Vector2.Zero, 2.0f, _createEnemySprite(), _audio, getWorld),
             _ => throw new ArgumentException($"Unknown enemy type: {type}", nameof(type)),
         };
-        foreach (var key in EnemyWarmUpKeys)
-            enemy.SpriteRenderer.SetAnimation(key);
+        EnemySprite.WarmUp(enemy.SpriteRenderer);
         return enemy;
     }
 

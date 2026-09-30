@@ -16,16 +16,6 @@ public class TestActorEntity(string name, Vector2 position, int width, int heigh
     public RectangleF MovementBounds { get; set; }
 }
 
-public class CollisionPushEntity(string name, Vector2 position, int width, int height)
-    : Entity(name, position, width, height), ICollisionActor, IMoveable
-{
-    public int Id => GetHashCode();
-    public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
-    public Vector2 MovementDirection { get; set; }
-    public float Speed { get; set; }
-    public RectangleF MovementBounds { get; set; }
-}
-
 [TestFixture]
 public class ActorCollisionTests
 {
@@ -34,9 +24,6 @@ public class ActorCollisionTests
 
     private static TestActorEntity MakeEntity(float x, float y) =>
         new("actor", new Vector2(x, y), EntitySize, EntitySize);
-
-    private static CollisionPushEntity MakePushEntity(float x, float y) =>
-        new("pusher", new Vector2(x, y), EntitySize, EntitySize);
 
     [Test]
     public void ClampToBounds_EntityInside_DoesNotMove()
@@ -183,8 +170,8 @@ public class ActorCollisionTests
     public void TwoEntitiesAtLeftEdge_PushedIntoEdge_BothStayInBounds()
     {
         var bounds = TwoScreenBounds;
-        var left = MakePushEntity(40, 300);
-        var right = MakePushEntity(70, 300);
+        var left = MakeEntity(40, 300);
+        var right = MakeEntity(70, 300);
         left.MovementBounds = bounds;
         right.MovementBounds = bounds;
 
@@ -198,8 +185,8 @@ public class ActorCollisionTests
     public void TwoEntitiesAtRightEdge_PushedIntoEdge_BothStayInBounds()
     {
         var bounds = TwoScreenBounds;
-        var left = MakePushEntity(1530, 300);
-        var right = MakePushEntity(1560, 300);
+        var left = MakeEntity(1530, 300);
+        var right = MakeEntity(1560, 300);
         left.MovementBounds = bounds;
         right.MovementBounds = bounds;
 
@@ -212,9 +199,9 @@ public class ActorCollisionTests
     public void ThreeEntitiesPushingTowardEdge_AllStayInBounds()
     {
         var bounds = TwoScreenBounds;
-        var e1 = MakePushEntity(35, 300);
-        var e2 = MakePushEntity(65, 300);
-        var e3 = MakePushEntity(95, 300);
+        var e1 = MakeEntity(35, 300);
+        var e2 = MakeEntity(65, 300);
+        var e3 = MakeEntity(95, 300);
         e1.MovementBounds = bounds;
         e2.MovementBounds = bounds;
         e3.MovementBounds = bounds;

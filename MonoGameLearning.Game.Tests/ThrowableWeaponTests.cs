@@ -10,7 +10,7 @@ namespace MonoGameLearning.Game.Tests;
 [TestFixture]
 public class ThrowableWeaponTests
 {
-    private static PlayerEntityTester CreatePlayer() => new("Test", Vector2.Zero, 1f);
+    private static PlayerEntityTester CreatePlayer() => new("Test", Vector2.Zero);
 
     private static GameTime Seconds(float seconds) => new(TimeSpan.FromSeconds(seconds), TimeSpan.FromSeconds(seconds));
 

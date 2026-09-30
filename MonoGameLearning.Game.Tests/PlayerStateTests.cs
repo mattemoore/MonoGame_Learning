@@ -13,7 +13,7 @@ public class PlayerStateTests
     private StateMachineController<PlayerState, PlayerTrigger> _controller;
 
     [SetUp]
-    public void Setup() => _controller = PlayerStateMachine.Create();
+    public void Setup() => _controller = PlayerStateMachine.Create(new CombatActorStateMachineCallbacks());
 
     [Test]
     public void InitialState_ShouldBeIdling() =>
@@ -152,7 +152,7 @@ public class PlayerStateTests
     [Test]
     public void Attacking_IsInAttackingState()
     {
-        var controller = PlayerStateMachine.Create();
+        var controller = PlayerStateMachine.Create(new CombatActorStateMachineCallbacks());
         controller.Fire(PlayerTrigger.AttackStart);
         Assert.That(controller.IsInState(PlayerState.Attacking), Is.True);
     }
@@ -409,7 +409,7 @@ public class PlayerStateTests
     [Test]
     public void WhileAttacking_MovementInput_DoesNotChangeDirection()
     {
-        var player = new PlayerEntityTester("Test", Vector2.Zero, 1f);
+        var player = new PlayerEntityTester("Test", Vector2.Zero);
         player.Attack(player.Attack1Move);
 
         player.MovementDirection = new Vector2(-1, 0);
@@ -422,7 +422,7 @@ public class PlayerStateTests
     [Test]
     public void WhileMoving_MovementInput_ChangesDirection()
     {
-        var player = new PlayerEntityTester("Test", Vector2.Zero, 1f);
+        var player = new PlayerEntityTester("Test", Vector2.Zero);
 
         player.MovementDirection = new Vector2(-1, 0);
         player.Update(ZeroGameTime);

@@ -33,9 +33,8 @@ public enum EnemyTrigger
 
 public static class EnemyStateMachine
 {
-    public static StateMachineController<EnemyState, EnemyTrigger> Create(CombatActorStateMachineCallbacks callbacks = null)
+    public static StateMachineController<EnemyState, EnemyTrigger> Create(CombatActorStateMachineCallbacks callbacks)
     {
-        callbacks ??= new();
         return new StateMachineController<EnemyState, EnemyTrigger>(
             EnemyState.Idle,
             machine => Configure(machine, callbacks),

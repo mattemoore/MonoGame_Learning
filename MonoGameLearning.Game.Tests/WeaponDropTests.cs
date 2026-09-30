@@ -147,7 +147,7 @@ public class WeaponDropActorTests
     [Test]
     public void PlayerKnockdown_WhileHoldingWeapon_RaisesDrop()
     {
-        var player = new PlayerEntityTester("player", new Vector2(100, 100), 1f);
+        var player = new PlayerEntityTester("player", new Vector2(100, 100));
         player.EquipWeapon(BatWeapon.Bat);
         int dropCount = 0;
         player.WeaponDropped += (_, _, _) => dropCount++;
@@ -164,7 +164,7 @@ public class WeaponDropActorTests
     [Test]
     public void PlayerDeath_WhileHoldingWeapon_RaisesDrop()
     {
-        var player = new PlayerEntityTester("player", new Vector2(100, 100), 1f);
+        var player = new PlayerEntityTester("player", new Vector2(100, 100));
         player.EquipWeapon(BatWeapon.Bat);
         int dropCount = 0;
         player.WeaponDropped += (_, _, _) => dropCount++;
@@ -287,7 +287,7 @@ public class WeaponDropDirectorTests
         director.SpawnWeaponPickup(BatWeapon.Bat, origin, landing);
 
         var pickup = mgr.All.OfType<WeaponPickupEntity>().Single();
-        var target = new PlayerEntityTester("player", Vector2.Zero, 1f);
+        var target = new PlayerEntityTester("player", Vector2.Zero);
         Assert.Multiple(() =>
         {
             Assert.That(pickup.Position, Is.EqualTo(origin), "The arc starts at the launch point.");
@@ -303,7 +303,7 @@ public class WeaponDropDirectorTests
             Assert.That(pickup.Position, Is.EqualTo(expectedGround));
         });
 
-        var wielder = new PlayerEntityTester("player", Vector2.Zero, 1f);
+        var wielder = new PlayerEntityTester("player", Vector2.Zero);
         pickup.OnPickup(wielder);
         Assert.That(wielder.EquippedWeapon, Is.SameAs(BatWeapon.Bat), "A landed pickup re-equips the weapon.");
     }
@@ -312,7 +312,7 @@ public class WeaponDropDirectorTests
     public void PlayerKnockdown_WhileArmed_DropsCollectiblePickup()
     {
         var mgr = new EntityService(CreateTestWorld());
-        var player = new PlayerEntityTester("player", new Vector2(100, 100), 1f);
+        var player = new PlayerEntityTester("player", new Vector2(100, 100));
         var level = new TestLevel([], endTriggerX: 1500f);
         var director = new TestLevelDirector(mgr, level, player);
         // Mirrors GameLoop.OnPlayerWeaponDropped (the only Game-side subscription).

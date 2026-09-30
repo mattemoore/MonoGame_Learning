@@ -13,7 +13,7 @@ public class WeaponPickupGateTests
     private static EntityService CreateManager() =>
         new(CollisionWorldFactory.Create(new RectangleF(0, 0, 2000, 2000)));
 
-    private static PlayerEntityTester CreatePlayer(float x, float y) => new("player", new Vector2(x, y), 1f);
+    private static PlayerEntityTester CreatePlayer(float x, float y) => new("player", new Vector2(x, y));
 
     private static WeaponPickupEntity CreateBatPickup(float x, float y) =>
         new(BatWeapon.Bat.Name, new Vector2(x, y), BatWeapon.Bat);

@@ -10,7 +10,7 @@ public class PlayerHudTests
     [Test]
     public void PlayerHud_Respawn_GrantsInvincibility()
     {
-        var player = new PlayerEntityTester("test", Vector2.Zero, 1f);
+        var player = new PlayerEntityTester("test", Vector2.Zero);
         Assert.That(player.IsInvincible, Is.False);
         player.Respawn();
         Assert.That(player.IsInvincible, Is.True);
@@ -19,21 +19,21 @@ public class PlayerHudTests
     [Test]
     public void PlayerHud_IsInvincible_Default_False()
     {
-        var player = new PlayerEntityTester("test", Vector2.Zero, 1f);
+        var player = new PlayerEntityTester("test", Vector2.Zero);
         Assert.That(player.IsInvincible, Is.False);
     }
 
     [Test]
     public void PlayerHud_Implements_IHudPlayerData()
     {
-        var player = new PlayerEntityTester("test", Vector2.Zero, 1f);
+        var player = new PlayerEntityTester("test", Vector2.Zero);
         Assert.That(player, Is.InstanceOf<IHudPlayerData>());
     }
 
     [Test]
     public void PlayerHud_IHudPlayerData_ReportsInvincibility()
     {
-        var player = new PlayerEntityTester("test", Vector2.Zero, 1f);
+        var player = new PlayerEntityTester("test", Vector2.Zero);
         var hudData = (IHudPlayerData)player;
         Assert.That(hudData.IsInvincible, Is.False);
         player.Respawn();
@@ -43,7 +43,7 @@ public class PlayerHudTests
     [Test]
     public void PlayerHud_IHudPlayerData_ReportsHealth()
     {
-        var player = new PlayerEntityTester("test", Vector2.Zero, 1f);
+        var player = new PlayerEntityTester("test", Vector2.Zero);
         var hudData = (IHudPlayerData)player;
         Assert.That(hudData.Health, Is.EqualTo(hudData.MaxHealth));
     }
@@ -51,7 +51,7 @@ public class PlayerHudTests
     [Test]
     public void PlayerHud_IHudPlayerData_ReportsName()
     {
-        var player = new PlayerEntityTester("Cody", Vector2.Zero, 1f);
+        var player = new PlayerEntityTester("Cody", Vector2.Zero);
         var hudData = (IHudPlayerData)player;
         Assert.That(hudData.Name, Is.EqualTo("Cody"));
     }

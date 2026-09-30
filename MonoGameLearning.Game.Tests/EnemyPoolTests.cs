@@ -137,11 +137,7 @@ public class EnemyPoolTests
     }
 
     private class TestEnemyPool(EntityService entityManager)
-        : EnemyPool(entityManager, () => default, (type, index, getWorld) =>
-        {
-            _mockCounter++;
-            return new TestEnemyEntity($"test_enemy_{_mockCounter}", Vector2.Zero);
-        })
+        : EnemyPool(entityManager, () => default, MockFactory)
     {
     }
 

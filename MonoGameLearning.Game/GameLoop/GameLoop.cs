@@ -28,14 +28,13 @@ using MonoGameLearning.Game.Audio;
 
 namespace MonoGameLearning.Game.GameLoop;
 
-public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEIGHT, GAME_WIDTH, GAME_HEIGHT, IS_FULL_SCREEN)
+public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEIGHT, GAME_WIDTH, GAME_HEIGHT, false)
 {
     public const int GAME_WIDTH = 800;
     public const int GAME_HEIGHT = 600;
     private static readonly ResolutionSetting STARTUP_RESOLUTION = SettingsService.LoadResolution();
     private static readonly int RESOLUTION_WIDTH = STARTUP_RESOLUTION.Width;
     private static readonly int RESOLUTION_HEIGHT = STARTUP_RESOLUTION.Height;
-    public const bool IS_FULL_SCREEN = false;
     private PlayerEntity _player;
     private LevelData _currentLevel;
     private EntityService _entityManager;
@@ -53,7 +52,6 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
     private CollisionWorld2D _collisionWorld;
     private Dictionary<InputAction, Action> _actionHandlers;
     private AudioService _audio;
-    private Action<SfxId> _playSfx;
     private GoIndicatorEntity _goIndicator;
     private HudService _hudService;
     private LevelEntityFactory _entityFactory;
@@ -68,7 +66,6 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
         _input = new InputService();
         _input.ActionTriggered += OnActionTriggered;
         _audio = new AudioService();
-        _playSfx = _audio.PlaySfx;
         SettingsService.LoadAudio();
         _audio.SfxVolume = SettingsService.AudioSettings.SfxVolume;
         _audio.MusicVolume = SettingsService.AudioSettings.MusicVolume;
@@ -84,7 +81,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             GameLoopRules.ApplyMusicForState(_audio, t.Source, t.Destination);
         });
 
-        _menuManager = new MenuService(_gameState, Exit, _playSfx, () => SettingsService.AudioSettings, settings =>
+        _menuManager = new MenuService(_gameState, Exit, _audio.PlaySfx, () => SettingsService.AudioSettings, settings =>
         {
             SettingsService.SaveAudio(settings);
             _audio.SfxVolume = settings.SfxVolume;
@@ -196,7 +193,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             _projectileService.Update();
 
             CollisionWorldFactory.ResolveActorPropCollisions(_collisionWorld);
-            PickupService.ResolveOverlaps(_entityManager, _player, _playSfx);
+            PickupService.ResolveOverlaps(_entityManager, _player, _audio.PlaySfx);
 
             _hudService.SetProximityTarget(_entityManager.FindNearestAliveEnemy(_player.Position));
 

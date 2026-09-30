@@ -32,6 +32,13 @@ public static class EnemySprite
     /// <summary>The animation definitions this actor declares, for tests to key hand data against.</summary>
     public static SpriteAnimationDef[] AnimationDefs => Asset.Defs;
 
+    /// <summary>Warms up all defined animations on a sprite renderer so the first frame has valid animation regions.</summary>
+    public static void WarmUp(SpriteRenderer renderer)
+    {
+        foreach (var def in Asset.Defs)
+            renderer.SetAnimation(def.Name);
+    }
+
     /// <summary>
     /// Per-frame hand points (actor units from Position) for the animations this actor uses.
     /// Authored as pivots on the source's Aseprite `hand` slice and pasted from

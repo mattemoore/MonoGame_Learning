@@ -47,8 +47,6 @@ public class EntityService(CollisionWorld2D world, HitboxService? hitboxService 
     public void SortRenderablesByY() => _renderables.Sort(_renderableYComparer);
     public IReadOnlyList<ICollisionActor> GetCollidables(string layer) =>
         _collidablesByLayer.TryGetValue(layer, out var list) ? list : [];
-    public IReadOnlyList<ICollisionActor> PickupCollidables =>
-        _collidablesByLayer.TryGetValue(CollisionLayers.Pickups, out var list) ? list : [];
     public IReadOnlyList<IMoveable> Movables => _movables;
     public IReadOnlyList<IDebugDrawable> DebugDrawables => _debugDrawables;
     public IReadOnlyList<PropBase> Props => _props;

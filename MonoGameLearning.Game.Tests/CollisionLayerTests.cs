@@ -12,13 +12,6 @@ public class TestProp(string name, Vector2 position, int width, int height)
     public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
 }
 
-public class PassThroughActor(string name, Vector2 position, int width, int height)
-    : Entity(name, position, width, height), ICollisionActor
-{
-    public int Id => GetHashCode();
-    public CollisionShape2D Shape => new(new BoundingBox2D(new Vector2(Frame.X, Frame.Y), new Vector2(Frame.Right, Frame.Bottom)));
-}
-
 [TestFixture]
 public class CollisionLayerTests
 {
@@ -38,8 +31,8 @@ public class CollisionLayerTests
     public void ActorActor_SameLayer_PassThrough()
     {
         var world = CreateCollisionWorld();
-        var a1 = new PassThroughActor("actor", new Vector2(100, 100), EntitySize, EntitySize);
-        var a2 = new PassThroughActor("actor", new Vector2(110, 100), EntitySize, EntitySize);
+        var a1 = MakeProp(100, 100);
+        var a2 = MakeProp(110, 100);
 
         world.Insert(a1, CollisionLayers.Actors);
         world.Insert(a2, CollisionLayers.Actors);

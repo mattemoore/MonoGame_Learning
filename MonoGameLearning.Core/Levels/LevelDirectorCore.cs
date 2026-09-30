@@ -69,8 +69,7 @@ public abstract class LevelDirectorCore<TEnemy>
         Func<string, MeleeWeaponDef> getWeapon,
         Func<string, int, Func<WorldSnapshot>, TEnemy> createEnemy,
         Action<TEnemy, EnemySpawnDef, FacingDirection, MeleeWeaponDef?> onEnemySpawned,
-        Func<RectangleF> getCameraView,
-        Func<EntityPool<TEnemy>>? buildPool = null)
+        Func<RectangleF> getCameraView)
     {
         EntityManager = entityManager;
         Level = level;
@@ -86,13 +85,13 @@ public abstract class LevelDirectorCore<TEnemy>
         _enemyBuf.Capacity = 16;
         _propBuf.Capacity = 16;
 
-        EnemyPool = buildPool?.Invoke() ?? CreateDefaultPool();
+        EnemyPool = CreateDefaultPool();
         InitializePool();
     }
 
     /// <summary>
     /// Creates a pool with default rent/return hooks that call Reset/ClearCombatState.
-    /// Override in a subclass or pass a <c>buildPool</c> delegate.
+    /// Override in a subclass.
     /// </summary>
     protected virtual EntityPool<TEnemy> CreateDefaultPool()
     {
@@ -102,8 +101,7 @@ public abstract class LevelDirectorCore<TEnemy>
     }
 
     /// <summary>
-    /// Hook for subclasses to customize pool initialization. The default is no-op;
-    /// <see cref="EnemyPool"/> is already set by the constructor's buildPool delegate.
+    /// Hook for subclasses to customize pool initialization. The default is no-op.
     /// </summary>
     protected virtual void InitializePool() { }
 
