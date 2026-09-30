@@ -45,6 +45,10 @@ public abstract class LevelDirectorCore<TEnemy>
     private bool _waveTriggered;
     private bool _goBellPlayed;
 
+    private const float DropArcDuration = 0.7f;
+    private const float DropArcPeak = 40f;
+    private const float DropSpinTurns = 1f;
+
     public event Action LevelCompleted = null!;
     public bool ShowGoPrompt => _waveCleared;
     public int CurrentWaveIndex => _currentWaveIndex;
@@ -118,6 +122,23 @@ public abstract class LevelDirectorCore<TEnemy>
             pickup.Position = new Vector2(source.Frame.Center.X, source.Frame.Bottom - pickup.Height / 2f);
             EntityManager.Register(pickup);
         }
+    }
+
+    /// <summary>
+    /// Spawns a ground weapon pickup and tosses it from <paramref name="origin"/> to
+    /// <paramref name="landing"/>. The dropped weapon is keyed off <see cref="WeaponDef.Name"/>,
+    /// which must equal a level-content pickup key handled by the injected <c>createPickup</c>
+    /// factory (unknown names throw loudly there).
+    /// </summary>
+    public void SpawnWeaponPickup(WeaponDef weapon, Vector2 origin, Vector2 landing)
+    {
+        var pickup = _createPickup(new PickupSpawnDef(weapon.Name, landing));
+        var ground = new Vector2(landing.X, landing.Y - pickup.Height / 2f);
+        if (pickup is PickupBase arcPickup)
+            arcPickup.BeginDropArc(origin, ground, DropArcDuration, DropArcPeak, DropSpinTurns);
+        else
+            pickup.Position = ground;
+        EntityManager.Register(pickup);
     }
 
     public void PopulateSnapshots(RectangleF walkableBounds)
@@ -216,6 +237,7 @@ public abstract class LevelDirectorCore<TEnemy>
             _onEnemySpawned(enemy, def, initialFacing, def.Weapon is null ? null : _getWeapon(def.Weapon));
 
             enemy.Died += OnDiedHandler;
+            enemy.WeaponDropped += SpawnWeaponPickup;
             _activeEnemies.Add(enemy);
         }
     }
@@ -302,6 +324,7 @@ public abstract class LevelDirectorCore<TEnemy>
     protected virtual void OnEnemyDied(TEnemy enemy)
     {
         enemy.Died -= OnDiedHandler;
+        enemy.WeaponDropped -= SpawnWeaponPickup;
         _activeEnemies.Remove(enemy);
         SpawnDrops(enemy);   // before Return — position is still real
         EnemyPool.Return(enemy);

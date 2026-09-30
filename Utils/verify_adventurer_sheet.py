@@ -21,13 +21,12 @@ import sys
 import zlib
 
 # The expected frame/tag spec is owned by the builder so the two tools cannot disagree.
-# The source frames are the first `count` frames of each prefix, in order; extra source
-# frames are intentionally unused.
+# Each tag lists its source PNG stems, in order; extra source frames are intentionally unused.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_adventurer_sheet import SPEC as EXPECTED  # noqa: E402
 
 FRAME_W, FRAME_H = 50, 37
-EXPECTED_TOTAL = sum(c for _, _, c in EXPECTED)
+EXPECTED_TOTAL = sum(len(stems) for _, stems in EXPECTED)
 
 
 def decode_png(path: str) -> tuple[int, int, bytes]:
@@ -148,17 +147,17 @@ def main() -> int:
         print(f"note: texture is {tex_w}x{tex_h}")
     source_hash: dict[str, str] = {}
     source_px: dict[str, str] = {}
-    for _, prefix, count in EXPECTED:
-        for i in range(count):
-            path = os.path.join(args.sources_dir, f"{prefix}-{i:02d}.png")
+    for _, stems in EXPECTED:
+        for stem in stems:
+            path = os.path.join(args.sources_dir, f"{stem}.png")
             if not os.path.exists(path):
                 failures.append(f"missing source frame {os.path.basename(path)}")
                 continue
-            source_hash[f"{prefix}-{i:02d}"] = hashlib.sha1(decode_png(path)[2]).hexdigest()
+            source_hash[stem] = hashlib.sha1(decode_png(path)[2]).hexdigest()
 
     tags = {t.get("name"): t for t in meta.get("frameTags", [])}
     print(f"tags: {sorted(tags)}")
-    missing = [k for k, _, _ in EXPECTED if k not in tags]
+    missing = [k for k, _ in EXPECTED if k not in tags]
     extra = [k for k in tags if k not in {e[0] for e in EXPECTED}]
     if missing:
         failures.append(f"missing tags: {missing}")
@@ -166,21 +165,20 @@ def main() -> int:
         failures.append(f"unexpected tags: {extra}")
 
     seen: set[int] = set()
-    for key, prefix, count in EXPECTED:
+    for key, stems in EXPECTED:
         tag = tags.get(key)
         if tag is None:
             print(f"  [{key}] MISSING")
             continue
         start, end = tag.get("from"), tag.get("to")
+        count = len(stems)
         got = end - start + 1 if start is not None else 0
         problems = []
         if got != count:
             problems.append(f"{got} frames != {count}")
-        match_ok = True
         for i in range(min(got, count)):
             idx = start + i
             if idx >= len(frames) or idx < 0:
-                match_ok = False
                 problems.append(f"range {idx} out of bounds")
                 break
             seen.add(idx)
@@ -189,9 +187,8 @@ def main() -> int:
             rect = frames[idx].get("frame", {})
             if (rect.get("w"), rect.get("h")) == (FRAME_W, FRAME_H):
                 got_hash = hashlib.sha1(frame_bytes(tex, tex_w, rect)).hexdigest()
-                if got_hash != source_hash.get(f"{prefix}-{i:02d}"):
-                    match_ok = False
-                    problems.append(f"frame {idx} art != {prefix}-{i:02d}")
+                if got_hash != source_hash.get(stems[i]):
+                    problems.append(f"frame {idx} art != {stems[i]}")
         status = "OK" if not problems else "BAD"
         print(f"  [{key}] {start}-{end} ({got}/{count}) {status}" + (f" :: {'; '.join(problems)}" if problems else ""))
         if problems:

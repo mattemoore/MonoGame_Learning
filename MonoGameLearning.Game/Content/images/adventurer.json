@@ -280,7 +280,7 @@
             "h": 37
           }
         },
-        "adventurer-getup-00": {
+        "adventurer-fall-02": {
           "frame": {
             "x": 1700,
             "y": 0,
@@ -288,7 +288,7 @@
             "h": 37
           }
         },
-        "adventurer-getup-01": {
+        "adventurer-getup-00": {
           "frame": {
             "x": 1750,
             "y": 0,
@@ -296,7 +296,7 @@
             "h": 37
           }
         },
-        "adventurer-getup-02": {
+        "adventurer-getup-01": {
           "frame": {
             "x": 1800,
             "y": 0,

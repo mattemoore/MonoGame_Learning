@@ -120,6 +120,7 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
         _player.Died += OnPlayerDied;
         _player.Thrown += OnPlayerThrown;
+        _player.WeaponDropped += OnPlayerWeaponDropped;
         _hudService = new HudService(_player, _debugFont, () => _lives);
 
         GoIndicatorTexture.Load(Content);
@@ -134,6 +135,8 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
             [InputAction.Confirm] = () => _menuManager.HandleConfirm(),
             [InputAction.DebugKill] = () => { if (IsDebug && _gameState.State == GameState.Playing) _player?.TakeDamage(new DamageInfo { Amount = 9999 }); },
             [InputAction.DebugComplete] = () => { if (IsDebug && _gameState.State == GameState.Playing) _gameState.Fire(GameTrigger.CompleteLevel); },
+            [InputAction.DebugKnockdown] = () => { if (IsDebug && _gameState.State == GameState.Playing) _player?.TakeDamage(new DamageInfo { Amount = 0, Knockdown = true }); },
+            [InputAction.DebugHit] = () => { if (IsDebug && _gameState.State == GameState.Playing) _player?.TakeDamage(new DamageInfo { Amount = 0 }); },
             [InputAction.MenuUp] = () => _menuManager.HandleMenuNavigation(-1),
             [InputAction.MenuDown] = () => _menuManager.HandleMenuNavigation(1),
             [InputAction.MenuLeft] = () => _menuManager.HandleMenuAdjust(-1),
@@ -294,6 +297,9 @@ public class GameLoop() : GameCore("Game Demo", RESOLUTION_WIDTH, RESOLUTION_HEI
 
     private void OnPlayerThrown(ThrowableWeaponDef def, Vector2 origin, FacingDirection facing) =>
         _projectileService.Spawn(def, origin, facing, Faction.Player);
+
+    private void OnPlayerWeaponDropped(WeaponDef weapon, Vector2 origin, Vector2 landing) =>
+        _levelDirector.SpawnWeaponPickup(weapon, origin, landing);
 
     private const int INITIAL_LIVES = 3;
 

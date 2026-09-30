@@ -67,7 +67,7 @@ findings have since been fixed (noted inline).
 ### 8. Observer pattern (events) [Pattern]
 
 - **Concept:** Producers raise events; consumers subscribe. Subscriptions must be symmetric with their producers' lifetime.
-- **Why it's used here:** `Died`/`Destroyed`/`ActionTriggered`/`LevelCompleted` decouple entities from the systems that react; the subscribe/unsubscribe symmetry around `SetAnimation` is mandatory (documented MonoGame.Extended pitfall).
+- **Why it's used here:** `Died`/`Destroyed`/`WeaponDropped`/`ActionTriggered`/`LevelCompleted` decouple entities from the systems that react; the subscribe/unsubscribe symmetry around `SetAnimation` is mandatory (documented MonoGame.Extended pitfall).
 - **Where:** `CombatActorBase.PlayAnimation` pairs `UnsubscribeFromAnimationEvent`/`SubscribeToAnimationEvent` (`CombatActorBase.cs:80-95`); `LevelDirectorCore` subscribes/unsubscribes `Destroyed`/`Died` (`LevelDirectorCore.cs:95,102,218,304`).
 - **How to spot it:** `event EventHandler` members plus `+=`/`-=` in matching call sites.
 
@@ -163,6 +163,14 @@ findings have since been fixed (noted inline).
 - **Why not one flat anchor:** storing the actor's hand point inside the weapon (the removed `CarryHandAnchor`/`SwingHandAnchors`) duplicated actor data per weapon — the knife simply aliased the bat's values — and a single actor-art change forced retuning every weapon.
 - **Where:** `Core.Animation.HandAnchorTable`, `CombatActorBase.HandAnchors`/`ResolveHandAnchor` (`Vector2.Zero` fallback + one-per-animation `Debug.WriteLine`), the pose clock `SpriteRenderer.AnimationFrame` (reset in `SetAnimation`, incremented per frame change — see the atlas-index pitfall in AGENTS.md), `PlayerSprite`/`EnemySprite` tables pasted from `Utils/aseprite_to_monogame_extended.py`, `WeaponDef.ComputeAnchor`, per-frame debug markers in `CombatActorBase.DrawDebug` (cyan hand, green grip).
 - **How to spot it:** A composed value built from two independently authored inputs, combined by a tiny pure function, with an explicit fallback when one input is missing.
+
+### 22. Opt-in drop arc with a target-aware collection gate [Pattern]
+
+- **Concept:** A lightweight code-driven tween (position + spin over a duration) moves an object from A to B, and the object exposes a capability predicate callers must honor before consuming it.
+- **Why it's used here:** Two rules share one gate: (1) a weapon knocked loose (knockdown/death) must NOT be instantly re-collected by the unarmed actor lying on it, and (2) an already-armed actor must not grab a second weapon. `PickupBase` implements `IUpdatable` and owns the parabolic arc; `IPickup.CanBeCollectedBy(IDamageable target)` (default `true`, so existing pickups are unchanged) is the gate, and `PickupService` skips uncollectible pickups. The arc rule lives in `PickupBase` (`!_isArcing`); the one-weapon rule lives on `WeaponPickupEntity` (`base.CanBeCollectedBy(target) && target is not IWeaponWielder { EquippedWeapon: not null }`), because only a weapon pickup cares. The actor raises `CombatActorBase.WeaponDropped` and its owner spawns the pickup (`LevelDirectorCore.SpawnWeaponPickup` for enemies, `GameLoop` for the player) — no new art, no physics engine, no parallel "dropping pickup" type.
+- **Why the target is a parameter, not a second flag:** "Can this be collected" always has a collector; folding the actor-dependent rule into the same question keeps `PickupService` to one check and `IWeaponWielder.EquippedWeapon` is the single source of truth for "armed" (melee holds until drop, throwable until thrown/consumed).
+- **Where:** `PickupBase.BeginDropArc`/`Update`/`CanBeCollectedBy`/`Rotation` (`PickupBase.cs`), `IPickup.CanBeCollectedBy` default method (`IPickup.cs`), `WeaponPickupEntity.CanBeCollectedBy` (`WeaponPickupEntity.cs`), `IWeaponWielder.EquippedWeapon`, the `PickupService.ResolveOverlaps` gate, `CombatActorBase.DropWeapon` (launches from the hands, lands behind the actor level with its sprite's frame bottom — its feet; `ResetActor` deliberately keeps `UnequipWeapon` so pool return/respawn never drops), `LevelDirectorCore.SpawnWeaponPickup`.
+- **How to spot it:** An entity exposing a "can I be consumed by this target yet" predicate plus a self-contained tween that flips it, consumed by a service that checks the predicate before acting.
 
 ---
 
