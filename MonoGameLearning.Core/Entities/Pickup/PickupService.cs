@@ -18,6 +18,7 @@ public static class PickupService
             if (pickup is not Entity { } pickupEntity) continue;
             if (!playerFrame.Intersects(pickupEntity.Frame)) continue;
             if (pickup is not IPickup pickupInterface) continue;
+            if (!pickupInterface.CanBeCollectedBy(damageable)) continue;
 
             pickupInterface.OnPickup(damageable);
             playSfx(SfxId.PickupHeal);

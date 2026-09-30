@@ -82,7 +82,7 @@ public class ThrowableWeaponTests
 
         pickup.OnPickup(wielder);
 
-        Assert.That(wielder.Equipped, Is.SameAs(KnifeWeapon.Knife));
+        Assert.That(wielder.EquippedWeapon, Is.SameAs(KnifeWeapon.Knife));
     }
 
     // --- Primary attack selection ---
@@ -227,8 +227,8 @@ public class ThrowableWeaponTests
         player.EquipWeapon(KnifeWeapon.Knife);
         player.PrimaryAttack();
 
-        // A pickup during the windup replaces the equipped weapon (GameLoop resolves pickups
-        // every frame while attacking). The throw must not consume the newly acquired weapon.
+        // The equipped weapon can be replaced mid-windup (e.g. a direct EquipWeapon); the throw
+        // must consume only the weapon it actually launched, never the newly acquired one.
         player.EquipWeapon(BatWeapon.Bat);
         player.SimulateFrameAdvanced(KnifeWeapon.Knife.SpawnFrame);
 

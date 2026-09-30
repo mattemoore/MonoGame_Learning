@@ -9,10 +9,12 @@ Why: GUI import repeatedly scrambled the frames (duplicate-merged `die-04`/`die-
 `die-01`/`die-04` missing, attack runs out of order). This script pins frame order, counts,
 tag names, and ranges.
 
-Frames imported (the first `count` PNGs of each prefix):
+Frames imported (source PNG stems, in canonical order):
     idle-00..03 (4), attack1-00..03 (4), attack2-00..03 (4), attack3-00..03 (4),
-    run-00..05 (6), hurt-00..02 (3), die-00..06 (7), fall-00..01 (2), stand-00..02 (3)
-Tag for the last group is `getup` (its source prefix is `adventurer-stand`).
+    run-00..05 (6), hurt-00..02 (3), die-00..06 (7),
+    fall-00..01 + stand-00 (3), stand-01..02 (2)
+The `fall` run ends on the `stand-00` art (the face-down landing pose) and `getup` starts at
+`stand-01`, so fall and getup share the `adventurer-stand` source prefix.
 
 Usage:
     python3 Utils/build_adventurer_sheet.py
@@ -31,17 +33,23 @@ import subprocess
 import sys
 import tempfile
 
-# (tag key, source PNG prefix, frame count)
+
+def _frames(prefix: str, start: int, count: int) -> list[str]:
+    """Source PNG stems `{prefix}-{start:02d}` .. for `count` frames."""
+    return [f"{prefix}-{i:02d}" for i in range(start, start + count)]
+
+
+# (tag key, source PNG stems in order)
 SPEC = [
-    ("idle", "adventurer-idle", 4),
-    ("attack1", "adventurer-attack1", 4),
-    ("attack2", "adventurer-attack2", 4),
-    ("attack3", "adventurer-attack3", 4),
-    ("run", "adventurer-run", 6),
-    ("hurt", "adventurer-hurt", 3),
-    ("die", "adventurer-die", 7),
-    ("fall", "adventurer-fall", 2),
-    ("getup", "adventurer-stand", 3),
+    ("idle", _frames("adventurer-idle", 0, 4)),
+    ("attack1", _frames("adventurer-attack1", 0, 4)),
+    ("attack2", _frames("adventurer-attack2", 0, 4)),
+    ("attack3", _frames("adventurer-attack3", 0, 4)),
+    ("run", _frames("adventurer-run", 0, 6)),
+    ("hurt", _frames("adventurer-hurt", 0, 3)),
+    ("die", _frames("adventurer-die", 0, 7)),
+    ("fall", _frames("adventurer-fall", 0, 2) + ["adventurer-stand-00"]),
+    ("getup", _frames("adventurer-stand", 1, 2)),
 ]
 
 LUA = """local DIR = {dir}
@@ -71,10 +79,11 @@ def build_plan() -> tuple[list[str], list[tuple[str, int, int]]]:
     files: list[str] = []
     tags: list[tuple[str, int, int]] = []
     index = 0
-    for key, prefix, count in SPEC:
+    for key, stems in SPEC:
+        count = len(stems)
         tags.append((key, index, index + count - 1))
         index += count
-        files.extend(f"{prefix}-{i:02d}.png" for i in range(count))
+        files.extend(f"{stem}.png" for stem in stems)
     return files, tags
 
 

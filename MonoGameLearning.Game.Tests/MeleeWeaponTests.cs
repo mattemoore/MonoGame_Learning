@@ -20,12 +20,12 @@ internal sealed class WeaponWielderTrackerEntity : IDamageable, IWeaponWielder
     public int MaxHealth => 100;
     public bool IsAlive => true;
     public event EventHandler Died = delegate { };
-    public WeaponDef? Equipped { get; private set; }
+    public WeaponDef? EquippedWeapon { get; private set; }
 
     public void TakeDamage(DamageInfo info) { }
     public void Heal(int amount) { }
-    public void EquipWeapon(WeaponDef weapon) => Equipped = weapon;
-    public void UnequipWeapon() => Equipped = null;
+    public void EquipWeapon(WeaponDef weapon) => EquippedWeapon = weapon;
+    public void UnequipWeapon() => EquippedWeapon = null;
 }
 
 [TestFixture]
@@ -139,7 +139,7 @@ public class MeleeWeaponTests
 
         pickup.OnPickup(wielder);
 
-        Assert.That(wielder.Equipped, Is.SameAs(BatWeapon.Bat));
+        Assert.That(wielder.EquippedWeapon, Is.SameAs(BatWeapon.Bat));
     }
 
     [Test]

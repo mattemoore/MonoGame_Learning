@@ -26,8 +26,8 @@ public static class PlayerSprite
         new SpriteAnimationDef(AnimationRun, "adventurer-run", 6, true),
         new SpriteAnimationDef(AnimationHurt, "adventurer-hurt", 3, false),
         new SpriteAnimationDef(AnimationDie, "adventurer-die", 7, false),
-        new SpriteAnimationDef(AnimationFall, "adventurer-fall", 2, false),
-        new SpriteAnimationDef(AnimationGetUp, "adventurer-getup", 3, false));
+        new SpriteAnimationDef(AnimationFall, "adventurer-fall", 3, false),
+        new SpriteAnimationDef(AnimationGetUp, "adventurer-getup", 2, false));
 
     public static void Load(ContentManager content) => Asset.Load(content);
 
@@ -49,6 +49,6 @@ public static class PlayerSprite
         (AnimationRun, [new(9, 2.5f), new(5, 3.5f), new(2, 3.5f), new(-3, -0.5f), new(1, 2.5f), new(5, 4.5f)]),
         (AnimationHurt, [new(2, 4.5f), new(-1, 5.5f), new(-3, 5.5f)]),
         (AnimationDie, [new(1, 4.5f), new(-1, 5.5f), new(-1, 5.5f), new(1, 6.5f), new(-2, 12.5f), new(-1, 12.5f), new(-1, 13.5f)]),
-        (AnimationFall, [new(-1, -10.5f), new(-1, -10.5f)]),
-        (AnimationGetUp, [new(-7, 15.5f), new(-7, 15.5f), new(-7, 15.5f)]));
+        (AnimationFall, [new(-1, -10.5f), new(-1, -10.5f), new(-7, 15.5f)]),
+        (AnimationGetUp, [new(-7, 15.5f), new(-7, 15.5f)]));
 }

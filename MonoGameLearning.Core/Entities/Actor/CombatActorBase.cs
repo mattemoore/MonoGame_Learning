@@ -35,6 +35,10 @@ public abstract class CombatActorBase(
 
     private string? _lastWarnedHandKey;
 
+    /// <summary>How long a knocked-down actor lies on the ground after the fall clip before getting up.</summary>
+    private const float KnockdownHoldSeconds = 0.75f;
+    private float _knockdownHoldTimer;
+
     public RectangleF MovementBounds { get; set; }
     public Vector2 MovementDirection { get; set; }
     public float Speed { get; set; }
@@ -43,6 +47,12 @@ public abstract class CombatActorBase(
     public FacingDirection Direction { get; set; } = FacingDirection.Right;
     public Faction Faction { get; protected set; }
     public event EventHandler? Died;
+
+    /// <summary>
+    /// Raised when a held weapon leaves the actor on knockdown/death: the weapon, the launch
+    /// point, and the intended ground landing point. The owner spawns the pickup.
+    /// </summary>
+    public event Action<WeaponDef, Vector2, Vector2>? WeaponDropped;
     protected SfxId? LastImpactSfx { get; set; }
     public WeaponDef? EquippedWeapon { get; private set; }
 
@@ -61,6 +71,33 @@ public abstract class CombatActorBase(
     public void EquipWeapon(WeaponDef weapon) => EquippedWeapon = weapon;
 
     public void UnequipWeapon() => EquippedWeapon = null;
+
+    private const float DropClearance = 32f;
+
+    /// <summary>
+    /// Knocks the held weapon loose: raises <see cref="WeaponDropped"/> with a launch point at
+    /// the hands and a ground landing point behind the actor, level with the actor sprite's
+    /// frame bottom (its feet). No-op when unarmed. <see cref="ResetActor"/> deliberately calls
+    /// <see cref="UnequipWeapon"/> instead, so pool return / respawn never spawns a pickup.
+    /// </summary>
+    private void DropWeapon()
+    {
+        if (EquippedWeapon is not { } weapon) return;
+        float forward = Direction == FacingDirection.Left ? -1f : 1f;
+        var origin = Position + new Vector2(forward * Width * 0.5f, 0f); // out of the hands
+        float x = Position.X - forward * (Width * 0.5f + DropClearance);
+        var landing = new Vector2(x, SpriteBottomY);
+        UnequipWeapon();
+        WeaponDropped?.Invoke(weapon, origin, landing);
+    }
+
+    /// <summary>
+    /// Y of the actor sprite's frame bottom (its drawn feet). Falls back to the collision-frame
+    /// bottom for headless test doubles with no sprite.
+    /// </summary>
+    private float SpriteBottomY => SpriteRenderer.Sprite is { } s
+        ? Position.Y + s.Size.Y * 0.5f * SpriteRenderer.Scale
+        : Frame.Bottom;
 
     protected void PlayAnimation(string key)
     {
@@ -87,9 +124,10 @@ public abstract class CombatActorBase(
         {
             if (KnockdownPhase == KnockdownPhase.Falling)
             {
-                SpriteRenderer.SetAnimation(Animations.GetUp);
-                KnockdownPhase = KnockdownPhase.GettingUp;
-                SubscribeToAnimationEvent();
+                // The fall clip finished: stop listening to it and lie on the ground for
+                // KnockdownHoldSeconds (the clip holds its last frame) before getting up.
+                UnsubscribeFromAnimationEvent();
+                _knockdownHoldTimer = KnockdownHoldSeconds;
             }
             else
                 FirePhaseCompleted();
@@ -308,7 +346,8 @@ public abstract class CombatActorBase(
     protected void KnockdownEntryImpl()
     {
         KnockdownPhase = KnockdownPhase.Falling;
-        UnequipWeapon();
+        _knockdownHoldTimer = 0f;
+        DropWeapon();
         PlayAnimation(Animations.Fall);
     }
 
@@ -316,11 +355,12 @@ public abstract class CombatActorBase(
     {
         UnsubscribeFromAnimationEvent();
         KnockdownPhase = KnockdownPhase.Falling;
+        _knockdownHoldTimer = 0f;
     }
 
     protected void DyingEntryImpl()
     {
-        UnequipWeapon();
+        DropWeapon();
         PlayAnimation(Animations.Die);
     }
 
@@ -333,8 +373,32 @@ public abstract class CombatActorBase(
     {
         if (!IsIncapacitated) return false;
         MovementDirection = Vector2.Zero;
+        TickKnockdownHold(gameTime);
         SpriteRenderer.Update(gameTime);
         return true;
+    }
+
+    /// <summary>
+    /// Holds a knocked-down actor on the ground for <see cref="KnockdownHoldSeconds"/> after the
+    /// fall clip finishes, then starts the getup clip. Without this the actor bounces straight
+    /// back up the frame the fall ends.
+    /// </summary>
+    private void TickKnockdownHold(GameTime gameTime)
+    {
+        if (Phase != ActorPhase.KnockedDown || KnockdownPhase != KnockdownPhase.Falling) return;
+        if (_knockdownHoldTimer <= 0f) return;
+
+        _knockdownHoldTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+        if (_knockdownHoldTimer <= 0f)
+            BeginGetUp();
+    }
+
+    private void BeginGetUp()
+    {
+        _knockdownHoldTimer = 0f;
+        KnockdownPhase = KnockdownPhase.GettingUp;
+        SpriteRenderer.SetAnimation(Animations.GetUp);
+        SubscribeToAnimationEvent();
     }
 
     // --- Shared Reset common parts ---
@@ -350,6 +414,7 @@ public abstract class CombatActorBase(
         CurrentMove = null;
         FrameTracker.Reset();
         KnockdownPhase = KnockdownPhase.Falling;
+        _knockdownHoldTimer = 0f;
         LastImpactSfx = null;
     }
 }

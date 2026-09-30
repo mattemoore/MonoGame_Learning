@@ -29,6 +29,8 @@ repeated here:
 | `~` | Toggle debug overlay + debug drawing |
 | K (debug) | Kill the player |
 | C (debug) | Complete the level |
+| L (debug) | Knock the player down |
+| H (debug) | Simulate a hit on the player (hurt flinch) |
 
 ## 1. Boot and window behavior
 
@@ -119,7 +121,7 @@ repeated here:
 | 7.3 | Enemy AI | Enemies chase when in range, idle otherwise, attack at ~70px range, back off / avoid the player properly; no walking through the player or world bounds |
 | 7.4 | Scroll lock | Camera stays locked until every wave enemy is dead; then GO bell rings, GO indicator flashes, and scroll resumes |
 | 7.5 | Mashing attacks | Hitbox connects during swing apex frames; enemies flinch (hurt animation) when struck |
-| 7.6 | Attack 3 (heavy) | Knocks enemies down; they fall, pause, then get up; no double-damage or re-hit during knockdown |
+| 7.6 | Attack 3 (heavy) | Knocks enemies down; they fall, lie on the ground for a clear pause (the fall clip holds its last, face-down frame), then get up; no double-damage or re-hit during knockdown |
 | 7.7 | Pick up the bat (x≈350) | Player equips it; attacks swap to bat swing with bat visuals and reach; swinging arrows start to register hits at the bat's reach instead of the fist's |
 | 7.8 | Pick up food | Player health increases (watch HUD); pickup is removed from the world |
 | 7.9 | Oil drums | Solidity (player can't walk through); destroying a drum that has drop defs spawns its food pickup |
@@ -132,7 +134,9 @@ repeated here:
 | 7.16 | Throw the knife while facing left | Projectile travels left, flips horizontally, and hits enemies on the left |
 | 7.17 | Throw the knife into an oil drum | Drum takes damage/breaks (a thrown projectile can hit neutral props) |
 | 7.18 | Throw the knife, then pick up the bat | The bat replaces the knife in hand; Attack1 swings again instead of throwing |
-| 7.19 | Get knocked down while holding the knife | Knife drops (not re-pickable); Attack1 is a normal punch after getting up. Fall/getup/die hand pivots are authored but unused while knockdown/die still unequip the weapon |
+| 7.19 | Get knocked down while holding the knife or bat | The held weapon is blown out of the hands and lands behind the actor at the sprite's feet level as a re-pickable ground pickup; Attack1 is a normal punch after getting up until the weapon is re-picked |
+| 7.20 | Watch a dropped weapon's arc | The weapon hops and spins slowly to the ground behind the dropper at the sprite's feet level, cannot be grabbed mid-flight, can be re-collected, and persists when walking away and back |
+| 7.21 | Walk onto a second weapon while already holding one | The armed player does not pick up or swap to the second weapon — it stays on the ground; food is still collected while armed |
 
 ## 8. Performance and stability
 
@@ -152,3 +156,5 @@ repeated here:
 | 9.3 | `C` during play | Level complete flow fires |
 | 9.4 | Debug overlays | Player frame (blue/yellow when invincible), enemy AI frames colored by dominant force + distance rings + force label, active hitboxes (red rects during attack frames), wave trigger/end/level-end/walkable lines, weapon anchor marker + name (orange, the region center), resolved actor hand point (cyan) and weapon grip point (green, the two coincide when the per-frame hand table and the weapon handle offsets are both correct) |
 | 9.5 | Debug overlay in menus/other states | No crash; text reflects the current game state |
+| 9.6 | `L` during play | Player is knocked down without losing health; the held weapon (if any) is tossed to the ground. Requires the debug overlay on; a repeat press within the 1.5s post-knockdown invincibility window is ignored |
+| 9.7 | `H` during play | Player flinches (hurt animation + SFX) without losing health. Requires the debug overlay on; a repeat press within the 1s post-hit invincibility window is ignored |

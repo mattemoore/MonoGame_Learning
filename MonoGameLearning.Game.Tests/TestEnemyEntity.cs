@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using MonoGame.Extended.Animations;
 using MonoGameLearning.Core.StateMachines;
 using MonoGameLearning.Game.Entities.Enemy;
 using MonoGameLearning.Game.Levels;
@@ -10,6 +11,12 @@ class TestEnemyEntity(string name, Vector2 position, LevelDirector? director = n
     : EnemyEntity(name, position, 1f, null!, null!, director is null ? () => default : () => director.CurrentWorld)
 {
     public StateMachineController<EnemyState, EnemyTrigger>? StateController { get; private set; }
+
+    /// <summary>Test hook: simulate the current animation reaching its end.</summary>
+    public void CompleteAnimation() => OnAnimationCompleted(null!, AnimationEventTrigger.AnimationCompleted);
+
+    /// <summary>Test hook: drive the incapacitated (knockdown/death) update path headlessly.</summary>
+    public bool TickIncapacitated(GameTime gameTime) => TryHandleIncapacitatedUpdate(gameTime);
 
     protected override StateMachineController<EnemyState, EnemyTrigger> CreateStateController()
     {
